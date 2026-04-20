@@ -1,34 +1,29 @@
 import { redirect } from "next/navigation"
 
-import { getSessionContext } from "@/lib/auth/session"
+import { auth } from "@/auth"
 import { UnauthenticatedError } from "@/lib/errors"
 
-export async function requireUser() {
-  const context = await getSessionContext()
-
-  if (!context) {
-    throw new UnauthenticatedError()
-  }
-
-  return context.user
+export async function getCurrentUser() {
+  const session = await auth()
+  return session?.user ?? null
 }
 
-export async function requireSessionContext() {
-  const context = await getSessionContext()
+export async function requireUser() {
+  const user = await getCurrentUser()
 
-  if (!context) {
+  if (!user?.id) {
     throw new UnauthenticatedError()
   }
 
-  return context
+  return user
 }
 
 export async function requireAppUser() {
-  const context = await getSessionContext()
+  const session = await auth()
 
-  if (!context) {
+  if (!session?.user?.id) {
     redirect("/login")
   }
 
-  return context
+  return session
 }

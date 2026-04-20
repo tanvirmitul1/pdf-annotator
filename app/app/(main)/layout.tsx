@@ -1,26 +1,17 @@
-import { AppShell } from "@/components/app/shell"
-import { GraceBanner } from "@/components/app/grace-banner"
+import { ProtectedShell } from "@/components/common/protected-shell"
 import { requireAppUser } from "@/lib/auth/require"
-import { getDeletionDaysRemaining } from "@/features/settings/service"
 
 export default async function AppLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const { user } = await requireAppUser()
-  const imageUrl = user.avatarUrl ?? user.googlePhotoUrl
+  const session = await requireAppUser()
 
   return (
-    <AppShell
-      user={{
-        displayName: user.displayName,
-        email: user.email,
-        imageUrl,
-      }}
+    <ProtectedShell
+      name={session.user.name ?? "Reader"}
+      email={session.user.email ?? "signed-in user"}
     >
-      <div id="main-content" className="space-y-6">
-        {user.deletedAt ? <GraceBanner daysRemaining={getDeletionDaysRemaining(user.deletedAt)} /> : null}
-        {children}
-      </div>
-    </AppShell>
+      {children}
+    </ProtectedShell>
   )
 }

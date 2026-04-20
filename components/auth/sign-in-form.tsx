@@ -1,138 +1,133 @@
 "use client"
 
-import * as React from "react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { useForm } from "react-hook-form"
+import { useRouter, useSearchParams } from "next/navigation"
+import { Globe, LoaderCircle } from "lucide-react"
+import { signIn } from "next-auth/react"
+import { type FormEvent, useState } from "react"
 import { z } from "zod"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { CredentialsSignInSchema } from "@/features/auth/schema"
-import { makeZodResolver } from "@/lib/forms/zod-resolver"
 
-type CredentialsSignInInput = z.infer<typeof CredentialsSignInSchema>
+const SignInSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(8),
+})
+
+type SignInValues = z.infer<typeof SignInSchema>
 
 export function SignInForm() {
   const router = useRouter()
-  const [serverMessage, setServerMessage] = React.useState("")
-  const [googlePending, setGooglePending] = React.useState(false)
-
-  const form = useForm<CredentialsSignInInput>({
-    resolver: makeZodResolver(CredentialsSignInSchema),
-    defaultValues: {
-      method: "credentials",
-      email: "demo@example.com",
-      password: "Password123!",
-    },
+  const searchParams = useSearchParams()
+  const [values, setValues] = useState<SignInValues>({
+    email: "",
+    password: "",
   })
+  const [errors, setErrors] = useState<Partial<Record<keyof SignInValues, string>>>({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  async function onSubmit(values: CredentialsSignInInput) {
-    setServerMessage("")
-    const response = await fetch("/api/auth/signin", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(values),
+  const callbackUrl = searchParams.get("callbackUrl") ?? "/app"
+
+  async function handleCredentials(values: SignInValues) {
+    setIsSubmitting(true)
+    setErrors({})
+
+    const result = await signIn("credentials", {
+      email: values.email,
+      password: values.password,
+      redirect: false,
+      callbackUrl,
     })
 
-    if (!response.ok) {
-      const payload = (await response.json()) as { error?: { message?: string } }
-      setServerMessage(payload.error?.message ?? "Sign-in failed")
+    if (result?.error) {
+      setErrors({ password: "Incorrect email or password." })
+      setIsSubmitting(false)
       return
     }
 
-    router.push("/app")
+    router.push(callbackUrl)
     router.refresh()
   }
 
-  async function signInWithGoogle() {
-    setGooglePending(true)
-    setServerMessage("")
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
 
-    const response = await fetch("/api/auth/signin", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ method: "google" }),
-    })
-
-    if (!response.ok) {
-      const payload = (await response.json()) as { error?: { message?: string } }
-      setServerMessage(payload.error?.message ?? "Google sign-in failed")
-      setGooglePending(false)
+    const parsed = SignInSchema.safeParse(values)
+    if (!parsed.success) {
+      const nextErrors: Partial<Record<keyof SignInValues, string>> = {}
+      for (const issue of parsed.error.issues) {
+        const field = issue.path[0]
+        if (typeof field === "string" && !(field in nextErrors)) {
+          nextErrors[field as keyof SignInValues] = issue.message
+        }
+      }
+      setErrors(nextErrors)
       return
     }
 
-    router.push("/app")
-    router.refresh()
+    await handleCredentials(parsed.data)
+  }
+
+  async function handleGoogle() {
+    await signIn("google", { callbackUrl })
   }
 
   return (
-    <Card className="rounded-[2rem] border-border/70 bg-card/90 shadow-lg">
-      <CardHeader className="space-y-3">
-        <CardTitle className="text-2xl">Sign in</CardTitle>
+    <Card className="rounded-[2rem] border-border/70 bg-card/90 shadow-xl">
+      <CardHeader className="space-y-2">
+        <CardTitle className="text-2xl">Login</CardTitle>
         <p className="text-sm text-muted-foreground">
-          Use the seeded credentials account or jump in with the Google demo user.
+          Continue with Google first, or use your email and password below.
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
-        <form className="space-y-4" onSubmit={form.handleSubmit((values) => void onSubmit(values))}>
+        <Button type="button" size="lg" className="w-full hover:bg-primary/90" onClick={() => void handleGoogle()}>
+          <Globe className="size-4" />
+          Continue with Google
+        </Button>
+
+        <div className="flex items-center gap-3 text-xs uppercase tracking-[0.22em] text-muted-foreground">
+          <span className="h-px flex-1 bg-border" />
+          <span>Or use email</span>
+          <span className="h-px flex-1 bg-border" />
+        </div>
+
+        <form className="space-y-4" onSubmit={(event) => void onSubmit(event)}>
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="login-email">Email address</Label>
             <Input
-              id="email"
+              id="login-email"
               type="email"
-              autoComplete="email"
-              {...form.register("email")}
-              aria-invalid={form.formState.errors.email ? "true" : "false"}
+              value={values.email}
+              onChange={(event) => setValues((current) => ({ ...current, email: event.target.value }))}
             />
+            <p className="min-h-5 text-sm text-destructive">{errors.email}</p>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="login-password">Password</Label>
             <Input
-              id="password"
+              id="login-password"
               type="password"
-              autoComplete="current-password"
-              {...form.register("password")}
-              aria-invalid={form.formState.errors.password ? "true" : "false"}
+              value={values.password}
+              onChange={(event) => setValues((current) => ({ ...current, password: event.target.value }))}
             />
+            <p className="min-h-5 text-sm text-destructive">{errors.password}</p>
           </div>
-          <Button
-            type="submit"
-            size="lg"
-            className="w-full hover:bg-primary/90"
-            disabled={form.formState.isSubmitting}
-          >
-            {form.formState.isSubmitting ? "Signing in..." : "Sign in"}
+          <Button type="submit" size="lg" className="w-full hover:bg-primary/90" disabled={isSubmitting}>
+            {isSubmitting ? <LoaderCircle className="size-4 animate-spin" /> : null}
+            Sign in
           </Button>
         </form>
 
-        <Button
-          type="button"
-          variant="outline"
-          size="lg"
-          className="w-full hover:bg-accent"
-          onClick={() => void signInWithGoogle()}
-          disabled={googlePending}
-        >
-          {googlePending ? "Opening Google demo..." : "Continue with Google"}
-        </Button>
-
-        <p role="status" aria-live="polite" className="min-h-5 text-sm text-muted-foreground">
-          {serverMessage}
-        </p>
-
-        <div className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           Need an account?{" "}
           <Link href="/signup" className="font-medium text-foreground underline underline-offset-4">
             Create one
           </Link>
-        </div>
+        </p>
       </CardContent>
     </Card>
   )

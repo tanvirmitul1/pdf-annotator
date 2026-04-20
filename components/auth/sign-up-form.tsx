@@ -1,35 +1,44 @@
 "use client"
 
-import * as React from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { useForm } from "react-hook-form"
+import { LoaderCircle } from "lucide-react"
+import { signIn } from "next-auth/react"
+import { type FormEvent, useState } from "react"
 import { z } from "zod"
 
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { SignUpSchema } from "@/features/auth/schema"
-import { makeZodResolver } from "@/lib/forms/zod-resolver"
 
-type SignUpInput = z.infer<typeof SignUpSchema>
+const SignUpSchema = z.object({
+  name: z.string().min(2).max(80),
+  email: z.string().email(),
+  password: z.string().min(8),
+  acceptTerms: z.boolean().refine((value) => value, {
+    message: "You must accept the Terms and Privacy policy.",
+  }),
+})
+
+type SignUpValues = z.infer<typeof SignUpSchema>
 
 export function SignUpForm() {
   const router = useRouter()
-  const [serverMessage, setServerMessage] = React.useState("")
-  const form = useForm<SignUpInput>({
-    resolver: makeZodResolver(SignUpSchema),
-    defaultValues: {
-      displayName: "",
-      email: "",
-      password: "",
-    },
+  const [values, setValues] = useState<SignUpValues>({
+    name: "",
+    email: "",
+    password: "",
+    acceptTerms: true,
   })
+  const [errors, setErrors] = useState<Partial<Record<keyof SignUpValues, string>>>({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  async function onSubmit(values: SignUpInput) {
-    setServerMessage("")
-    const response = await fetch("/api/auth/signup", {
+  async function handleSubmit(values: SignUpValues) {
+    setIsSubmitting(true)
+    setErrors({})
+
+    const response = await fetch("/api/signup", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -37,75 +46,114 @@ export function SignUpForm() {
       body: JSON.stringify(values),
     })
 
+    const payload = (await response.json()) as { error?: { message?: string } }
+
     if (!response.ok) {
-      const payload = (await response.json()) as { error?: { message?: string } }
-      setServerMessage(payload.error?.message ?? "Signup failed")
+      setErrors({ email: payload.error?.message ?? "Signup failed." })
+      setIsSubmitting(false)
       return
     }
+
+    await signIn("credentials", {
+      email: values.email,
+      password: values.password,
+      redirect: false,
+    })
 
     router.push("/app")
     router.refresh()
   }
 
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    const parsed = SignUpSchema.safeParse(values)
+    if (!parsed.success) {
+      const nextErrors: Partial<Record<keyof SignUpValues, string>> = {}
+      for (const issue of parsed.error.issues) {
+        const field = issue.path[0]
+        if (typeof field === "string" && !(field in nextErrors)) {
+          nextErrors[field as keyof SignUpValues] = issue.message
+        }
+      }
+      setErrors(nextErrors)
+      return
+    }
+
+    await handleSubmit(parsed.data)
+  }
+
   return (
-    <Card className="rounded-[2rem] border-border/70 bg-card/90 shadow-lg">
-      <CardHeader className="space-y-3">
+    <Card className="rounded-[2rem] border-border/70 bg-card/90 shadow-xl">
+      <CardHeader className="space-y-2">
         <CardTitle className="text-2xl">Create account</CardTitle>
         <p className="text-sm text-muted-foreground">
-          Start with the free plan. Billing can come later without reshaping the app.
+          Use email and password today, then attach Google whenever you are ready.
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
-        <form className="space-y-4" onSubmit={form.handleSubmit((values) => void onSubmit(values))}>
+        <form className="space-y-4" onSubmit={(event) => void onSubmit(event)}>
           <div className="space-y-2">
-            <Label htmlFor="displayName">Display name</Label>
+            <Label htmlFor="signup-name">Display name</Label>
             <Input
-              id="displayName"
-              autoComplete="name"
-              {...form.register("displayName")}
-              aria-invalid={form.formState.errors.displayName ? "true" : "false"}
+              id="signup-name"
+              value={values.name}
+              onChange={(event) => setValues((current) => ({ ...current, name: event.target.value }))}
             />
+            <p className="min-h-5 text-sm text-destructive">{errors.name}</p>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="signup-email">Email</Label>
+            <Label htmlFor="signup-email">Email address</Label>
             <Input
               id="signup-email"
               type="email"
-              autoComplete="email"
-              {...form.register("email")}
-              aria-invalid={form.formState.errors.email ? "true" : "false"}
+              value={values.email}
+              onChange={(event) => setValues((current) => ({ ...current, email: event.target.value }))}
             />
+            <p className="min-h-5 text-sm text-destructive">{errors.email}</p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="signup-password">Password</Label>
             <Input
               id="signup-password"
               type="password"
-              autoComplete="new-password"
-              {...form.register("password")}
-              aria-invalid={form.formState.errors.password ? "true" : "false"}
+              value={values.password}
+              onChange={(event) => setValues((current) => ({ ...current, password: event.target.value }))}
             />
+            <p className="min-h-5 text-sm text-destructive">{errors.password}</p>
           </div>
-          <Button
-            type="submit"
-            size="lg"
-            className="w-full hover:bg-primary/90"
-            disabled={form.formState.isSubmitting}
-          >
-            {form.formState.isSubmitting ? "Creating account..." : "Create account"}
+          <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-border bg-muted/40 p-4 text-sm text-muted-foreground hover:border-primary/40">
+            <input
+              type="checkbox"
+              className="mt-1"
+              checked={values.acceptTerms}
+              onChange={(event) => setValues((current) => ({ ...current, acceptTerms: event.target.checked }))}
+            />
+            <span>
+              I agree to the{" "}
+              <Link href="/terms" className="font-medium text-foreground underline underline-offset-4">
+                Terms
+              </Link>{" "}
+              and{" "}
+              <Link href="/privacy" className="font-medium text-foreground underline underline-offset-4">
+                Privacy Policy
+              </Link>
+              .
+            </span>
+          </label>
+          <p className="min-h-5 text-sm text-destructive">{errors.acceptTerms}</p>
+          <Button type="submit" size="lg" className="w-full hover:bg-primary/90" disabled={isSubmitting}>
+            {isSubmitting ? <LoaderCircle className="size-4 animate-spin" /> : null}
+            Create account
           </Button>
         </form>
 
-        <p role="status" aria-live="polite" className="min-h-5 text-sm text-muted-foreground">
-          {serverMessage}
-        </p>
-
-        <div className="text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           Already have an account?{" "}
           <Link href="/login" className="font-medium text-foreground underline underline-offset-4">
             Sign in
           </Link>
-        </div>
+        </p>
       </CardContent>
     </Card>
   )

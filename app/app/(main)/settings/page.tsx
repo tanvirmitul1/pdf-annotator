@@ -1,49 +1,12 @@
-import { SettingsView } from "@/components/settings/settings-view"
-import { requireAppUser } from "@/lib/auth/require"
-import { accountRepository } from "@/lib/db/repositories/account"
-
-export default async function SettingsPage() {
-  const { user, session } = await requireAppUser()
-  const repository = accountRepository()
-  const plan = repository.getPlanById(user.planId)
-  const usageRows = repository.getUsageForUser(user.id)
-  const latestExportJob = repository.getLatestExportJob(user.id)
-
+export default function SettingsPlaceholderPage() {
   return (
-    <SettingsView
-      snapshot={{
-        user: {
-          displayName: user.displayName,
-          email: user.email,
-          providers: user.providers,
-          imageUrl: user.avatarUrl ?? user.googlePhotoUrl,
-          deletedAt: user.deletedAt,
-        },
-        currentSessionId: session.id,
-        plan: {
-          name: plan?.name ?? "Free",
-          limits: plan?.limits ?? { documents: 0, storageMB: 0, shareLinks: 0 },
-        },
-        usage: usageRows.map((usage) => ({
-          metric: usage.metric,
-          value: usage.value,
-          limit: plan?.limits[usage.metric] ?? 0,
-        })),
-        sessions: repository.listSessionsForUser(user.id).map((entry) => ({
-          id: entry.id,
-          label: entry.label,
-          userAgent: entry.userAgent,
-          lastActivityAt: entry.lastActivityAt,
-        })),
-        latestExportJob: latestExportJob
-          ? {
-              status: latestExportJob.status,
-              progress: latestExportJob.progress,
-              resultUrl: latestExportJob.resultUrl,
-              updatedAt: latestExportJob.updatedAt,
-            }
-          : null,
-      }}
-    />
+    <section className="rounded-[2rem] border border-border bg-card/80 p-8 shadow-sm">
+      <p className="text-sm font-semibold uppercase tracking-[0.24em] text-primary">Settings</p>
+      <h1 className="mt-4 text-3xl font-semibold tracking-tight">Settings placeholder</h1>
+      <p className="mt-3 max-w-2xl text-sm/7 text-muted-foreground">
+        This page is intentionally minimal in Phase 1. Phase 1.5 expands it with profile, usage,
+        security, export, and account deletion flows.
+      </p>
+    </section>
   )
 }

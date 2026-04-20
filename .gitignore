@@ -30,7 +30,14 @@ pnpm-debug.log*
 
 # env files
 .env*.local
+.env
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Prisma
+/prisma/dev.db
+
+# uploads
+/uploads

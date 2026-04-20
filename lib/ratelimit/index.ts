@@ -1,30 +1,70 @@
+import { Ratelimit } from "@upstash/ratelimit"
+import type { NextRequest } from "next/server"
+
+import { upstashClient } from "@/lib/cache/redis"
+import { env } from "@/lib/env"
 import { RateLimitedError } from "@/lib/errors"
 
-type BucketName = "auth" | "settings" | "default"
+type BucketName = "auth" | "upload" | "annotation-write" | "default"
 
-const LIMITS: Record<BucketName, { max: number; windowMs: number }> = {
-  auth: { max: 20, windowMs: 60_000 },
-  settings: { max: 60, windowMs: 60_000 },
-  default: { max: 120, windowMs: 60_000 },
+type MemoryWindow = {
+  timestamps: number[]
 }
 
-const requestBuckets = new Map<string, number[]>()
+const memoryBuckets = new Map<string, MemoryWindow>()
 
-export async function enforceRateLimit(
-  key: string,
-  bucket: BucketName = "default"
-) {
-  const now = Date.now()
-  const config = LIMITS[bucket]
-  const entryKey = `${bucket}:${key}`
-  const requests = requestBuckets.get(entryKey) ?? []
-  const activeRequests = requests.filter((timestamp) => now - timestamp < config.windowMs)
+const BUCKETS: Record<BucketName, { requests: number; window: `${number} ${"s" | "m" | "h"}`; seconds: number }> = {
+  auth: { requests: 10, window: "1 m", seconds: 60 },
+  upload: { requests: 20, window: "1 h", seconds: 3600 },
+  "annotation-write": { requests: 300, window: "1 m", seconds: 60 },
+  default: { requests: 120, window: "1 m", seconds: 60 },
+}
 
-  if (activeRequests.length >= config.max) {
-    throw new RateLimitedError(Math.ceil(config.windowMs / 1000))
+const upstashEnabled = Boolean(env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN && upstashClient)
+
+function createLimiter(bucket: BucketName) {
+  if (!upstashEnabled) {
+    return null
   }
 
-  activeRequests.push(now)
-  requestBuckets.set(entryKey, activeRequests)
+  return new Ratelimit({
+    redis: upstashClient!,
+    limiter: Ratelimit.slidingWindow(BUCKETS[bucket].requests, BUCKETS[bucket].window),
+    analytics: false,
+    prefix: `ratelimit:${bucket}`,
+  })
 }
 
+export async function enforceRateLimit(
+  req: NextRequest | Request,
+  identifier: string,
+  bucket: BucketName = "default"
+) {
+  const key = `${bucket}:${identifier}`
+  const limiter = createLimiter(bucket)
+
+  if (limiter) {
+    const result = await limiter.limit(identifier)
+    if (!result.success) {
+      throw new RateLimitedError(result.reset ? Math.max(1, Math.ceil((result.reset - Date.now()) / 1000)) : 60)
+    }
+    return
+  }
+
+  const now = Date.now()
+  const config = BUCKETS[bucket]
+  const current = memoryBuckets.get(key) ?? { timestamps: [] }
+  current.timestamps = current.timestamps.filter((timestamp) => now - timestamp < config.seconds * 1000)
+
+  if (current.timestamps.length >= config.requests) {
+    throw new RateLimitedError(config.seconds)
+  }
+
+  current.timestamps.push(now)
+  memoryBuckets.set(key, current)
+  void req
+}
+
+export function resetRateLimits() {
+  memoryBuckets.clear()
+}

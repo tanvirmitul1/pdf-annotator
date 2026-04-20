@@ -2,10 +2,9 @@
 
 import * as React from "react"
 import { DropdownMenu as DropdownMenuPrimitive } from "radix-ui"
+import { Check, ChevronRight } from "lucide-react"
 
 import { cn } from "@/lib/utils"
-import { HugeiconsIcon } from "@hugeicons/react"
-import { Tick02Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons"
 
 function DropdownMenu({
   ...props
@@ -95,22 +94,22 @@ function DropdownMenuCheckboxItem({
     <DropdownMenuPrimitive.CheckboxItem
       data-slot="dropdown-menu-checkbox-item"
       data-inset={inset}
-      className={cn(
-        "relative flex min-h-7 cursor-default items-center gap-2 rounded-md py-1.5 pr-8 pl-2 text-xs outline-hidden select-none focus:bg-accent focus:text-accent-foreground focus:**:text-accent-foreground data-inset:pl-7.5 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
-        className
-      )}
+        className={cn(
+          "relative flex min-h-7 cursor-default items-center gap-2 rounded-md py-1.5 pr-8 pl-2 text-xs outline-hidden select-none focus:bg-accent focus:text-accent-foreground focus:**:text-accent-foreground data-inset:pl-7.5 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-3.5",
+          className
+        )}
       checked={checked}
       {...props}
-    >
-      <span
-        className="pointer-events-none absolute right-2 flex items-center justify-center"
-        data-slot="dropdown-menu-checkbox-item-indicator"
       >
-        <DropdownMenuPrimitive.ItemIndicator>
-          <HugeiconsIcon icon={Tick02Icon} strokeWidth={2} />
-        </DropdownMenuPrimitive.ItemIndicator>
-      </span>
-      {children}
+        <span
+          className="pointer-events-none absolute right-2 flex items-center justify-center"
+          data-slot="dropdown-menu-checkbox-item-indicator"
+        >
+          <DropdownMenuPrimitive.ItemIndicator>
+            <Check className="size-3.5" />
+          </DropdownMenuPrimitive.ItemIndicator>
+        </span>
+        {children}
     </DropdownMenuPrimitive.CheckboxItem>
   )
 }
@@ -143,16 +142,16 @@ function DropdownMenuRadioItem({
         className
       )}
       {...props}
-    >
-      <span
-        className="pointer-events-none absolute right-2 flex items-center justify-center"
-        data-slot="dropdown-menu-radio-item-indicator"
       >
-        <DropdownMenuPrimitive.ItemIndicator>
-          <HugeiconsIcon icon={Tick02Icon} strokeWidth={2} />
-        </DropdownMenuPrimitive.ItemIndicator>
-      </span>
-      {children}
+        <span
+          className="pointer-events-none absolute right-2 flex items-center justify-center"
+          data-slot="dropdown-menu-radio-item-indicator"
+        >
+          <DropdownMenuPrimitive.ItemIndicator>
+            <Check className="size-3.5" />
+          </DropdownMenuPrimitive.ItemIndicator>
+        </span>
+        {children}
     </DropdownMenuPrimitive.RadioItem>
   )
 }
@@ -231,7 +230,7 @@ function DropdownMenuSubTrigger({
       {...props}
     >
       {children}
-      <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} className="ml-auto" />
+      <ChevronRight className="ml-auto size-3.5" />
     </DropdownMenuPrimitive.SubTrigger>
   )
 }

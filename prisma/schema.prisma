@@ -1,0 +1,383 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum SubscriptionStatus {
+  FREE
+  TRIALING
+  ACTIVE
+  PAST_DUE
+  CANCELED
+}
+
+enum UsageMetric {
+  DOCUMENTS
+  STORAGE_MB
+  SHARE_LINKS
+  ANNOTATIONS
+}
+
+enum DocumentStatus {
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum AnnotationType {
+  HIGHLIGHT
+  UNDERLINE
+  STRIKETHROUGH
+  SQUIGGLY
+  NOTE
+  FREEHAND
+  RECTANGLE
+  CIRCLE
+  ARROW
+  TEXTBOX
+  IMAGE_SHAPE
+}
+
+enum ExportJobKind {
+  DATA_EXPORT
+  ANNOTATION_EXPORT
+  PDF_EXPORT
+}
+
+enum ExportJobStatus {
+  QUEUED
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum EmailLogStatus {
+  QUEUED
+  SENT
+  FAILED
+  SKIPPED
+}
+
+model User {
+  id                 String             @id @default(cuid())
+  name               String?
+  email              String?            @unique
+  emailVerified      DateTime?
+  image              String?
+  passwordHash       String?
+  planId             String             @default("free")
+  trialEndsAt        DateTime?
+  subscriptionStatus SubscriptionStatus @default(FREE)
+  stripeCustomerId   String?
+  deletedAt          DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  plan               Plan               @relation(fields: [planId], references: [id], onDelete: Restrict)
+  accounts           Account[]
+  sessions           Session[]
+  usage              Usage[]
+  documents          Document[]
+  annotations        Annotation[]
+  tags               Tag[]
+  collections        Collection[]
+  bookmarks          Bookmark[]
+  readingProgress    ReadingProgress[]
+  shareLinks         ShareLink[]
+  exportJobs         ExportJob[]
+  emailLogs          EmailLog[]
+  auditLogs          AuditLog[]
+
+  @@index([planId])
+  @@index([deletedAt])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@index([token])
+}
+
+model Plan {
+  id        String   @id
+  name      String   @unique
+  price     Int      @default(0)
+  limits    Json
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  users     User[]
+}
+
+model Usage {
+  id          String      @id @default(cuid())
+  userId      String
+  metric      UsageMetric
+  value       Int         @default(0)
+  periodStart DateTime    @default(now())
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  user        User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, metric])
+  @@index([userId])
+}
+
+model Document {
+  id            String         @id @default(cuid())
+  userId        String
+  name          String
+  pageCount     Int            @default(0)
+  fileSize      Int            @default(0)
+  storageKey    String
+  thumbnailKey  String?
+  lastOpenedAt  DateTime?
+  status        DocumentStatus @default(PROCESSING)
+  deletedAt     DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  annotations   Annotation[]
+  collections   DocumentCollection[]
+  bookmarks     Bookmark[]
+  reading       ReadingProgress[]
+  shareLinks    ShareLink[]
+  textPages     DocumentText[]
+  outline       DocumentOutline?
+
+  @@index([userId])
+  @@index([userId, deletedAt])
+  @@index([userId, lastOpenedAt(sort: Desc)])
+}
+
+model Annotation {
+  id           String         @id @default(cuid())
+  userId       String
+  documentId   String
+  pageNumber   Int
+  type         AnnotationType
+  color        String
+  positionData Json
+  content      String?
+  deletedAt    DateTime?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document     Document       @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  tags         AnnotationTag[]
+
+  @@index([userId])
+  @@index([userId, deletedAt])
+  @@index([documentId])
+}
+
+model Tag {
+  id          String          @id @default(cuid())
+  userId      String
+  label       String
+  color       String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  annotations AnnotationTag[]
+
+  @@index([userId])
+  @@unique([userId, label])
+}
+
+model AnnotationTag {
+  annotationId String
+  tagId        String
+  annotation   Annotation @relation(fields: [annotationId], references: [id], onDelete: Cascade)
+  tag          Tag        @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([annotationId, tagId])
+  @@index([tagId])
+}
+
+model Collection {
+  id         String               @id @default(cuid())
+  userId     String
+  name       String
+  createdAt  DateTime             @default(now())
+  updatedAt  DateTime             @updatedAt
+  user       User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  documents  DocumentCollection[]
+
+  @@index([userId])
+  @@unique([userId, name])
+}
+
+model DocumentCollection {
+  documentId   String
+  collectionId String
+  document     Document   @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, collectionId])
+  @@index([collectionId])
+}
+
+model Bookmark {
+  id         String   @id @default(cuid())
+  userId     String
+  documentId String
+  pageNumber Int
+  label      String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([documentId])
+}
+
+model ReadingProgress {
+  id              String   @id @default(cuid())
+  userId          String
+  documentId      String
+  lastPage        Int
+  percentComplete Float
+  lastReadAt      DateTime
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document        Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, documentId])
+  @@index([userId])
+  @@index([documentId])
+}
+
+model ShareLink {
+  id           String   @id @default(cuid())
+  userId       String
+  documentId   String
+  token        String   @unique
+  createdBy    String
+  expiresAt    DateTime?
+  viewCount    Int      @default(0)
+  revokedAt    DateTime?
+  passwordHash String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  document     Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([documentId])
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  userId       String
+  action       String
+  resourceType String
+  resourceId   String
+  metadata     Json
+  ipAddress    String
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+model DocumentText {
+  id         String                  @id @default(cuid())
+  documentId String
+  pageNumber Int
+  text       String
+  tsv        Unsupported("tsvector")?
+  createdAt  DateTime                @default(now())
+  updatedAt  DateTime                @updatedAt
+  document   Document                @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, pageNumber])
+  @@index([documentId])
+}
+
+model DocumentOutline {
+  id         String   @id @default(cuid())
+  documentId String   @unique
+  entries    Json
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+
+  @@index([documentId])
+}
+
+model ExportJob {
+  id         String          @id @default(cuid())
+  userId     String
+  kind       ExportJobKind
+  status     ExportJobStatus @default(QUEUED)
+  payload    Json
+  resultKey  String?
+  error      String?
+  progress   Int             @default(0)
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model WebhookEvent {
+  id          String   @id @default(cuid())
+  provider    String
+  eventId     String   @unique
+  payload     Json
+  processedAt DateTime?
+  createdAt   DateTime @default(now())
+}
+
+model EmailLog {
+  id         String         @id @default(cuid())
+  userId     String
+  template   String
+  status     EmailLogStatus @default(QUEUED)
+  provider   String
+  providerId String?
+  error      String?
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+  user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}

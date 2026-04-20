@@ -1,48 +1,44 @@
-type JobHandler<TPayload> = (payload: TPayload) => Promise<void>
+import { Queue, Worker, QueueEvents } from "bullmq"
+import { env } from "@/lib/env"
 
-interface QueueJob<TPayload> {
-  key: string
-  payload: TPayload
-  retries: number
-  handler: JobHandler<TPayload>
-}
+export const mainQueue = new Queue("main", {
+  connection: {
+    host: env.REDIS_URL ? new URL(env.REDIS_URL).hostname : "localhost",
+    port: env.REDIS_URL ? parseInt(new URL(env.REDIS_URL).port) : 6379,
+    password: env.REDIS_URL ? new URL(env.REDIS_URL).password : undefined,
+  },
+  defaultJobOptions: {
+    removeOnComplete: 100,
+    removeOnFail: 50,
+    attempts: 3,
+    backoff: {
+      type: "exponential",
+      delay: 2000,
+    },
+  },
+})
 
-const queuedJobs: Promise<void>[] = []
+export const queueEvents = new QueueEvents("main", {
+  connection: mainQueue.opts.connection,
+})
 
-export async function enqueueInProcessJob<TPayload>(
-  key: string,
-  payload: TPayload,
-  handler: JobHandler<TPayload>,
-  retries = 3
-) {
-  const job: QueueJob<TPayload> = { key, payload, retries, handler }
-
-  const promise = executeJob(job)
-  queuedJobs.push(promise)
-
-  promise.finally(() => {
-    const index = queuedJobs.indexOf(promise)
-    if (index >= 0) {
-      queuedJobs.splice(index, 1)
-    }
-  })
-
-  return promise
-}
-
-async function executeJob<TPayload>(job: QueueJob<TPayload>, attempt = 1): Promise<void> {
+// Health check function
+export async function getQueueHealth() {
   try {
-    await job.handler(job.payload)
-  } catch (error) {
-    if (attempt >= job.retries) {
-      throw error
+    const waiting = await mainQueue.getWaiting()
+    const active = await mainQueue.getActive()
+    const completed = await mainQueue.getCompleted()
+    const failed = await mainQueue.getFailed()
+
+    return {
+      waiting: waiting.length,
+      active: active.length,
+      completed: completed.length,
+      failed: failed.length,
     }
-
-    await new Promise((resolve) => setTimeout(resolve, attempt * 25))
-    await executeJob(job, attempt + 1)
+  } catch (error) {
+    return {
+      error: error instanceof Error ? error.message : "Unknown error",
+    }
   }
-}
-
-export async function flushInProcessJobs() {
-  await Promise.allSettled([...queuedJobs])
 }

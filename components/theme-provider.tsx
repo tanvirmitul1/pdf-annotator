@@ -1,71 +1,41 @@
 "use client"
 
-import * as React from "react"
-import { ThemeProvider as NextThemesProvider, useTheme } from "next-themes"
+import { useEffect } from "react"
 
-function ThemeProvider({
-  children,
-  ...props
-}: React.ComponentProps<typeof NextThemesProvider>) {
-  return (
-    <NextThemesProvider
-      attribute="data-theme"
-      defaultTheme="system"
-      enableSystem
-      disableTransitionOnChange
-      {...props}
-    >
-      <ThemeHotkey />
-      {children}
-    </NextThemesProvider>
-  )
-}
+import { setTheme, type ThemeMode } from "@/features/theme/slice"
+import { useAppDispatch, useAppSelector } from "@/store/hooks"
 
-function isTypingTarget(target: EventTarget | null) {
-  if (!(target instanceof HTMLElement)) {
-    return false
+function resolveTheme(theme: ThemeMode) {
+  if (theme === "system") {
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
   }
 
-  return (
-    target.isContentEditable ||
-    target.tagName === "INPUT" ||
-    target.tagName === "TEXTAREA" ||
-    target.tagName === "SELECT"
-  )
+  return theme
 }
 
-function ThemeHotkey() {
-  const { resolvedTheme, setTheme } = useTheme()
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  const dispatch = useAppDispatch()
+  const theme = useAppSelector((state) => state.theme.value)
 
-  React.useEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      if (event.defaultPrevented || event.repeat) {
-        return
-      }
-
-      if (event.metaKey || event.ctrlKey || event.altKey) {
-        return
-      }
-
-      if (event.key.toLowerCase() !== "d") {
-        return
-      }
-
-      if (isTypingTarget(event.target)) {
-        return
-      }
-
-      setTheme(resolvedTheme === "dark" ? "light" : "dark")
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return
     }
 
-    window.addEventListener("keydown", onKeyDown)
-
-    return () => {
-      window.removeEventListener("keydown", onKeyDown)
+    const stored = window.localStorage.getItem("pdf-annotator-theme") as ThemeMode | null
+    if (stored === "light" || stored === "dark" || stored === "system") {
+      dispatch(setTheme(stored))
     }
-  }, [resolvedTheme, setTheme])
+  }, [dispatch])
 
-  return null
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return
+    }
+
+    window.localStorage.setItem("pdf-annotator-theme", theme)
+    document.documentElement.setAttribute("data-theme", resolveTheme(theme))
+  }, [theme])
+
+  return children
 }
-
-export { ThemeProvider }
