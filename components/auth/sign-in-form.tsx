@@ -4,7 +4,7 @@ import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import { Globe, LoaderCircle } from "lucide-react"
 import { signIn } from "next-auth/react"
-import { type FormEvent, useState } from "react"
+import { useState } from "react"
 import { z } from "zod"
 
 import { Button } from "@/components/ui/button"
@@ -31,29 +31,10 @@ export function SignInForm() {
 
   const callbackUrl = searchParams.get("callbackUrl") ?? "/app"
 
-  async function handleCredentials(values: SignInValues) {
+  async function handleSignIn() {
+    console.log("[signin] button clicked")
     setIsSubmitting(true)
     setErrors({})
-
-    const result = await signIn("credentials", {
-      email: values.email,
-      password: values.password,
-      redirect: false,
-      callbackUrl,
-    })
-
-    if (result?.error) {
-      setErrors({ password: "Incorrect email or password." })
-      setIsSubmitting(false)
-      return
-    }
-
-    router.push(callbackUrl)
-    router.refresh()
-  }
-
-  async function onSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
 
     const parsed = SignInSchema.safeParse(values)
     if (!parsed.success) {
@@ -65,10 +46,35 @@ export function SignInForm() {
         }
       }
       setErrors(nextErrors)
+      setIsSubmitting(false)
       return
     }
 
-    await handleCredentials(parsed.data)
+    console.log("[signin] calling signIn", { email: parsed.data.email })
+
+    try {
+      const result = await signIn("credentials", {
+        email: parsed.data.email,
+        password: parsed.data.password,
+        redirect: false,
+        callbackUrl,
+      })
+
+      console.log("[signin] result", result)
+
+      if (result?.error) {
+        setErrors({ password: "Incorrect email or password." })
+        setIsSubmitting(false)
+        return
+      }
+
+      router.push(callbackUrl)
+      router.refresh()
+    } catch (error) {
+      console.error("[signin] error", error)
+      setErrors({ password: "Network error. Please try again." })
+      setIsSubmitting(false)
+    }
   }
 
   async function handleGoogle() {
@@ -95,7 +101,7 @@ export function SignInForm() {
           <span className="h-px flex-1 bg-border" />
         </div>
 
-        <form className="space-y-4" onSubmit={(event) => void onSubmit(event)}>
+        <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="login-email">Email address</Label>
             <Input
@@ -116,11 +122,17 @@ export function SignInForm() {
             />
             <p className="min-h-5 text-sm text-destructive">{errors.password}</p>
           </div>
-          <Button type="submit" size="lg" className="w-full hover:bg-primary/90" disabled={isSubmitting}>
+          <Button 
+            type="button" 
+            size="lg" 
+            className="w-full hover:bg-primary/90" 
+            disabled={isSubmitting}
+            onClick={() => void handleSignIn()}
+          >
             {isSubmitting ? <LoaderCircle className="size-4 animate-spin" /> : null}
             Sign in
           </Button>
-        </form>
+        </div>
 
         <p className="text-sm text-muted-foreground">
           Need an account?{" "}

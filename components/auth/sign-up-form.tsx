@@ -4,7 +4,7 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { LoaderCircle } from "lucide-react"
 import { signIn } from "next-auth/react"
-import { type FormEvent, useState } from "react"
+import { useState } from "react"
 import { z } from "zod"
 
 import { Button } from "@/components/ui/button"
@@ -34,40 +34,15 @@ export function SignUpForm() {
   const [errors, setErrors] = useState<Partial<Record<keyof SignUpValues, string>>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  async function handleSubmit(values: SignUpValues) {
+  async function handleSignup() {
+    alert("clicked")
+    console.log("[signup] button clicked")
     setIsSubmitting(true)
     setErrors({})
 
-    const response = await fetch("/api/signup", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(values),
-    })
-
-    const payload = (await response.json()) as { error?: { message?: string } }
-
-    if (!response.ok) {
-      setErrors({ email: payload.error?.message ?? "Signup failed." })
-      setIsSubmitting(false)
-      return
-    }
-
-    await signIn("credentials", {
-      email: values.email,
-      password: values.password,
-      redirect: false,
-    })
-
-    router.push("/app")
-    router.refresh()
-  }
-
-  async function onSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
-
     const parsed = SignUpSchema.safeParse(values)
+    console.log("[signup] validation", parsed.success ? "passed" : parsed.error.flatten().fieldErrors)
+    
     if (!parsed.success) {
       const nextErrors: Partial<Record<keyof SignUpValues, string>> = {}
       for (const issue of parsed.error.issues) {
@@ -77,10 +52,53 @@ export function SignUpForm() {
         }
       }
       setErrors(nextErrors)
+      setIsSubmitting(false)
       return
     }
 
-    await handleSubmit(parsed.data)
+    console.log("[signup] calling POST /api/signup", { email: parsed.data.email })
+
+    try {
+      const response = await fetch("/api/signup", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(parsed.data),
+      })
+
+      const payload = (await response.json()) as { error?: { message?: string }; data?: unknown }
+      console.log("[signup] response", response.status, payload)
+
+      if (!response.ok) {
+        setErrors({ email: payload.error?.message ?? "Signup failed." })
+        setIsSubmitting(false)
+        return
+      }
+
+      console.log("[signup] user created, signing in...")
+
+      const signInResult = await signIn("credentials", {
+        email: parsed.data.email,
+        password: parsed.data.password,
+        redirect: false,
+      })
+
+      console.log("[signup] signIn result", signInResult)
+
+      if (signInResult?.error) {
+        setErrors({ email: "Account created but login failed. Try signing in." })
+        setIsSubmitting(false)
+        return
+      }
+
+      router.push("/app")
+      router.refresh()
+    } catch (error) {
+      console.error("[signup] error", error)
+      setErrors({ email: "Network error. Please try again." })
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -92,7 +110,7 @@ export function SignUpForm() {
         </p>
       </CardHeader>
       <CardContent className="space-y-6">
-        <form className="space-y-4" onSubmit={(event) => void onSubmit(event)}>
+        <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="signup-name">Display name</Label>
             <Input
@@ -142,11 +160,17 @@ export function SignUpForm() {
             </span>
           </label>
           <p className="min-h-5 text-sm text-destructive">{errors.acceptTerms}</p>
-          <Button type="submit" size="lg" className="w-full hover:bg-primary/90" disabled={isSubmitting}>
+          <Button 
+            type="button" 
+            size="lg" 
+            className="w-full hover:bg-primary/90" 
+            disabled={isSubmitting}
+            onClick={() => void handleSignup()}
+          >
             {isSubmitting ? <LoaderCircle className="size-4 animate-spin" /> : null}
             Create account
           </Button>
-        </form>
+        </div>
 
         <p className="text-sm text-muted-foreground">
           Already have an account?{" "}

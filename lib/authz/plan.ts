@@ -93,3 +93,27 @@ export async function incrementUsage(userId: string, metric: UsageMetric, delta:
   await cacheDelete(`usage:${userId}:${metric}`)
   return usage
 }
+
+export async function decrementUsage(userId: string, metric: UsageMetric, delta: number) {
+  const usage = await prisma.usage.upsert({
+    where: {
+      userId_metric: {
+        userId,
+        metric,
+      },
+    },
+    create: {
+      userId,
+      metric,
+      value: 0,
+    },
+    update: {
+      value: {
+        decrement: delta,
+      },
+    },
+  })
+
+  await cacheDelete(`usage:${userId}:${metric}`)
+  return usage
+}

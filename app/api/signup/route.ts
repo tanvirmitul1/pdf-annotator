@@ -15,9 +15,13 @@ const SignUpSchema = z.object({
 
 export const POST = withErrorHandling(async (req) => {
   const ipAddress = getIpAddress(req)
+  console.log("[api/signup] POST received from", ipAddress)
   await enforceRateLimit(req, ipAddress, "auth")
-  const input = SignUpSchema.parse(await req.json())
+  const body = await req.json()
+  console.log("[api/signup] body", { ...body, password: "[redacted]" })
+  const input = SignUpSchema.parse(body)
   const user = await registerCredentialsUser(input)
+  console.log("[api/signup] user created", user.id, user.email)
 
   return NextResponse.json(
     {

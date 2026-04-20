@@ -1,16 +1,17 @@
 import posthog from "posthog-js"
 
-import { env } from "@/lib/env"
-
 let initialized = false
 
 export function initPostHogClient() {
-  if (initialized || !env.POSTHOG_KEY || !env.POSTHOG_HOST || typeof window === "undefined") {
+  const key = process.env.NEXT_PUBLIC_POSTHOG_KEY
+  const host = process.env.NEXT_PUBLIC_POSTHOG_HOST
+
+  if (initialized || !key || !host || typeof window === "undefined") {
     return
   }
 
-  posthog.init(env.POSTHOG_KEY, {
-    api_host: env.POSTHOG_HOST,
+  posthog.init(key, {
+    api_host: host,
     person_profiles: "identified_only",
     capture_pageview: false,
   })

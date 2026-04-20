@@ -1,3 +1,4 @@
+import { Suspense } from "react"
 import { LogIn } from "lucide-react"
 
 import { SignInForm } from "@/components/auth/sign-in-form"
@@ -19,7 +20,9 @@ export default function LoginPage() {
             document features arrive.
           </p>
         </section>
-        <SignInForm />
+        <Suspense fallback={<div>Loading...</div>}>
+          <SignInForm />
+        </Suspense>
       </div>
     </main>
   )

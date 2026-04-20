@@ -1,4 +1,4 @@
-import { Queue, Worker, QueueEvents } from "bullmq"
+import { Queue, QueueEvents } from "bullmq"
 import { env } from "@/lib/env"
 
 export const mainQueue = new Queue("main", {
