@@ -65,3 +65,25 @@ Append-only log. Don't edit old entries; add new ones that supersede.
 ## Add new decisions below
 
 <!-- New entries: append here, never rewrite above -->
+
+### 2026-04-20 â€” Trust-layer dependencies for settings and email
+
+**Context:** Phase 1.5 needs forms, validation, transactional email rendering, consent-aware analytics plumbing, and a real test harness before document features exist.
+
+**Decision:** add `zod`, `react-hook-form`, `@hookform/resolvers`, `sonner`, `resend`, `@react-email/components`, `@react-email/render`, `vitest`, `@testing-library/react`, `@testing-library/jest-dom`, `@testing-library/user-event`, `axe-core`, `vitest-axe`, and `jsdom`.
+
+**Alternatives:** hand-rolled validation and form state (too brittle), raw HTML email strings (harder to maintain), delaying tests until later phases (undercuts the trust/account layer).
+
+**Consequences:** larger dependency surface area now, but better validation, email ergonomics, and verification coverage.
+
+---
+
+### 2026-04-20 â€” shadcn primitives added for the settings shell
+
+**Context:** the settings surface needs tabs, menus, avatar handling, cards, badges, and tooltips that match the frontend interaction contract.
+
+**Decision:** install shadcn primitives for `tabs`, `input`, `label`, `tooltip`, `dropdown-menu`, `avatar`, `card`, `badge`, and `separator`.
+
+**Alternatives:** custom-building every primitive (more maintenance), or editing `/components/ui` manually (breaks the repo rule).
+
+**Consequences:** UI composition stays consistent with the design system and `/components/ui` remains generator-managed.
