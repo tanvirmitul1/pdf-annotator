@@ -2,7 +2,7 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-@custom-variant dark (&:is(.dark *));
+@custom-variant dark (&:is([data-theme=dark] *));
 
 @theme inline {
     --font-heading: var(--font-sans);
@@ -82,7 +82,7 @@
     --sidebar-ring: oklch(0.708 0 0);
 }
 
-.dark {
+[data-theme="dark"] {
     --background: oklch(0.145 0 0);
     --foreground: oklch(0.985 0 0);
     --card: oklch(0.205 0 0);
@@ -126,4 +126,20 @@
   html {
     @apply font-sans;
     }
+  body {
+    background-image:
+      radial-gradient(circle at top, color-mix(in oklab, var(--primary) 10%, transparent) 0, transparent 34rem),
+      linear-gradient(180deg, color-mix(in oklab, var(--background) 92%, white) 0%, var(--background) 100%);
+    min-height: 100vh;
+    }
+  a {
+    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50;
+    }
+  ::selection {
+    background: color-mix(in oklab, var(--primary) 28%, transparent);
+    color: var(--foreground);
+  }
+  .skip-link {
+    @apply sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-full focus:bg-card focus:px-4 focus:py-2 focus:shadow-md;
+  }
 }

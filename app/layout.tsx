@@ -1,8 +1,12 @@
-import { Geist, Geist_Mono, Inter } from "next/font/google"
+import { Geist_Mono, Inter } from "next/font/google"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
-import { cn } from "@/lib/utils";
+import { TooltipProvider } from "@/components/ui/tooltip"
+import { CookieBanner } from "@/components/app/cookie-banner"
+import { AnalyticsBridge } from "@/components/app/analytics-bridge"
+import { cn } from "@/lib/utils"
+import { getAnalyticsConsent } from "@/lib/analytics/server"
 
 const inter = Inter({subsets:['latin'],variable:'--font-sans'})
 
@@ -11,11 +15,13 @@ const fontMono = Geist_Mono({
   variable: "--font-mono",
 })
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const consent = await getAnalyticsConsent()
+
   return (
     <html
       lang="en"
@@ -23,7 +29,16 @@ export default function RootLayout({
       className={cn("antialiased", fontMono.variable, "font-sans", inter.variable)}
     >
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        <a href="#main-content" className="skip-link">
+          Skip to content
+        </a>
+        <ThemeProvider>
+          <TooltipProvider delayDuration={150}>
+            <AnalyticsBridge consent={consent} />
+            {children}
+            <CookieBanner initialConsent={consent} />
+          </TooltipProvider>
+        </ThemeProvider>
       </body>
     </html>
   )
