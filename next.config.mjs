@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: process.env.DOCKER_BUILD === "1" ? "standalone" : undefined,
   // Native .node binaries used by the BullMQ worker (canvas rendering,
   // pdf.js processing) cannot be bundled by webpack. Mark them external
   // so Next.js leaves them to Node.js require() at runtime.
