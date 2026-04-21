@@ -47,9 +47,15 @@ export async function processDocumentPostProcess({ documentId }: DocumentPostPro
 
   const storage = createStorageAdapter()
 
+  const setProgress = (progress: number) =>
+    prisma.document.update({
+      where: { id: documentId },
+      data: { processingProgress: progress },
+    })
+
   const fileName = document.name.toLowerCase()
   if (fileName.endsWith(".pdf")) {
-    await processPdf(document, storage)
+    await processPdf(document, storage, setProgress)
   } else if (
     fileName.endsWith(".png") ||
     fileName.endsWith(".jpg") ||
@@ -57,14 +63,14 @@ export async function processDocumentPostProcess({ documentId }: DocumentPostPro
     fileName.endsWith(".webp") ||
     fileName.endsWith(".gif")
   ) {
-    await processImage(document, storage)
+    await processImage(document, storage, setProgress)
   } else {
     throw new Error(`Unsupported document type: ${document.name}`)
   }
 
   await prisma.document.update({
     where: { id: documentId },
-    data: { status: "READY" },
+    data: { status: "READY", processingProgress: 100 },
   })
 }
 
@@ -73,11 +79,14 @@ type PdfDocumentRecord = Pick<Document, "id" | "userId" | "name" | "fileSize" | 
 /** Process pages in parallel batches to avoid overwhelming memory. */
 const PAGE_CONCURRENCY = 5
 
-async function processPdf(document: PdfDocumentRecord, storage: StorageAdapter) {
+type ProgressFn = (progress: number) => Promise<unknown>
+
+async function processPdf(document: PdfDocumentRecord, storage: StorageAdapter, setProgress: ProgressFn) {
   const t0 = Date.now()
   const originalStream = await storage.get(`${document.userId}/${document.id}/original`)
   const buffer = await streamToBuffer(originalStream)
   console.log(`[${document.id}] Downloaded original in ${Date.now() - t0}ms`)
+  await setProgress(10)
 
   // Load PDF
   const pdf = await pdfjs.getDocument({
@@ -87,11 +96,13 @@ async function processPdf(document: PdfDocumentRecord, storage: StorageAdapter) 
   }).promise
   const numPages = pdf.numPages
   console.log(`[${document.id}] Loaded PDF: ${numPages} pages`)
+  await setProgress(20)
 
   // Generate thumbnail from first page at reduced scale for speed
   const tThumb = Date.now()
   const thumbnailKey = await generatePdfThumbnail(pdf, document, storage)
   console.log(`[${document.id}] Thumbnail generated in ${Date.now() - tThumb}ms`)
+  await setProgress(35)
 
   // Extract text (batched) and outline concurrently
   const tExtract = Date.now()
@@ -102,6 +113,7 @@ async function processPdf(document: PdfDocumentRecord, storage: StorageAdapter) 
     ),
   ])
   console.log(`[${document.id}] Text + outline extracted in ${Date.now() - tExtract}ms`)
+  await setProgress(80)
 
   // Single transaction for all DB writes
   const tDb = Date.now()
@@ -118,6 +130,7 @@ async function processPdf(document: PdfDocumentRecord, storage: StorageAdapter) 
     }),
   ])
   console.log(`[${document.id}] DB writes in ${Date.now() - tDb}ms (total: ${Date.now() - t0}ms)`)
+  await setProgress(95)
 }
 
 async function extractTextBatched(
@@ -182,15 +195,17 @@ async function generatePdfThumbnail(
   return key
 }
 
-async function processImage(document: PdfDocumentRecord, storage: StorageAdapter) {
+async function processImage(document: PdfDocumentRecord, storage: StorageAdapter, setProgress: ProgressFn) {
   const originalStream = await storage.get(`${document.userId}/${document.id}/original`)
   const buffer = await streamToBuffer(originalStream)
+  await setProgress(20)
 
   // Generate thumbnail
   const thumbnailBuffer = await sharp(buffer)
     .resize(400, null, { withoutEnlargement: true })
     .webp()
     .toBuffer()
+  await setProgress(60)
 
   const { key: thumbnailKey } = await storage.upload(
     document.userId,
@@ -205,6 +220,7 @@ async function processImage(document: PdfDocumentRecord, storage: StorageAdapter
     where: { id: document.id },
     data: { pageCount: 1, thumbnailKey },
   })
+  await setProgress(95)
 }
 
 interface OutlineItem {
