@@ -88,14 +88,18 @@ async function handler(request: NextRequest) {
   // Upload file
   const storage = createStorageAdapter()
   const stream = Readable.from(file.stream() as unknown as AsyncIterable<Uint8Array>)
-  await storage.upload(user.id, documentId, stream, file.type, file.name)
+  await storage.upload(user.id, documentId, stream, file.type, "original")
 
   // Increment usage
   await incrementUsage(user.id, "DOCUMENTS", 1)
   await incrementUsage(user.id, "STORAGE_MB", fileSizeMB)
 
-  // Enqueue processing job
-  await mainQueue.add("document.postProcess", { documentId })
+  // Enqueue processing job (idempotent per document)
+  await mainQueue.add(
+    "document.postProcess",
+    { documentId },
+    { jobId: documentId }
+  )
 
   // Audit log
   await logAudit({
@@ -103,7 +107,8 @@ async function handler(request: NextRequest) {
     action: "document.create",
     resourceType: "document",
     resourceId: documentId,
-    metadata: { fileSize: file.size, contentType: file.type },    ipAddress: request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown",  })
+    metadata: { fileSize: file.size, contentType: file.type }, ipAddress: request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown",
+  })
 
   return NextResponse.json(document)
 }
