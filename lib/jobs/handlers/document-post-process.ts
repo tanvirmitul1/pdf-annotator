@@ -236,7 +236,7 @@ function extractOutline(outline: OutlineItem[]): Array<{ title: string; pageNumb
 
   function processItem(item: OutlineItem, level = 0) {
     entries.push({
-      title: item.title,
+      title: (item.title ?? "").replace(/\0/g, ""),
       pageNumber: item.dest?.[0]?.num || 1,
       level,
     })
