@@ -82,29 +82,8 @@ async function processPdf(document: PdfDocumentRecord, storage: StorageAdapter) 
   }).promise
   const numPages = pdf.numPages
 
-  // Generate thumbnail from first page
-  const page = await pdf.getPage(1)
-  const viewport = page.getViewport({ scale: 1.0 })
-  const { createCanvas } = await import("@napi-rs/canvas")
-  const canvas = createCanvas(viewport.width, viewport.height)
-  const context = canvas.getContext("2d")
-
-  // @napi-rs/canvas is not typed as HTMLCanvasElement but is API-compatible
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await page.render({ canvas: canvas as any, canvasContext: context as any, viewport }).promise
-
-  const thumbnailBuffer = await sharp(await canvas.encode("png"))
-    .resize(400, 520, { fit: "inside" })
-    .webp()
-    .toBuffer()
-
-  const { key: thumbnailKey } = await storage.upload(
-    document.userId,
-    document.id,
-    Readable.from(thumbnailBuffer),
-    "image/webp",
-    "thumb.webp"
-  )
+  // Generate thumbnail from first page at reduced scale for speed
+  const thumbnailKey = await generatePdfThumbnail(pdf, document, storage)
 
   // Extract text per page
   const textEntries: Array<{ documentId: string; pageNumber: number; text: string }> = []
@@ -148,6 +127,41 @@ async function processPdf(document: PdfDocumentRecord, storage: StorageAdapter) 
       thumbnailKey,
     },
   })
+}
+
+async function generatePdfThumbnail(
+  pdf: pdfjs.PDFDocumentProxy,
+  document: PdfDocumentRecord,
+  storage: StorageAdapter,
+): Promise<string> {
+  const page = await pdf.getPage(1)
+  // Render at reduced scale — thumbnail only needs 400px wide
+  const desiredWidth = 400
+  const naturalViewport = page.getViewport({ scale: 1.0 })
+  const thumbScale = Math.min(desiredWidth / naturalViewport.width, 1.0)
+  const viewport = page.getViewport({ scale: thumbScale })
+
+  const { createCanvas } = await import("@napi-rs/canvas")
+  const canvas = createCanvas(viewport.width, viewport.height)
+  const context = canvas.getContext("2d")
+
+  // @napi-rs/canvas is not typed as HTMLCanvasElement but is API-compatible
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  await page.render({ canvas: canvas as any, canvasContext: context as any, viewport }).promise
+
+  const thumbnailBuffer = await sharp(await canvas.encode("png"))
+    .resize(400, 520, { fit: "inside" })
+    .webp()
+    .toBuffer()
+
+  const { key } = await storage.upload(
+    document.userId,
+    document.id,
+    Readable.from(thumbnailBuffer),
+    "image/webp",
+    "thumb.webp",
+  )
+  return key
 }
 
 async function processImage(document: PdfDocumentRecord, storage: StorageAdapter) {
