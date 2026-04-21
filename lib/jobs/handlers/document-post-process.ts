@@ -148,9 +148,11 @@ async function extractTextBatched(
       batch.map(async (pageNum) => {
         const page = await pdf.getPage(pageNum)
         const textContent = await page.getTextContent()
+        // Strip null bytes — PostgreSQL rejects 0x00 in text columns
         const text = textContent.items
           .map((item) => ((item as { str?: string }).str ?? ""))
           .join(" ")
+          .replace(/\0/g, "")
         return { documentId, pageNumber: pageNum, text }
       }),
     )
