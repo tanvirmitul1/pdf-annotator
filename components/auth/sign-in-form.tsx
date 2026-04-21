@@ -1,16 +1,15 @@
 "use client"
 
-import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Globe, LoaderCircle } from "lucide-react"
+import { LoaderCircle, LockKeyhole, Mail } from "lucide-react"
 import { signIn } from "next-auth/react"
-import { useState } from "react"
+import { type FormEvent, useState } from "react"
 import { z } from "zod"
 
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Separator } from "@/components/ui/separator"
 
 const SignInSchema = z.object({
   email: z.string().email(),
@@ -19,7 +18,7 @@ const SignInSchema = z.object({
 
 type SignInValues = z.infer<typeof SignInSchema>
 
-export function SignInForm() {
+export function SignInForm({ compact = false }: { compact?: boolean }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [values, setValues] = useState<SignInValues>({
@@ -32,7 +31,6 @@ export function SignInForm() {
   const callbackUrl = searchParams.get("callbackUrl") ?? "/app"
 
   async function handleSignIn() {
-    console.log("[signin] button clicked")
     setIsSubmitting(true)
     setErrors({})
 
@@ -50,8 +48,6 @@ export function SignInForm() {
       return
     }
 
-    console.log("[signin] calling signIn", { email: parsed.data.email })
-
     try {
       const result = await signIn("credentials", {
         email: parsed.data.email,
@@ -59,8 +55,6 @@ export function SignInForm() {
         redirect: false,
         callbackUrl,
       })
-
-      console.log("[signin] result", result)
 
       if (result?.error) {
         setErrors({ password: "Incorrect email or password." })
@@ -71,76 +65,105 @@ export function SignInForm() {
       router.push(callbackUrl)
       router.refresh()
     } catch (error) {
-      console.error("[signin] error", error)
+      console.error(error)
       setErrors({ password: "Network error. Please try again." })
       setIsSubmitting(false)
     }
   }
 
-  async function handleGoogle() {
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    await handleSignIn()
+  }
+
+  async function handleGoogleSignIn() {
     await signIn("google", { callbackUrl })
   }
 
   return (
-    <Card className="rounded-[2rem] border-border/70 bg-card/90 shadow-xl">
-      <CardHeader className="space-y-2">
-        <CardTitle className="text-2xl">Login</CardTitle>
-        <p className="text-sm text-muted-foreground">
-          Continue with Google first, or use your email and password below.
+    <div className="space-y-4">
+      <div className="text-center">
+        <h2 className="font-heading text-2xl font-semibold tracking-tight text-foreground">
+          Welcome back
+        </h2>
+        <p className="mt-1.5 text-sm text-muted-foreground">
+          Sign in to your account
         </p>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <Button type="button" size="lg" className="w-full hover:bg-primary/90" onClick={() => void handleGoogle()}>
-          <Globe className="size-4" />
-          Continue with Google
-        </Button>
+      </div>
 
-        <div className="flex items-center gap-3 text-xs uppercase tracking-[0.22em] text-muted-foreground">
-          <span className="h-px flex-1 bg-border" />
-          <span>Or use email</span>
-          <span className="h-px flex-1 bg-border" />
+      <Button
+        type="button"
+        variant="outline"
+        className="h-11 w-full rounded-xl border-border/70 bg-card/70 hover:bg-accent/70"
+        onClick={() => void handleGoogleSignIn()}
+      >
+        <svg className="size-5" viewBox="0 0 24 24">
+          <path
+            fill="currentColor"
+            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+          />
+          <path
+            fill="currentColor"
+            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+          />
+          <path
+            fill="currentColor"
+            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+          />
+          <path
+            fill="currentColor"
+            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+          />
+        </svg>
+        Continue with Google
+      </Button>
+
+      <div className="flex items-center gap-3">
+        <Separator className="flex-1" />
+        <span className="text-xs text-muted-foreground">OR</span>
+        <Separator className="flex-1" />
+      </div>
+
+      <form className="space-y-3" onSubmit={(event) => void onSubmit(event)}>
+      <div className="space-y-1.5">
+        <Label htmlFor="signin-email" className="text-xs">Email</Label>
+        <div className="relative">
+          <Mail className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            id="signin-email"
+            type="email"
+            value={values.email}
+            onChange={(e) => setValues((c) => ({ ...c, email: e.target.value }))}
+            className="h-10 rounded-xl border-border/70 bg-card/80 pl-10 text-sm"
+          />
         </div>
+        {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
+      </div>
 
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="login-email">Email address</Label>
-            <Input
-              id="login-email"
-              type="email"
-              value={values.email}
-              onChange={(event) => setValues((current) => ({ ...current, email: event.target.value }))}
-            />
-            <p className="min-h-5 text-sm text-destructive">{errors.email}</p>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="login-password">Password</Label>
-            <Input
-              id="login-password"
-              type="password"
-              value={values.password}
-              onChange={(event) => setValues((current) => ({ ...current, password: event.target.value }))}
-            />
-            <p className="min-h-5 text-sm text-destructive">{errors.password}</p>
-          </div>
-          <Button 
-            type="button" 
-            size="lg" 
-            className="w-full hover:bg-primary/90" 
-            disabled={isSubmitting}
-            onClick={() => void handleSignIn()}
-          >
-            {isSubmitting ? <LoaderCircle className="size-4 animate-spin" /> : null}
-            Sign in
-          </Button>
+      <div className="space-y-1.5">
+        <Label htmlFor="signin-password" className="text-xs">Password</Label>
+        <div className="relative">
+          <LockKeyhole className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            id="signin-password"
+            type="password"
+            value={values.password}
+            onChange={(e) => setValues((c) => ({ ...c, password: e.target.value }))}
+            className="h-10 rounded-xl border-border/70 bg-card/80 pl-10 text-sm"
+          />
         </div>
+        {errors.password && <p className="text-xs text-destructive">{errors.password}</p>}
+      </div>
 
-        <p className="text-sm text-muted-foreground">
-          Need an account?{" "}
-          <Link href="/signup" className="font-medium text-foreground underline underline-offset-4">
-            Create one
-          </Link>
-        </p>
-      </CardContent>
-    </Card>
+      <Button
+        type="submit"
+        className="h-10 w-full rounded-xl text-sm"
+        disabled={isSubmitting}
+      >
+        {isSubmitting && <LoaderCircle className="size-4 animate-spin" />}
+        Sign In
+      </Button>
+    </form>
+    </div>
   )
 }

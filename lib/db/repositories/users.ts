@@ -7,6 +7,11 @@ export function usersRepository() {
         where: { email },
       })
     },
+    findByDeviceToken(deviceToken: string) {
+      return prisma.user.findUnique({
+        where: { deviceToken },
+      })
+    },
     findById(id: string) {
       return prisma.user.findUnique({
         where: { id },
@@ -17,6 +22,9 @@ export function usersRepository() {
       email: string
       passwordHash?: string | null
       image?: string | null
+      deviceToken?: string | null
+      lastKnownIp?: string | null
+      isAnonymous?: boolean
     }) {
       return prisma.user.create({
         data: {
@@ -24,6 +32,9 @@ export function usersRepository() {
           email: input.email,
           image: input.image ?? null,
           passwordHash: input.passwordHash ?? null,
+          deviceToken: input.deviceToken ?? null,
+          lastKnownIp: input.lastKnownIp ?? null,
+          isAnonymous: input.isAnonymous ?? false,
           planId: "free",
         },
       })

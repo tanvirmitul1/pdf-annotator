@@ -152,6 +152,7 @@ Variants from shadcn (default, secondary, outline, ghost, destructive). Every va
 ## Keyboard shortcuts (register in one place)
 
 **Global:**
+
 - `?` — shortcut help overlay
 - `Cmd/Ctrl+K` — command palette
 - `g d` — go to dashboard
@@ -159,6 +160,7 @@ Variants from shadcn (default, secondary, outline, ghost, destructive). Every va
 - `g t` — go to trash
 
 **Viewer:**
+
 - `←`/`→` or `PgUp`/`PgDn` — prev/next page
 - `Home`/`End` — first/last page
 - `+`/`-` — zoom
@@ -170,6 +172,7 @@ Variants from shadcn (default, secondary, outline, ghost, destructive). Every va
 - `Esc` — close overlays / deselect
 
 **Annotation:**
+
 - `V` — select tool
 - `H` — highlight
 - `U` — underline
@@ -239,3 +242,26 @@ Every page and every data-bound component handles all four:
 - Add components via `npx shadcn add <name>`. Commit as-is.
 - Never modify `/components/ui` files directly. If you need a variant, compose in `/components/common`.
 - Track installed components in DECISIONS.md.
+
+## Added interaction rows
+
+### Sidebar navigation item (app shell)
+
+- **Hover:** subtle surface lift, border tint to `border-primary/20`, icon shifts to `text-primary`
+- **Focus-visible:** 2px ring in `ring-primary`
+- **Click:** navigates immediately to the route
+- **Active state:** `bg-primary/10`, stronger text contrast, persistent active icon tint
+
+### Theme toggle button
+
+- **Hover:** `bg-accent`, icon remains legible, tooltip "Theme"
+- **Focus-visible:** 2px ring
+- **Click:** opens dropdown with Light / Dark / System
+- **Active state:** current theme reflected in the trigger icon
+
+### Auth primary button (Google / credentials submit)
+
+- **Hover:** slightly brighter background, no layout shift, icon remains aligned
+- **Focus-visible:** 2px ring in `ring-primary`
+- **Click:** immediately starts auth flow, pending state swaps in spinner
+- **Disabled:** lowered opacity, `cursor-not-allowed`

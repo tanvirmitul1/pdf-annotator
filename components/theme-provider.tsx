@@ -7,7 +7,9 @@ import { useAppDispatch, useAppSelector } from "@/store/hooks"
 
 function resolveTheme(theme: ThemeMode) {
   if (theme === "system") {
-    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+    return window.matchMedia("(prefers-color-scheme: dark)").matches
+      ? "dark"
+      : "light"
   }
 
   return theme
@@ -22,7 +24,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       return
     }
 
-    const stored = window.localStorage.getItem("pdf-annotator-theme") as ThemeMode | null
+    const stored = window.localStorage.getItem(
+      "pdf-annotator-theme"
+    ) as ThemeMode | null
     if (stored === "light" || stored === "dark" || stored === "system") {
       dispatch(setTheme(stored))
     }

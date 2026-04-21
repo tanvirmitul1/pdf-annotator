@@ -8,7 +8,9 @@ import { enforceRateLimit } from "@/lib/ratelimit"
 
 export const runtime = "nodejs"
 
-const isDev = process.env.APP_ENV === "development" || process.env.NODE_ENV === "development"
+const isDev =
+  process.env.APP_ENV === "development" ||
+  process.env.NODE_ENV === "development"
 
 const securityHeaders = {
   "Content-Security-Policy": isDev
@@ -23,9 +25,22 @@ const securityHeaders = {
 
 export default auth(async (req) => {
   try {
-    await enforceRateLimit(req as NextRequest, req.auth?.user?.id ?? getIpAddress(req), "default")
+    await enforceRateLimit(
+      req as NextRequest,
+      req.auth?.user?.id ?? getIpAddress(req),
+      "default"
+    )
   } catch (error) {
     return toErrorResponse(error)
+  }
+
+  if (
+    req.auth?.user &&
+    ["/", "/login", "/signup"].includes(req.nextUrl.pathname)
+  ) {
+    const response = NextResponse.redirect(new URL("/app", req.url))
+    setSecurityHeaders(response)
+    return response
   }
 
   if (req.nextUrl.pathname.startsWith("/app") && !req.auth?.user) {
@@ -48,5 +63,8 @@ function setSecurityHeaders(response: NextResponse) {
 }
 
 export const config = {
-  matcher: ["/app/:path*", "/((?!_next/static|_next/image|favicon.ico|api/).*)"],
+  matcher: [
+    "/app/:path*",
+    "/((?!_next/static|_next/image|favicon.ico|api/).*)",
+  ],
 }

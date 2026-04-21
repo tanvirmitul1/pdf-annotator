@@ -71,16 +71,20 @@ export function PdfCanvas({
       const ctx = canvas.getContext("2d")
       if (!ctx) return
 
-      // canvas is required in pdfjs-dist v5; canvasContext is optional but
-      // providing both avoids pdfjs calling getContext() a second time.
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const task = page.render({ canvas: canvas as any, canvasContext: ctx, viewport })
+      const task = page.render({
+        canvas,
+        canvasContext: ctx,
+        viewport,
+      })
       renderTaskRef.current = task
 
       try {
         await task.promise
       } catch (err: unknown) {
-        if (!cancelled && (err as { name?: string })?.name !== "RenderingCancelledException") {
+        if (
+          !cancelled &&
+          (err as { name?: string })?.name !== "RenderingCancelledException"
+        ) {
           setRenderError(true)
         }
       }
@@ -137,15 +141,8 @@ export function PdfCanvas({
   }
 
   return (
-    <div
-      style={{ width: scaledW, height: scaledH }}
-      className="relative"
-    >
-      <canvas
-        ref={canvasRef}
-        className="block"
-        aria-label="PDF page"
-      />
+    <div style={{ width: scaledW, height: scaledH }} className="relative">
+      <canvas ref={canvasRef} className="block" aria-label="PDF page" />
       {/* Search highlight overlays */}
       {searchMatches.length > 0 && (
         <div

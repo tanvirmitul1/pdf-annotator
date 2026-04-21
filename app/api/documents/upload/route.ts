@@ -8,11 +8,12 @@ import { prisma } from "@/lib/db/prisma"
 import { withErrorHandling } from "@/lib/api/handler"
 import { assertCanPerform } from "@/lib/authz/assert"
 import { getPlan, getUsage, incrementUsage } from "@/lib/authz/plan"
+import { getDeviceCookieOptions, resolveIdentityFromRequest } from "@/lib/device/identity"
 import { createStorageAdapter } from "@/lib/storage"
 import { mainQueue } from "@/lib/jobs/queue"
 import { logAudit } from "@/lib/audit"
 import { QuotaExceededError } from "@/lib/errors"
-import { requireUser } from "@/lib/auth/require"
+import { getIpAddress } from "@/lib/request"
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024 // 50MB
 
@@ -28,11 +29,8 @@ const UploadSchema = z.object({
 
 async function handler(request: NextRequest) {
   const session = await auth()
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
-
-  const user = await requireUser()
+  const identity = await resolveIdentityFromRequest(request, session?.user?.id ?? null)
+  const ipAddress = getIpAddress(request)
 
   const formData = await request.formData()
   const file = formData.get("file") as File
@@ -48,9 +46,9 @@ async function handler(request: NextRequest) {
   }
 
   // Check quota
-  const plan = await getPlan(user.id)
-  const currentDocuments = await getUsage(user.id, "DOCUMENTS")
-  const currentStorageMB = await getUsage(user.id, "STORAGE_MB")
+  const plan = await getPlan(identity.userId)
+  const currentDocuments = await getUsage(identity.userId, "DOCUMENTS")
+  const currentStorageMB = await getUsage(identity.userId, "STORAGE_MB")
 
   if (currentDocuments >= plan.maxDocuments) {
     return NextResponse.json({ error: "Document quota exceeded" }, { status: 402 })
@@ -62,7 +60,7 @@ async function handler(request: NextRequest) {
   }
 
   try {
-    await assertCanPerform(user.id, "document.create")
+    await assertCanPerform(identity.userId, "document.create")
   } catch (error) {
     if (error instanceof QuotaExceededError) {
       return NextResponse.json({ error: "Quota exceeded" }, { status: 402 })
@@ -77,10 +75,10 @@ async function handler(request: NextRequest) {
   const document = await prisma.document.create({
     data: {
       id: documentId,
-      userId: user.id,
+      userId: identity.userId,
       name: file.name,
       fileSize: file.size,
-      storageKey: `${user.id}/${documentId}/original`,
+      storageKey: `${identity.userId}/${documentId}/original`,
       status: "PROCESSING",
     },
   })
@@ -88,11 +86,11 @@ async function handler(request: NextRequest) {
   // Upload file
   const storage = createStorageAdapter()
   const stream = Readable.from(file.stream() as unknown as AsyncIterable<Uint8Array>)
-  await storage.upload(user.id, documentId, stream, file.type, "original")
+  await storage.upload(identity.userId, documentId, stream, file.type, "original")
 
   // Increment usage
-  await incrementUsage(user.id, "DOCUMENTS", 1)
-  await incrementUsage(user.id, "STORAGE_MB", fileSizeMB)
+  await incrementUsage(identity.userId, "DOCUMENTS", 1)
+  await incrementUsage(identity.userId, "STORAGE_MB", fileSizeMB)
 
   // Enqueue processing job (idempotent per document)
   await mainQueue.add(
@@ -103,14 +101,27 @@ async function handler(request: NextRequest) {
 
   // Audit log
   await logAudit({
-    userId: user.id,
+    userId: identity.userId,
     action: "document.create",
     resourceType: "document",
     resourceId: documentId,
-    metadata: { fileSize: file.size, contentType: file.type }, ipAddress: request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown",
+    metadata: { fileSize: file.size, contentType: file.type, isAnonymous: identity.isAnonymous },
+    ipAddress,
   })
 
-  return NextResponse.json(document)
+  const response = NextResponse.json({
+    document,
+    isAnonymous: identity.isAnonymous,
+  })
+
+  if (identity.isAnonymous && identity.cookieWasCreated) {
+    response.cookies.set({
+      ...getDeviceCookieOptions(),
+      value: identity.deviceToken,
+    })
+  }
+
+  return response
 }
 
 export const POST = withErrorHandling(handler)

@@ -3,6 +3,7 @@ import { notFound } from "next/navigation"
 import { requireUser } from "@/lib/auth/require"
 import { prisma } from "@/lib/db/prisma"
 import { ViewerShellLoader } from "@/components/viewer/viewer-shell-loader"
+import { ImageViewer } from "@/components/viewer/image-viewer"
 
 export default async function DocumentViewerPage({
   params,
@@ -18,6 +19,18 @@ export default async function DocumentViewerPage({
   })
 
   if (!document) notFound()
+
+  // Check if it's an image based on file extension
+  const fileName = document.name.toLowerCase()
+  const isImage = fileName.endsWith(".png") || 
+                  fileName.endsWith(".jpg") || 
+                  fileName.endsWith(".jpeg") || 
+                  fileName.endsWith(".webp") || 
+                  fileName.endsWith(".gif")
+
+  if (isImage) {
+    return <ImageViewer documentId={document.id} documentName={document.name} />
+  }
 
   return (
     <ViewerShellLoader

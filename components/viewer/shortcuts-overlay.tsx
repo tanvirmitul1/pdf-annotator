@@ -33,7 +33,7 @@ export function ShortcutsOverlay() {
         <div className="space-y-4 py-2">
           {Object.entries(grouped).map(([category, items]) => (
             <div key={category}>
-              <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              <h3 className="mb-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
                 {category}
               </h3>
               <ul className="space-y-1">

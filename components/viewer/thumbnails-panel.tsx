@@ -14,7 +14,10 @@ interface ThumbnailsPanelProps {
 
 const THUMB_HEIGHT = 110
 
-export function ThumbnailsPanel({ pdfDocument, totalPages }: ThumbnailsPanelProps) {
+export function ThumbnailsPanel({
+  pdfDocument,
+  totalPages,
+}: ThumbnailsPanelProps) {
   const currentPage = useViewer((s) => s.currentPage)
   const setPage = useViewer((s) => s.setPage)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -34,7 +37,10 @@ export function ThumbnailsPanel({ pdfDocument, totalPages }: ThumbnailsPanelProp
   return (
     <div ref={containerRef} className="flex-1 overflow-y-auto py-2">
       <div
-        style={{ height: `${virtualizer.getTotalSize()}px`, position: "relative" }}
+        style={{
+          height: `${virtualizer.getTotalSize()}px`,
+          position: "relative",
+        }}
       >
         {virtualizer.getVirtualItems().map((vi) => {
           const pageNum = vi.index + 1
@@ -58,10 +64,10 @@ export function ThumbnailsPanel({ pdfDocument, totalPages }: ThumbnailsPanelProp
                 aria-label={`Go to page ${pageNum}`}
                 className={cn(
                   "w-full cursor-pointer overflow-hidden rounded border bg-card transition-all duration-150",
-                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+                  "focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none",
                   "hover:scale-[1.02] hover:border-primary/60",
                   isCurrent
-                    ? "ring-2 ring-primary border-primary"
+                    ? "border-primary ring-2 ring-primary"
                     : "border-border"
                 )}
               >
@@ -73,7 +79,9 @@ export function ThumbnailsPanel({ pdfDocument, totalPages }: ThumbnailsPanelProp
                 <div
                   className={cn(
                     "py-1 text-center text-xs",
-                    isCurrent ? "font-semibold text-primary" : "text-muted-foreground"
+                    isCurrent
+                      ? "font-semibold text-primary"
+                      : "text-muted-foreground"
                   )}
                 >
                   {pageNum}
@@ -116,7 +124,11 @@ function ThumbnailCanvas({
       const ctx = canvas.getContext("2d")
       if (!ctx) return
 
-      const task = page.render({ canvasContext: ctx, viewport: scaledVp, canvas })
+      const task = page.render({
+        canvasContext: ctx,
+        viewport: scaledVp,
+        canvas,
+      })
       try {
         await task.promise
       } catch {
@@ -125,7 +137,9 @@ function ThumbnailCanvas({
     }
 
     render()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [pdfDocument, pageNum, active])
 
   if (!active) {

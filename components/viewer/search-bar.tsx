@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState, useTransition } from "react"
+import { useEffect, useRef, useTransition } from "react"
 import { Search, X, ChevronUp, ChevronDown } from "lucide-react"
 import { AnimatePresence, motion } from "framer-motion"
 
@@ -70,7 +70,7 @@ export function SearchBar({ documentId }: SearchBarProps) {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.15 }}
-          className="absolute right-4 top-14 z-50 flex items-center gap-1 rounded-lg border border-border bg-card px-2 py-1.5 shadow-lg"
+          className="absolute top-16 right-4 z-50 flex items-center gap-1 rounded-[1.2rem] border border-border/70 bg-card/88 px-2 py-2 shadow-[0_28px_70px_-45px_rgba(15,23,42,0.6)] backdrop-blur-xl"
           role="search"
           aria-label="Search in document"
         >
@@ -80,10 +80,14 @@ export function SearchBar({ documentId }: SearchBarProps) {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search in document…"
-            className="h-7 w-48 border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
+            className="h-8 w-52 border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
             onKeyDown={(e) => {
               if (e.key === "Enter") {
-                e.shiftKey ? prevMatch() : nextMatch()
+                if (e.shiftKey) {
+                  prevMatch()
+                } else {
+                  nextMatch()
+                }
               }
               if (e.key === "Escape") closeSearch()
             }}

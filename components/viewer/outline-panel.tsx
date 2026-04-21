@@ -58,7 +58,11 @@ function OutlineItem({
   const hasChildren = entry.items && entry.items.length > 0
 
   return (
-    <li role="treeitem" aria-expanded={hasChildren ? expanded : undefined}>
+    <li
+      role="treeitem"
+      aria-expanded={hasChildren ? expanded : undefined}
+      aria-selected={false}
+    >
       <button
         type="button"
         onClick={() => {
@@ -67,7 +71,7 @@ function OutlineItem({
         }}
         className={cn(
           "flex w-full cursor-pointer items-center gap-1 rounded px-2 py-1 text-left text-sm transition-colors",
-          "hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
+          "hover:bg-accent focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none",
           "active:bg-accent/80"
         )}
         style={{ paddingLeft: `${8 + depth * 12}px` }}

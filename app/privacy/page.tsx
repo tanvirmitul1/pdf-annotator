@@ -1,52 +1,102 @@
+import { LegalPage } from "@/components/common/legal-page"
+
 export default function PrivacyPage() {
   return (
-    <main id="main-content" className="mx-auto max-w-4xl px-6 py-12">
-      <div className="rounded-[2rem] border border-border bg-card/80 p-8 shadow-sm">
-        <p className="text-sm font-semibold uppercase tracking-[0.24em] text-primary">Privacy Policy</p>
-        <h1 className="mt-4 text-4xl font-semibold tracking-tight">Privacy Policy</h1>
-        <div className="mt-8 space-y-8 text-sm/7 text-muted-foreground">
-          <section>
-            <h2 className="text-lg font-semibold text-foreground">1. What we collect</h2>
-            <p className="mt-2">
-              We collect the account information you provide directly, including your email address,
-              display name, and your authentication method. If you sign in with Google OAuth, we use
-              the verified email address and basic profile information supplied by Google to create
-              your account.
-            </p>
-          </section>
-          <section>
-            <h2 className="text-lg font-semibold text-foreground">2. Cookies and consent</h2>
-            <p className="mt-2">
-              Essential cookies keep sign-in and account management working. Analytics cookies remain
-              disabled until you explicitly accept them through the cookie banner. Rejecting optional
-              analytics leaves the core account experience available.
-            </p>
-          </section>
-          <section>
-            <h2 className="text-lg font-semibold text-foreground">3. Analytics and error tracking</h2>
-            <p className="mt-2">
-              We plan to use PostHog for product analytics and Sentry for error tracking. Analytics
-              is treated as non-essential, while operational error monitoring helps us diagnose service
-              failures. Do not place personal note content or document titles inside analytics props.
-            </p>
-          </section>
-          <section>
-            <h2 className="text-lg font-semibold text-foreground">4. Data retention and user rights</h2>
-            <p className="mt-2">
-              You can request a data export from Settings. Account deletion enters a 7-day grace
-              period before permanent purge. During that window you may restore the account. Audit
-              records may be retained in anonymized form to preserve platform integrity.
-            </p>
-          </section>
-          <section>
-            <h2 className="text-lg font-semibold text-foreground">5. International rights and review</h2>
-            <p className="mt-2">
-              TODO: Lawyer review. Describe lawful bases, cross-border processing, GDPR/CCPA rights,
-              and the data protection officer contact. Placeholder DPO contact: privacy@example.com.
-            </p>
-          </section>
-        </div>
-      </div>
-    </main>
+    <LegalPage
+      eyebrow="Privacy policy"
+      title="Privacy Policy"
+      description="This draft is structured for real review. It covers account data, Google OAuth usage, cookies, analytics consent, operational monitoring, retention, deletion, and user rights."
+      sections={[
+        {
+          title: "What we collect",
+          body: (
+            <>
+              <p>
+                We collect the account information you provide directly,
+                including your display name, email address, chosen
+                authentication method, and the usage metadata needed to keep the
+                app secure and quota-aware.
+              </p>
+              <p>
+                If you sign in with Google OAuth, we use the verified email
+                address, your name, and your Google profile photo to create and
+                maintain your account. We do not request broader Google Drive or
+                Gmail scopes for this experience.
+              </p>
+            </>
+          ),
+        },
+        {
+          title: "Cookies, consent, and analytics",
+          body: (
+            <>
+              <p>
+                Essential cookies keep sign-in, route protection, and theme
+                preference working. Non-essential analytics stays blocked until
+                you explicitly accept it through the cookie banner.
+              </p>
+              <p>
+                Rejecting optional analytics leaves the core application usable.
+                Consent preferences can be revisited through the cookie policy
+                flow or by clearing the stored cookie.
+              </p>
+            </>
+          ),
+        },
+        {
+          title: "Operational monitoring and product telemetry",
+          body: (
+            <>
+              <p>
+                We use PostHog for product analytics after consent and Sentry
+                for operational error tracking. Error tracking helps us
+                investigate failures, while analytics helps us improve workflows
+                and understand feature usage.
+              </p>
+              <p>
+                Sensitive document content, annotation text, and private file
+                names should not be sent in analytics payloads. Error payloads
+                must be minimized and handled under the security and backend
+                rules of the project.
+              </p>
+            </>
+          ),
+        },
+        {
+          title: "Retention, export, deletion, and restore",
+          body: (
+            <>
+              <p>
+                Users can request an export of their account data from Settings.
+                Account deletion enters a 7-day grace period before permanent
+                removal, and users may restore access during that window.
+              </p>
+              <p>
+                Audit records may be retained in limited or anonymized form to
+                preserve platform integrity, investigate abuse, and satisfy
+                legal obligations where required.
+              </p>
+            </>
+          ),
+        },
+        {
+          title: "User rights and legal review",
+          body: (
+            <>
+              <p>
+                TODO: lawyer review. This section should describe lawful bases,
+                regional rights under frameworks such as GDPR and CCPA,
+                cross-border data transfer language, and formal complaint
+                channels.
+              </p>
+              <p>
+                Placeholder contact for the Data Protection Officer:{" "}
+                <strong>privacy@example.com</strong>.
+              </p>
+            </>
+          ),
+        },
+      ]}
+    />
   )
 }

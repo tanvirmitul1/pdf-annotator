@@ -44,13 +44,17 @@ export function Providers({
   }, [])
 
   return (
-    <Sentry.ErrorBoundary fallback={<p className="p-6 text-sm text-destructive">Something went wrong.</p>}>
+    <Sentry.ErrorBoundary
+      fallback={
+        <p className="p-6 text-sm text-destructive">Something went wrong.</p>
+      }
+    >
       <SessionProvider>
         <Provider store={store}>
-              <ThemeProvider>
-                {children}
-                <Toaster richColors position="bottom-right" />
-              </ThemeProvider>
+          <ThemeProvider>
+            {children}
+            <Toaster richColors position="bottom-right" />
+          </ThemeProvider>
         </Provider>
       </SessionProvider>
     </Sentry.ErrorBoundary>

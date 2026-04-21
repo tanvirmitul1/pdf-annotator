@@ -93,7 +93,18 @@ async function processPdf(document: PdfDocumentRecord, storage: StorageAdapter, 
     data: new Uint8Array(buffer),
     standardFontDataUrl: STANDARD_FONT_DATA_URL,
     wasmUrl: WASM_URL,
-  }).promise
+    password: "", // Empty password for non-protected PDFs
+  }).promise.catch(async (err) => {
+    // If password required, mark as failed and skip processing
+    if (err.name === "PasswordException") {
+      await prisma.document.update({
+        where: { id: document.id },
+        data: { status: "FAILED", processingProgress: 0 },
+      })
+      throw new Error("Password-protected PDFs are not supported")
+    }
+    throw err
+  })
   const numPages = pdf.numPages
   console.log(`[${document.id}] Loaded PDF: ${numPages} pages`)
   await setProgress(20)

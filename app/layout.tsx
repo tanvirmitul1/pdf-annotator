@@ -1,18 +1,25 @@
 import type { Metadata } from "next"
-import { Geist_Mono, Inter } from "next/font/google"
+import { IBM_Plex_Mono, Manrope, Space_Grotesk } from "next/font/google"
 
 import "@/app/globals.css"
 import { Providers } from "@/app/providers"
+import { getCurrentUser } from "@/lib/auth/require"
 import { cn } from "@/lib/utils"
 
-const inter = Inter({
+const manrope = Manrope({
   subsets: ["latin"],
   variable: "--font-sans",
 })
 
-const fontMono = Geist_Mono({
+const heading = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-display",
+})
+
+const fontMono = IBM_Plex_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
+  weight: ["400", "500", "600"],
 })
 
 export const metadata: Metadata = {
@@ -41,7 +48,7 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode
 }>) {
-  // const user = await getCurrentUser()
+  const user = await getCurrentUser()
 
   return (
     <html
@@ -51,7 +58,8 @@ export default async function RootLayout({
         "antialiased",
         fontMono.variable,
         "font-sans",
-        inter.variable
+        heading.variable,
+        manrope.variable
       )}
     >
       <body>
@@ -59,7 +67,7 @@ export default async function RootLayout({
         <a href="#main-content" className="skip-link">
           Skip to content
         </a>
-        <Providers initialUser={null}>{children}</Providers>
+        <Providers initialUser={user}>{children}</Providers>
       </body>
     </html>
   )

@@ -2,7 +2,13 @@ import { Readable } from "stream"
 import type { S3Client } from "@aws-sdk/client-s3"
 
 export interface StorageAdapter {
-  upload(userId: string, docId: string, stream: Readable, contentType: string, filename: string): Promise<{ key: string; size: number }>
+  upload(
+    userId: string,
+    docId: string,
+    stream: Readable,
+    contentType: string,
+    filename: string
+  ): Promise<{ key: string; size: number }>
   get(key: string): Promise<Readable>
   delete(key: string): Promise<void>
   getSignedUrl(key: string, expiresIn: number): Promise<string>
@@ -39,7 +45,8 @@ export class LocalDiskAdapter implements StorageAdapter {
         size += chunk.length
       })
 
-      stream.pipe(writeStream)
+      stream
+        .pipe(writeStream)
         .on("finish", () => {
           const key = `${userId}/${docId}/${filename}`
           resolve({ key, size })
@@ -68,7 +75,8 @@ export class LocalDiskAdapter implements StorageAdapter {
     }
   }
 
-  async getSignedUrl(key: string, _expiresIn: number): Promise<string> {
+  async getSignedUrl(key: string, expiresIn: number): Promise<string> {
+    void expiresIn
     // For local development, return a local URL for the requested key
     return this.getPublicUrl(key)
   }
@@ -83,7 +91,13 @@ export class S3Adapter implements StorageAdapter {
   private s3: S3Client
   private bucket: string
 
-  constructor(bucket: string, region: string, accessKeyId: string, secretAccessKey: string, endpoint?: string) {
+  constructor(
+    bucket: string,
+    region: string,
+    accessKeyId: string,
+    secretAccessKey: string,
+    endpoint?: string
+  ) {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { S3Client } = require("@aws-sdk/client-s3")
     this.s3 = new S3Client({

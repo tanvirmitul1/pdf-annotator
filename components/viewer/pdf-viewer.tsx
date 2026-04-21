@@ -1,12 +1,6 @@
 "use client"
 
-import {
-  useEffect,
-  useRef,
-  useState,
-  useCallback,
-  useMemo,
-} from "react"
+import { useEffect, useRef, useState, useCallback, useMemo } from "react"
 import { useVirtualizer } from "@tanstack/react-virtual"
 import type { PDFDocumentProxy, PDFPageProxy } from "pdfjs-dist"
 
@@ -65,7 +59,9 @@ export function PdfViewer({ pdfDocument, onProgressUpdate }: PdfViewerProps) {
     }
 
     loadDimensions()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [pdfDocument, setTotalPages])
 
   // Compute item sizes for virtualizer (height includes gap)
@@ -115,7 +111,9 @@ export function PdfViewer({ pdfDocument, onProgressUpdate }: PdfViewerProps) {
       })
     })
 
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [virtualItems, pdfDocument, pageDimensions, loadedPages])
 
   // Scroll to current page when changed externally
@@ -123,7 +121,9 @@ export function PdfViewer({ pdfDocument, onProgressUpdate }: PdfViewerProps) {
     if (currentPage < 1 || currentPage > totalPages) return
     programmaticScrollRef.current = true
     virtualizer.scrollToIndex(currentPage - 1, { align: "start" })
-    setTimeout(() => { programmaticScrollRef.current = false }, 200)
+    setTimeout(() => {
+      programmaticScrollRef.current = false
+    }, 200)
   }, [currentPage, totalPages, virtualizer])
 
   // Scroll to current search match
@@ -133,7 +133,9 @@ export function PdfViewer({ pdfDocument, onProgressUpdate }: PdfViewerProps) {
     const pageIndex = currentMatch.pageNumber - 1
     programmaticScrollRef.current = true
     virtualizer.scrollToIndex(pageIndex, { align: "center" })
-    setTimeout(() => { programmaticScrollRef.current = false }, 200)
+    setTimeout(() => {
+      programmaticScrollRef.current = false
+    }, 200)
   }, [currentMatch, virtualizer])
 
   // Update current page on scroll
@@ -150,9 +152,8 @@ export function PdfViewer({ pdfDocument, onProgressUpdate }: PdfViewerProps) {
       if (accumulated + size / 2 >= center) {
         setPage(i + 1)
 
-        const percent = totalPages > 1
-          ? Math.round(((i + 1) / totalPages) * 100)
-          : 100
+        const percent =
+          totalPages > 1 ? Math.round(((i + 1) / totalPages) * 100) : 100
         onProgressUpdate?.(i + 1, percent)
         return
       }
@@ -173,7 +174,7 @@ export function PdfViewer({ pdfDocument, onProgressUpdate }: PdfViewerProps) {
 
   if (pageDimensions.length === 0) {
     return (
-      <div className="flex flex-1 items-center justify-center">
+      <div className="flex flex-1 items-center justify-center bg-[radial-gradient(circle_at_top,color-mix(in_oklab,var(--primary)_8%,transparent)_0,transparent_40%)]">
         <div className="h-10 w-10 animate-spin rounded-full border-4 border-muted border-t-primary" />
       </div>
     )
@@ -182,7 +183,7 @@ export function PdfViewer({ pdfDocument, onProgressUpdate }: PdfViewerProps) {
   return (
     <div
       ref={scrollRef}
-      className="flex-1 overflow-y-auto bg-muted/30"
+      className="flex-1 overflow-y-auto bg-[linear-gradient(180deg,color-mix(in_oklab,var(--background)_96%,white)_0%,color-mix(in_oklab,var(--muted)_65%,transparent)_100%)]"
       onScroll={handleScroll}
       tabIndex={-1}
     >
@@ -204,8 +205,7 @@ export function PdfViewer({ pdfDocument, onProgressUpdate }: PdfViewerProps) {
           const pageMatches = searchMatches.filter(
             (m: SearchMatch) => m.pageNumber === pageNum
           )
-          const isCurrentMatchPage =
-            currentMatch?.pageNumber === pageNum
+          const isCurrentMatchPage = currentMatch?.pageNumber === pageNum
 
           return (
             <div
@@ -228,7 +228,7 @@ export function PdfViewer({ pdfDocument, onProgressUpdate }: PdfViewerProps) {
                   {pageNum}
                 </div>
                 <div
-                  className="shadow-md"
+                  className="rounded-[1.4rem] bg-white/70 p-2 shadow-[0_30px_80px_-48px_rgba(15,23,42,0.65)] dark:bg-black/12"
                   style={{ maxWidth: maxPageWidth }}
                 >
                   <PdfCanvas

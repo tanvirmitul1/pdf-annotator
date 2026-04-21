@@ -68,6 +68,9 @@ model User {
   emailVerified      DateTime?
   image              String?
   passwordHash       String?
+  isAnonymous        Boolean            @default(false)
+  deviceToken        String?            @unique
+  lastKnownIp        String?
   planId             String             @default("free")
   trialEndsAt        DateTime?
   subscriptionStatus SubscriptionStatus @default(FREE)
@@ -92,6 +95,7 @@ model User {
 
   @@index([planId])
   @@index([deletedAt])
+  @@index([isAnonymous])
 }
 
 model Account {

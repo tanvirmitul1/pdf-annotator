@@ -23,7 +23,7 @@ export function OfflineBanner() {
   return (
     <div
       role="alert"
-      className="flex items-center gap-2 bg-amber-500/90 px-4 py-2 text-sm font-medium text-white"
+      className="flex items-center gap-2 border-b border-amber-300/30 bg-amber-500/90 px-4 py-2 text-sm font-medium text-white backdrop-blur-xl"
     >
       <WifiOff className="size-4 shrink-0" />
       You&apos;re offline — some features may be unavailable

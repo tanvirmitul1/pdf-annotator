@@ -145,3 +145,15 @@ Append-only log. Don't edit old entries; add new ones that supersede.
 **Alternatives:** custom-building every primitive (more maintenance), or editing `/components/ui` manually (breaks the repo rule).
 
 **Consequences:** UI composition stays consistent with the design system and `/components/ui` remains generator-managed.
+
+---
+
+### 2026-04-21 â€” richer visual system without introducing a new UI framework
+
+**Context:** the app shell and public pages were functional but too visually bare for a client-facing demo, especially across mobile, tablet, and desktop.
+
+**Decision:** keep the existing shadcn + Tailwind foundation, but expand the semantic token set, glass-panel utilities, and shared shell components (`LogoMark`, `ThemeToggle`, `AuthShell`, `LegalPage`, upgraded `ProtectedShell`) instead of adding a heavier design layer.
+
+**Alternatives considered:** swapping to a full component framework (too disruptive), page-by-page ad hoc restyling (would create visual drift), leaving the shell minimal until later phases (hurts perceived product quality now).
+
+**Consequences:** slightly more custom global styling, but later document, settings, and annotation work can inherit a stronger system without another redesign pass.

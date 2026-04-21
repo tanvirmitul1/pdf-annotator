@@ -30,7 +30,7 @@ export function Sidebar({
   return (
     <div
       className={cn(
-        "flex w-56 shrink-0 flex-col border-r border-border bg-card",
+        "flex w-64 shrink-0 flex-col border-r border-border/70 bg-card/75 backdrop-blur-xl",
         className
       )}
     >
@@ -41,22 +41,22 @@ export function Sidebar({
         }
         className="flex flex-1 flex-col overflow-hidden"
       >
-        <TabsList className="h-auto w-full rounded-none border-b border-border bg-transparent p-0">
+        <TabsList className="h-auto w-full rounded-none border-b border-border/70 bg-transparent p-1">
           <TabsTrigger
             value="thumbnails"
-            className="flex-1 rounded-none border-b-2 border-transparent py-2 text-xs data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+            className="flex-1 rounded-[0.9rem] py-2 text-xs data-[state=active]:bg-primary/10 data-[state=active]:text-foreground data-[state=active]:shadow-none"
           >
             Pages
           </TabsTrigger>
           <TabsTrigger
             value="outline"
-            className="flex-1 rounded-none border-b-2 border-transparent py-2 text-xs data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+            className="flex-1 rounded-[0.9rem] py-2 text-xs data-[state=active]:bg-primary/10 data-[state=active]:text-foreground data-[state=active]:shadow-none"
           >
             Outline
           </TabsTrigger>
           <TabsTrigger
             value="bookmarks"
-            className="flex-1 rounded-none border-b-2 border-transparent py-2 text-xs data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none"
+            className="flex-1 rounded-[0.9rem] py-2 text-xs data-[state=active]:bg-primary/10 data-[state=active]:text-foreground data-[state=active]:shadow-none"
           >
             Bookmarks
           </TabsTrigger>

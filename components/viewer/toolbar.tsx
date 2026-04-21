@@ -64,7 +64,11 @@ function Divider() {
   return <div className="mx-1 h-5 w-px bg-border" aria-hidden />
 }
 
-export function Toolbar({ documentId, documentName, downloadUrl }: ToolbarProps) {
+export function Toolbar({
+  documentId,
+  documentName,
+  downloadUrl,
+}: ToolbarProps) {
   const zoom = useViewer((s) => s.zoom)
   const setZoom = useViewer((s) => s.setZoom)
   const currentPage = useViewer((s) => s.currentPage)
@@ -117,7 +121,7 @@ export function Toolbar({ documentId, documentName, downloadUrl }: ToolbarProps)
 
   return (
     <header
-      className="flex h-12 shrink-0 items-center gap-1 border-b border-border bg-card px-2"
+      className="flex h-14 shrink-0 items-center gap-1 border-b border-border/70 bg-card/75 px-2 backdrop-blur-xl"
       role="toolbar"
       aria-label="PDF viewer controls"
     >
@@ -135,7 +139,7 @@ export function Toolbar({ documentId, documentName, downloadUrl }: ToolbarProps)
         <Button
           variant="ghost"
           size="icon"
-          className="size-8"
+          className="size-8 rounded-[1rem]"
           onClick={toggleSidebar}
           aria-pressed={sidebarOpen}
           aria-label="Toggle sidebar"
@@ -151,7 +155,7 @@ export function Toolbar({ documentId, documentName, downloadUrl }: ToolbarProps)
         <Button
           variant="ghost"
           size="icon"
-          className="size-8"
+          className="size-8 rounded-[1rem]"
           onClick={() => setPage(currentPage - 1)}
           disabled={currentPage <= 1}
           aria-label="Previous page"
@@ -189,7 +193,7 @@ export function Toolbar({ documentId, documentName, downloadUrl }: ToolbarProps)
         <Button
           variant="ghost"
           size="icon"
-          className="size-8"
+          className="size-8 rounded-[1rem]"
           onClick={() => setPage(currentPage + 1)}
           disabled={currentPage >= totalPages}
           aria-label="Next page"
@@ -205,7 +209,7 @@ export function Toolbar({ documentId, documentName, downloadUrl }: ToolbarProps)
         <Button
           variant="ghost"
           size="icon"
-          className="size-8"
+          className="size-8 rounded-[1rem]"
           onClick={zoomOut}
           disabled={zoom <= 0.25}
           aria-label="Zoom out"
@@ -222,7 +226,7 @@ export function Toolbar({ documentId, documentName, downloadUrl }: ToolbarProps)
         <Button
           variant="ghost"
           size="icon"
-          className="size-8"
+          className="size-8 rounded-[1rem]"
           onClick={zoomIn}
           disabled={zoom >= 4}
           aria-label="Zoom in"
@@ -235,7 +239,7 @@ export function Toolbar({ documentId, documentName, downloadUrl }: ToolbarProps)
         <Button
           variant="ghost"
           size="sm"
-          className="h-7 px-2 text-xs"
+          className="h-8 rounded-[1rem] px-3 text-xs"
           onClick={() => setZoom(1)}
           aria-label="Fit width"
         >
@@ -250,7 +254,7 @@ export function Toolbar({ documentId, documentName, downloadUrl }: ToolbarProps)
         <Button
           variant="ghost"
           size="icon"
-          className="size-8"
+          className="size-8 rounded-[1rem]"
           onClick={rotate}
           aria-label="Rotate 90 degrees"
         >
@@ -261,20 +265,24 @@ export function Toolbar({ documentId, documentName, downloadUrl }: ToolbarProps)
       <Divider />
 
       {/* Document title */}
-      <span className="hidden truncate text-sm font-medium md:block max-w-[200px]">
+      <span className="hidden max-w-[220px] truncate rounded-full border border-border/70 bg-card/75 px-3 py-1 text-sm font-medium md:block">
         {documentName}
       </span>
 
       {/* Right-side actions */}
       <div className="ml-auto flex items-center gap-1">
         {/* Bookmark toggle */}
-        <Tip label={currentBookmark ? "Remove bookmark (B)" : "Bookmark page (B)"}>
+        <Tip
+          label={currentBookmark ? "Remove bookmark (B)" : "Bookmark page (B)"}
+        >
           <Button
             variant="ghost"
             size="icon"
-            className="size-8"
+            className="size-8 rounded-[1rem]"
             onClick={toggleBookmark}
-            aria-label={currentBookmark ? "Remove bookmark" : "Bookmark this page"}
+            aria-label={
+              currentBookmark ? "Remove bookmark" : "Bookmark this page"
+            }
             aria-pressed={!!currentBookmark}
           >
             {currentBookmark ? (
@@ -290,7 +298,7 @@ export function Toolbar({ documentId, documentName, downloadUrl }: ToolbarProps)
           <Button
             variant="ghost"
             size="icon"
-            className="size-8"
+            className="size-8 rounded-[1rem]"
             onClick={openSearch}
             aria-pressed={searchOpen}
             aria-label="Search in document"
@@ -304,7 +312,7 @@ export function Toolbar({ documentId, documentName, downloadUrl }: ToolbarProps)
           <Button
             variant="ghost"
             size="icon"
-            className="size-8"
+            className="size-8 rounded-[1rem]"
             onClick={() => window.print()}
             aria-label="Print document"
           >
@@ -318,7 +326,7 @@ export function Toolbar({ documentId, documentName, downloadUrl }: ToolbarProps)
             <Button
               variant="ghost"
               size="icon"
-              className="size-8"
+              className="size-8 rounded-[1rem]"
               asChild
               aria-label="Download document"
             >
@@ -334,7 +342,7 @@ export function Toolbar({ documentId, documentName, downloadUrl }: ToolbarProps)
           <Button
             variant="ghost"
             size="icon"
-            className="size-8"
+            className="size-8 rounded-[1rem]"
             disabled
             aria-label="Share document (coming soon)"
           >

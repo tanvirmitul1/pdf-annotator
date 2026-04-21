@@ -2,6 +2,7 @@ import { NextResponse } from "next/server"
 import { z } from "zod"
 
 import { withErrorHandling } from "@/lib/api/handler"
+import { DEVICE_COOKIE_NAME, mergeAnonymousDeviceIntoUser, readDeviceTokenFromRequest } from "@/lib/device/identity"
 import { getIpAddress } from "@/lib/request"
 import { enforceRateLimit } from "@/lib/ratelimit"
 import { registerCredentialsUser } from "@/lib/auth/register"
@@ -15,15 +16,17 @@ const SignUpSchema = z.object({
 
 export const POST = withErrorHandling(async (req) => {
   const ipAddress = getIpAddress(req)
-  console.log("[api/signup] POST received from", ipAddress)
   await enforceRateLimit(req, ipAddress, "auth")
-  const body = await req.json()
-  console.log("[api/signup] body", { ...body, password: "[redacted]" })
-  const input = SignUpSchema.parse(body)
+  const input = SignUpSchema.parse(await req.json())
   const user = await registerCredentialsUser(input)
-  console.log("[api/signup] user created", user.id, user.email)
 
-  return NextResponse.json(
+  await mergeAnonymousDeviceIntoUser({
+    targetUserId: user.id,
+    deviceToken: readDeviceTokenFromRequest(req),
+    ipAddress,
+  })
+
+  const response = NextResponse.json(
     {
       data: {
         id: user.id,
@@ -32,4 +35,18 @@ export const POST = withErrorHandling(async (req) => {
     },
     { status: 201 }
   )
+
+  if (!readDeviceTokenFromRequest(req)) {
+    response.cookies.set({
+      name: DEVICE_COOKIE_NAME,
+      value: crypto.randomUUID(),
+      httpOnly: true,
+      sameSite: "lax",
+      secure: process.env.NODE_ENV === "production",
+      path: "/",
+      maxAge: 60 * 60 * 24 * 365,
+    })
+  }
+
+  return response
 })

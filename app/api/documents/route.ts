@@ -5,7 +5,7 @@ import { z } from "zod"
 import { auth } from "@/auth"
 import { prisma } from "@/lib/db/prisma"
 import { withErrorHandling } from "@/lib/api/handler"
-import { requireUser } from "@/lib/auth/require"
+import { resolveOptionalIdentityFromRequest } from "@/lib/device/identity"
 
 const ListDocumentsSchema = z.object({
   collection: z.string().optional(),
@@ -18,11 +18,15 @@ const ListDocumentsSchema = z.object({
 
 async function handler(request: NextRequest) {
   const session = await auth()
-  if (!session?.user?.id) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-  }
+  const identity = await resolveOptionalIdentityFromRequest(request, session?.user?.id ?? null)
 
-  const user = await requireUser()
+  if (!identity) {
+    return NextResponse.json({
+      items: [],
+      nextCursor: null,
+      hasMore: false,
+    })
+  }
 
   const { searchParams } = new URL(request.url)
   const params = ListDocumentsSchema.parse({
@@ -35,7 +39,7 @@ async function handler(request: NextRequest) {
   })
 
   const where: Prisma.DocumentWhereInput = {
-    userId: user.id,
+    userId: identity.userId,
     deletedAt: null,
   }
 

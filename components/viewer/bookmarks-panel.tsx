@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState } from "react"
 import { Bookmark, Trash2, Pencil, Check, X, Plus } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 
@@ -125,7 +125,7 @@ export function BookmarksPanel({ documentId }: BookmarksPanelProps) {
                   <>
                     <button
                       type="button"
-                      className="flex flex-1 cursor-pointer flex-col text-left hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      className="flex flex-1 cursor-pointer flex-col text-left hover:opacity-80 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none"
                       onClick={() => setPage(bm.pageNumber)}
                       onDoubleClick={() => handleStartEdit(bm.id, bm.label)}
                       aria-label={`Go to bookmark on page ${bm.pageNumber}`}
@@ -160,7 +160,7 @@ export function BookmarksPanel({ documentId }: BookmarksPanelProps) {
                         className={cn(
                           "size-6",
                           confirmDeleteId === bm.id &&
-                            "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            "text-destructive-foreground bg-destructive hover:bg-destructive/90"
                         )}
                         onClick={() => handleDelete(bm.id)}
                         aria-label={

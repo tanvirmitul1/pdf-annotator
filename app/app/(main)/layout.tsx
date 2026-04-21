@@ -12,6 +12,8 @@ export default async function AppLayout({
     <ProtectedShell
       name={session.user.name ?? "Reader"}
       email={session.user.email ?? "signed-in user"}
+      image={session.user.image ?? null}
+      planId={session.user.planId}
     >
       {children}
     </ProtectedShell>

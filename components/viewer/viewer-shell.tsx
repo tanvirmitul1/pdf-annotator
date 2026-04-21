@@ -17,7 +17,6 @@ import { SearchBar } from "./search-bar"
 import { ShortcutsOverlay } from "./shortcuts-overlay"
 import { OfflineBanner } from "./offline-banner"
 import { ViewerSkeleton } from "./viewer-skeleton"
-import { cn } from "@/lib/utils"
 
 type PdfjsModule = typeof import("pdfjs-dist")
 
@@ -31,11 +30,13 @@ async function getPdfjsModule(): Promise<PdfjsModule> {
     // incorrectly, producing "Object.defineProperty called on non-object" at render time.
     // Loading from /public as a plain browser ESM module avoids the transpilation entirely.
     // @ts-expect-error — URL path import, not resolvable by TS; types come from PdfjsModule cast below
-    pdfjsModulePromise = import(/* webpackIgnore: true */ "/pdf.min.mjs").then((mod) => {
-      const pdfjs = mod as unknown as PdfjsModule
-      pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs"
-      return pdfjs
-    })
+    pdfjsModulePromise = import(/* webpackIgnore: true */ "/pdf.min.mjs").then(
+      (mod) => {
+        const pdfjs = mod as unknown as PdfjsModule
+        pdfjs.GlobalWorkerOptions.workerSrc = "/pdf.worker.min.mjs"
+        return pdfjs
+      }
+    )
   }
   return pdfjsModulePromise
 }
@@ -77,9 +78,6 @@ function ViewerShellInner({
   const setZoom = useViewer((s) => s.setZoom)
   const setPage = useViewer((s) => s.setPage)
   const setTotalPages = useViewer((s) => s.setTotalPages)
-  const rotation = useViewer((s) => s.rotation)
-  const setRotation = useViewer((s) => s.setRotation)
-  const toggleSidebar = useViewer((s) => s.toggleSidebar)
   const openSidebar = useViewer((s) => s.openSidebar)
   const openSearch = useViewer((s) => s.openSearch)
   const closeSearch = useViewer((s) => s.closeSearch)
@@ -290,12 +288,12 @@ function ViewerShellInner({
   if (isLoading || !pdfDocument) {
     const status = data?.document?.status
     return (
-      <div className="flex h-full flex-col">
+      <div className="flex h-full flex-col rounded-[2rem] border border-border/60 bg-card/55 shadow-[0_28px_80px_-55px_rgba(15,23,42,0.65)]">
         {loadError ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-4">
+          <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8">
             <p className="text-destructive">{loadError}</p>
             <button
-              className="text-sm underline"
+              className="rounded-full border border-border/70 px-4 py-2 text-sm underline-offset-4 hover:bg-accent/50"
               onClick={() => window.location.reload()}
             >
               Retry
@@ -319,7 +317,7 @@ function ViewerShellInner({
   const downloadUrl: string | null = null // fetched on demand via toolbar
 
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full flex-col overflow-hidden rounded-[2rem] border border-border/60 bg-card/55 shadow-[0_28px_80px_-55px_rgba(15,23,42,0.65)]">
       <OfflineBanner />
 
       <Toolbar
@@ -329,9 +327,9 @@ function ViewerShellInner({
       />
 
       {/* Reading progress bar */}
-      <div className="relative h-0.5 w-full bg-muted">
+      <div className="relative h-0.5 w-full bg-muted/80">
         <div
-          className="absolute left-0 top-0 h-full bg-primary transition-all duration-300"
+          className="absolute top-0 left-0 h-full bg-primary transition-all duration-300"
           style={{
             width: `${totalPages > 0 ? ((currentPage - 1) / (totalPages - 1)) * 100 : 0}%`,
           }}
@@ -370,12 +368,16 @@ function ViewerShellInner({
       </div>
 
       {/* Bottom status bar */}
-      <div className="flex h-6 shrink-0 items-center justify-end gap-3 border-t border-border bg-card px-4 text-xs text-muted-foreground">
+      <div className="flex h-8 shrink-0 items-center justify-end gap-3 border-t border-border/70 bg-card/75 px-4 text-xs text-muted-foreground backdrop-blur-xl">
         <span>
           Page {currentPage} of {totalPages || "—"}
           {totalPages > 0 && (
             <span className="ml-1 text-muted-foreground/70">
-              ({Math.round(((currentPage - 1) / Math.max(totalPages - 1, 1)) * 100)}%)
+              (
+              {Math.round(
+                ((currentPage - 1) / Math.max(totalPages - 1, 1)) * 100
+              )}
+              %)
             </span>
           )}
         </span>

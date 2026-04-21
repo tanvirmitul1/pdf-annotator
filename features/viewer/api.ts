@@ -1,5 +1,5 @@
 import { api } from "@/store/api"
-import type { Bookmark, DocumentOutline, ReadingProgress } from "@prisma/client"
+import type { Bookmark, ReadingProgress } from "@prisma/client"
 
 export interface DocumentOutlineEntry {
   title: string
@@ -73,5 +73,7 @@ export const viewerApi = api.injectEndpoints({
   }),
 })
 
-export const { useGetDocumentViewerDataQuery, useUpdateReadingProgressMutation } =
-  viewerApi
+export const {
+  useGetDocumentViewerDataQuery,
+  useUpdateReadingProgressMutation,
+} = viewerApi

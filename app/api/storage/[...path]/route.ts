@@ -26,23 +26,23 @@ async function getHandler(
         return NextResponse.json({ error: "Invalid storage key" }, { status: 400 })
     }
 
-    const [pathUserId, documentId, ...rest] = path
+    const [_pathUserId, documentId, ...rest] = path
     const user = await requireUser()
-
-    if (user.id !== pathUserId) {
-        return NextResponse.json({ error: "Not found" }, { status: 404 })
-    }
 
     const document = await prisma.document.findFirst({
         where: { id: documentId, userId: user.id, deletedAt: null },
-        select: { name: true },
+        select: { name: true, storageKey: true, thumbnailKey: true },
     })
 
     if (!document) {
         return NextResponse.json({ error: "Not found" }, { status: 404 })
     }
 
-    const storageKey = [pathUserId, documentId, ...rest].join("/")
+    const storageKey = path.join("/")
+    const expectedKeys = [document.storageKey, document.thumbnailKey].filter(Boolean)
+    if (!expectedKeys.includes(storageKey)) {
+        return NextResponse.json({ error: "Not found" }, { status: 404 })
+    }
     const storage = createStorageAdapter()
 
     let nodeStream: Readable

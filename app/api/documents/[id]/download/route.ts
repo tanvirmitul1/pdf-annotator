@@ -25,6 +25,11 @@ async function handler(request: NextRequest, { params }: { params: Promise<{ id:
       userId: user.id,
       deletedAt: null,
     },
+    select: {
+      id: true,
+      storageKey: true,
+      thumbnailKey: true,
+    },
   })
 
   if (!document) {
@@ -32,7 +37,10 @@ async function handler(request: NextRequest, { params }: { params: Promise<{ id:
   }
 
   const storage = createStorageAdapter()
-  const key = `${user.id}/${id}/${flavor === "original" ? "original" : "thumb.webp"}`
+  const key = flavor === "original" ? document.storageKey : document.thumbnailKey
+  if (!key) {
+    return NextResponse.json({ error: "Document asset not available" }, { status: 404 })
+  }
   const signedUrl = await storage.getSignedUrl(key, 15 * 60) // 15 minutes
 
   await logAudit({
