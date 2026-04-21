@@ -11,6 +11,7 @@ export interface Document {
   lastOpenedAt: string | null
   deletedAt?: string | null
   status: string
+  processingProgress: number
 }
 
 export interface ListDocumentsResponse {

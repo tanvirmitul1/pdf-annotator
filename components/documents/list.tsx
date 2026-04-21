@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import Link from "next/link"
 import { formatDistanceToNow } from "date-fns"
 import { Download, Edit2, Trash2, RotateCcw, FileText, Check, X } from "lucide-react"
@@ -9,6 +9,7 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Progress } from "@/components/ui/progress"
 import {
   Tooltip,
   TooltipContent,
@@ -132,6 +133,16 @@ export function DocumentList({ showDeleted = false }: DocumentListProps) {
     sort: "lastOpenedAt",
     limit: 20,
   })
+
+  // Poll every 5s while any document is still processing
+  const hasProcessing = useMemo(
+    () => data?.items?.some((doc) => doc.status === "PROCESSING") ?? false,
+    [data?.items],
+  )
+  useListDocumentsQuery(
+    { search, sort: "lastOpenedAt", limit: 20 },
+    { pollingInterval: hasProcessing ? 5000 : 0 },
+  )
   const [deleteDocument] = useDeleteDocumentMutation()
   const [restoreDocument] = useRestoreDocumentMutation()
 
@@ -258,9 +269,12 @@ export function DocumentList({ showDeleted = false }: DocumentListProps) {
                     {(doc.fileSize / 1024 / 1024).toFixed(1)} MB
                   </Badge>
                   {doc.status === "PROCESSING" && (
-                    <Badge variant="secondary" className="text-xs">
-                      Processing…
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Progress value={doc.processingProgress ?? 0} className="h-2 w-24" />
+                      <span className="text-xs text-muted-foreground">
+                        {doc.processingProgress ?? 0}%
+                      </span>
+                    </div>
                   )}
                   {doc.status === "FAILED" && (
                     <Badge variant="destructive" className="text-xs">
