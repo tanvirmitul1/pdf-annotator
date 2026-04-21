@@ -88,35 +88,27 @@ async function processPdf(document: PdfDocumentRecord, storage: StorageAdapter) 
   // Generate thumbnail from first page at reduced scale for speed
   const thumbnailKey = await generatePdfThumbnail(pdf, document, storage)
 
-  // Extract text with batched concurrency
-  const textEntries = await extractTextBatched(pdf, document.id, numPages)
+  // Extract text (batched) and outline concurrently
+  const [textEntries, outlineEntries] = await Promise.all([
+    extractTextBatched(pdf, document.id, numPages),
+    pdf.getOutline().then((outline) =>
+      outline ? extractOutline(outline as unknown as OutlineItem[]) : []
+    ),
+  ])
 
-  await prisma.documentText.createMany({
-    data: textEntries,
-    skipDuplicates: true,
-  })
-
-  // Extract outline
-  const outline = await pdf.getOutline()
-  const outlineEntries = outline ? extractOutline(outline as unknown as OutlineItem[]) : []
-
-  await prisma.documentOutline.upsert({
-    where: { documentId: document.id },
-    update: { entries: outlineEntries },
-    create: {
-      documentId: document.id,
-      entries: outlineEntries,
-    },
-  })
-
-  // Update document metadata
-  await prisma.document.update({
-    where: { id: document.id },
-    data: {
-      pageCount: numPages,
-      thumbnailKey,
-    },
-  })
+  // Single transaction for all DB writes
+  await prisma.$transaction([
+    prisma.documentText.createMany({ data: textEntries, skipDuplicates: true }),
+    prisma.documentOutline.upsert({
+      where: { documentId: document.id },
+      update: { entries: outlineEntries },
+      create: { documentId: document.id, entries: outlineEntries },
+    }),
+    prisma.document.update({
+      where: { id: document.id },
+      data: { pageCount: numPages, thumbnailKey },
+    }),
+  ])
 }
 
 async function extractTextBatched(
