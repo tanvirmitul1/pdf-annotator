@@ -16,17 +16,22 @@ export class LocalDiskAdapter implements StorageAdapter {
     this.basePath = basePath
   }
 
-  async upload(userId: string, docId: string, stream: Readable): Promise<{ key: string; size: number }> {
+  async upload(
+    userId: string,
+    docId: string,
+    stream: Readable,
+    _contentType: string,
+    filename: string
+  ): Promise<{ key: string; size: number }> {
     const fs = await import("fs")
     const path = await import("path")
 
-    const userDir = path.join(this.basePath, userId)
-    const docDir = path.join(userDir, docId)
-    const originalPath = path.join(docDir, "original")
+    const docDir = path.join(this.basePath, userId, docId)
+    const filePath = path.join(docDir, filename)
 
     await fs.promises.mkdir(docDir, { recursive: true })
 
-    const writeStream = fs.createWriteStream(originalPath)
+    const writeStream = fs.createWriteStream(filePath)
     let size = 0
 
     return new Promise((resolve, reject) => {
@@ -36,7 +41,7 @@ export class LocalDiskAdapter implements StorageAdapter {
 
       stream.pipe(writeStream)
         .on("finish", () => {
-          const key = `${userId}/${docId}/original`
+          const key = `${userId}/${docId}/${filename}`
           resolve({ key, size })
         })
         .on("error", reject)
@@ -63,9 +68,9 @@ export class LocalDiskAdapter implements StorageAdapter {
     }
   }
 
-  async getSignedUrl(): Promise<string> {
-    // For local development, return a local URL
-    return this.getPublicUrl("")
+  async getSignedUrl(key: string, _expiresIn: number): Promise<string> {
+    // For local development, return a local URL for the requested key
+    return this.getPublicUrl(key)
   }
 
   getPublicUrl(key: string): string {
@@ -93,11 +98,17 @@ export class S3Adapter implements StorageAdapter {
     this.bucket = bucket
   }
 
-  async upload(userId: string, docId: string, stream: Readable): Promise<{ key: string; size: number }> {
+  async upload(
+    userId: string,
+    docId: string,
+    stream: Readable,
+    _contentType: string,
+    filename: string
+  ): Promise<{ key: string; size: number }> {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { Upload } = require("@aws-sdk/lib-storage")
 
-    const key = `${userId}/${docId}/original`
+    const key = `${userId}/${docId}/${filename}`
     const upload = new Upload({
       client: this.s3,
       params: {

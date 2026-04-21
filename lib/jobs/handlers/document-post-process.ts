@@ -2,12 +2,21 @@ import type { Document } from "@prisma/client"
 import type { StorageAdapter } from "@/lib/storage"
 import { prisma } from "@/lib/db/prisma"
 import { createStorageAdapter } from "@/lib/storage"
-import * as pdfjs from "pdfjs-dist"
+import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs"
 import sharp from "sharp"
 import { Readable } from "stream"
 
-// Configure PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.min.js`
+// Configure PDF.js worker for Node.js using local file:// URIs.
+// import.meta.resolve() is used instead of createRequire().resolve() because
+// the worker is an ESM .mjs package that webpack cannot handle with CJS require.
+// This code only runs inside the BullMQ worker process (never bundled by Next.js).
+const _workerUrl = import.meta.resolve("pdfjs-dist/legacy/build/pdf.worker.mjs")
+pdfjs.GlobalWorkerOptions.workerSrc = _workerUrl
+
+// Resolve local asset base URL so pdf.js can load fonts and WASM without warnings.
+const _pdfjsRoot = import.meta.resolve("pdfjs-dist/package.json").replace(/package\.json$/, "")
+const STANDARD_FONT_DATA_URL = _pdfjsRoot + "standard_fonts/"
+const WASM_URL = _pdfjsRoot + "wasm/"
 
 interface DocumentPostProcessPayload {
   documentId: string
@@ -23,38 +32,40 @@ export async function processDocumentPostProcess({ documentId }: DocumentPostPro
   }
 
   if (document.status === "READY") {
-    // Already processed
-    return
+    return // Already processed — idempotent
   }
 
-  if (document.status !== "PROCESSING") {
-    throw new Error(`Document ${documentId} is not in PROCESSING status`)
+  if (document.status === "FAILED") {
+    // Reset to PROCESSING so this retry attempt can proceed.
+    // The worker's `failed` event (not this handler) is responsible
+    // for the final FAILED write after all retries are exhausted.
+    await prisma.document.update({
+      where: { id: documentId },
+      data: { status: "PROCESSING" },
+    })
   }
 
   const storage = createStorageAdapter()
 
-  try {
-    const fileName = document.name.toLowerCase()
-    if (fileName.endsWith(".pdf")) {
-      await processPdf(document, storage)
-    } else if (fileName.endsWith(".png") || fileName.endsWith(".jpg") || fileName.endsWith(".jpeg") || fileName.endsWith(".webp") || fileName.endsWith(".gif")) {
-      await processImage(document, storage)
-    } else {
-      throw new Error(`Unsupported document type: ${document.name}`)
-    }
-
-    await prisma.document.update({
-      where: { id: documentId },
-      data: { status: "READY" },
-    })
-  } catch (error) {
-    console.error(`Failed to process document ${documentId}:`, error)
-    await prisma.document.update({
-      where: { id: documentId },
-      data: { status: "FAILED" },
-    })
-    throw error
+  const fileName = document.name.toLowerCase()
+  if (fileName.endsWith(".pdf")) {
+    await processPdf(document, storage)
+  } else if (
+    fileName.endsWith(".png") ||
+    fileName.endsWith(".jpg") ||
+    fileName.endsWith(".jpeg") ||
+    fileName.endsWith(".webp") ||
+    fileName.endsWith(".gif")
+  ) {
+    await processImage(document, storage)
+  } else {
+    throw new Error(`Unsupported document type: ${document.name}`)
   }
+
+  await prisma.document.update({
+    where: { id: documentId },
+    data: { status: "READY" },
+  })
 }
 
 type PdfDocumentRecord = Pick<Document, "id" | "userId" | "name" | "fileSize" | "storageKey"> 
@@ -64,25 +75,30 @@ async function processPdf(document: PdfDocumentRecord, storage: StorageAdapter) 
   const buffer = await streamToBuffer(originalStream)
 
   // Load PDF
-  const pdf = await pdfjs.getDocument({ data: buffer }).promise
+  const pdf = await pdfjs.getDocument({
+    data: new Uint8Array(buffer),
+    standardFontDataUrl: STANDARD_FONT_DATA_URL,
+    wasmUrl: WASM_URL,
+  }).promise
   const numPages = pdf.numPages
 
   // Generate thumbnail from first page
   const page = await pdf.getPage(1)
   const viewport = page.getViewport({ scale: 1.0 })
-  const canvasModule = await import("canvas")
-  const canvas = new canvasModule.Canvas(viewport.width, viewport.height)
-  const context = canvas.getContext("2d") as unknown
+  const { createCanvas } = await import("@napi-rs/canvas")
+  const canvas = createCanvas(viewport.width, viewport.height)
+  const context = canvas.getContext("2d")
 
+  // @napi-rs/canvas is not typed as HTMLCanvasElement but is API-compatible
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   await page.render({ canvas: canvas as any, canvasContext: context as any, viewport }).promise
 
-  const thumbnailBuffer = await sharp(canvas.toBuffer("image/png"))
+  const thumbnailBuffer = await sharp(await canvas.encode("png"))
     .resize(400, 520, { fit: "inside" })
     .webp()
     .toBuffer()
 
-  await storage.upload(
+  const { key: thumbnailKey } = await storage.upload(
     document.userId,
     document.id,
     Readable.from(thumbnailBuffer),
@@ -129,6 +145,7 @@ async function processPdf(document: PdfDocumentRecord, storage: StorageAdapter) 
     where: { id: document.id },
     data: {
       pageCount: numPages,
+      thumbnailKey,
     },
   })
 }
@@ -143,7 +160,7 @@ async function processImage(document: PdfDocumentRecord, storage: StorageAdapter
     .webp()
     .toBuffer()
 
-  await storage.upload(
+  const { key: thumbnailKey } = await storage.upload(
     document.userId,
     document.id,
     Readable.from(thumbnailBuffer),
@@ -154,7 +171,7 @@ async function processImage(document: PdfDocumentRecord, storage: StorageAdapter
   // For images, set pageCount to 1
   await prisma.document.update({
     where: { id: document.id },
-    data: { pageCount: 1 },
+    data: { pageCount: 1, thumbnailKey },
   })
 }
 
