@@ -1,4 +1,5 @@
 import posthog from "posthog-js"
+import type { AnalyticsEvent } from "./events"
 
 let initialized = false
 
@@ -17,4 +18,12 @@ export function initPostHogClient() {
   })
 
   initialized = true
+}
+
+export function track<E extends AnalyticsEvent["name"]>(
+  name: E,
+  props: Extract<AnalyticsEvent, { name: E }>["props"]
+) {
+  if (typeof window === "undefined") return
+  posthog.capture(name, props)
 }

@@ -66,6 +66,64 @@ Append-only log. Don't edit old entries; add new ones that supersede.
 
 <!-- New entries: append here, never rewrite above -->
 
+### 2026-04-20 — Phase 3: zustand for viewer ephemeral state
+
+**Context:** STATE.md specifies Zustand for ephemeral per-viewer state (zoom, page, search, sidebar). It was not yet installed.
+
+**Decision:** Add zustand — required by the architecture doc as the ephemeral state layer.
+
+**Alternatives considered:** none; explicitly required by STATE.md.
+
+**Consequences:** fourth state lib entry-point; all viewer-local state uses the ViewerProvider pattern so it's isolated and GC-able.
+
+---
+
+### 2026-04-20 — Phase 3: pdfjs-dist directly over react-pdf
+
+**Context:** Phase 3 requires a virtualized PDF viewer. react-pdf is a popular React wrapper around pdfjs-dist.
+
+**Decision:** Use pdfjs-dist directly (already installed). react-pdf would add a new dependency without meaningfully reducing code; direct usage gives us full control over canvas rendering, viewport computation, and task cancellation.
+
+**Alternatives considered:** react-pdf — adds ~50KB for a thin wrapper we'd fight against to get page-by-page control; react-pdf/pdfjs version coupling causes build issues with Next.js 15 App Router.
+
+**Consequences:** we manage the render/cancel lifecycle ourselves; this is ~50 lines of boilerplate in PdfCanvas.
+
+---
+
+### 2026-04-20 — Phase 3: @tanstack/react-virtual for page virtualization
+
+**Context:** A 200-page PDF with variable-height pages needs virtualization. react-window lacks first-class variable-size support without measurement hacks.
+
+**Decision:** @tanstack/react-virtual v3 — native variable-size support, zero dependencies, tree-shakeable.
+
+**Alternatives considered:** react-window — stable but requires VariableSizeList with manual height tracking; no built-in gap support.
+
+**Consequences:** new dependency (~8KB gzipped); virtualizer's dynamic measurement handles mixed-page PDFs correctly.
+
+---
+
+### 2026-04-20 — Phase 3: framer-motion for viewer transitions
+
+**Context:** FRONTEND.md names framer-motion as the animation library. Phase 3 needs slide-in search bar.
+
+**Decision:** framer-motion — required by the design system spec in FRONTEND.md.
+
+**Alternatives considered:** CSS-only transitions — no runtime overhead but can't achieve the motion spec reliably in all browsers for complex enter/exit states.
+
+**Consequences:** ~30KB gzipped; use sparingly (search bar slide, panel transitions only).
+
+---
+
+### 2026-04-20 — Phase 3: (viewer) route group for full-screen layout
+
+**Context:** The existing (main) route group wraps every page in ProtectedShell which constrains max-width to max-w-6xl. A PDF viewer needs the full viewport.
+
+**Decision:** Add an app/(viewer) route group with its own layout that provides auth (requireAppUser) but renders children full-screen without the constrained max-width shell.
+
+**Alternatives considered:** Negative margins to break out of (main) shell — fragile and produces horizontal scroll; separate /view subdomain — scope creep.
+
+**Consequences:** two authenticated route groups; both call requireAppUser so auth is equally enforced.
+
 ### 2026-04-20 â€” Trust-layer dependencies for settings and email
 
 **Context:** Phase 1.5 needs forms, validation, transactional email rendering, consent-aware analytics plumbing, and a real test harness before document features exist.
