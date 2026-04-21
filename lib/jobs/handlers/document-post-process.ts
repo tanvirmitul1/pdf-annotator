@@ -68,7 +68,10 @@ export async function processDocumentPostProcess({ documentId }: DocumentPostPro
   })
 }
 
-type PdfDocumentRecord = Pick<Document, "id" | "userId" | "name" | "fileSize" | "storageKey"> 
+type PdfDocumentRecord = Pick<Document, "id" | "userId" | "name" | "fileSize" | "storageKey">
+
+/** Process pages in parallel batches to avoid overwhelming memory. */
+const PAGE_CONCURRENCY = 5
 
 async function processPdf(document: PdfDocumentRecord, storage: StorageAdapter) {
   const originalStream = await storage.get(`${document.userId}/${document.id}/original`)
@@ -85,21 +88,8 @@ async function processPdf(document: PdfDocumentRecord, storage: StorageAdapter) 
   // Generate thumbnail from first page at reduced scale for speed
   const thumbnailKey = await generatePdfThumbnail(pdf, document, storage)
 
-  // Extract text per page
-  const textEntries: Array<{ documentId: string; pageNumber: number; text: string }> = []
-  for (let pageNum = 1; pageNum <= numPages; pageNum++) {
-    const page = await pdf.getPage(pageNum)
-    const textContent = await page.getTextContent()
-    const text = textContent.items
-      .map((item) => ((item as { str?: string }).str ?? ""))
-      .join(" ")
-
-    textEntries.push({
-      documentId: document.id,
-      pageNumber: pageNum,
-      text,
-    })
-  }
+  // Extract text with batched concurrency
+  const textEntries = await extractTextBatched(pdf, document.id, numPages)
 
   await prisma.documentText.createMany({
     data: textEntries,
@@ -127,6 +117,33 @@ async function processPdf(document: PdfDocumentRecord, storage: StorageAdapter) 
       thumbnailKey,
     },
   })
+}
+
+async function extractTextBatched(
+  pdf: pdfjs.PDFDocumentProxy,
+  documentId: string,
+  numPages: number,
+): Promise<Array<{ documentId: string; pageNumber: number; text: string }>> {
+  const results: Array<{ documentId: string; pageNumber: number; text: string }> = []
+
+  for (let start = 1; start <= numPages; start += PAGE_CONCURRENCY) {
+    const end = Math.min(start + PAGE_CONCURRENCY - 1, numPages)
+    const batch = Array.from({ length: end - start + 1 }, (_, i) => start + i)
+
+    const batchResults = await Promise.all(
+      batch.map(async (pageNum) => {
+        const page = await pdf.getPage(pageNum)
+        const textContent = await page.getTextContent()
+        const text = textContent.items
+          .map((item) => ((item as { str?: string }).str ?? ""))
+          .join(" ")
+        return { documentId, pageNumber: pageNum, text }
+      }),
+    )
+    results.push(...batchResults)
+  }
+
+  return results
 }
 
 async function generatePdfThumbnail(
