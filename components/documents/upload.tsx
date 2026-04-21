@@ -35,7 +35,9 @@ export function DocumentUpload({ onUploadSuccess }: DocumentUploadProps) {
         } catch (error: unknown) {
           const apiError = error as ApiError
           const message =
-            typeof error === "object" && error !== null && "data" in error &&
+            typeof error === "object" &&
+            error !== null &&
+            "data" in error &&
             typeof apiError.data?.error === "string"
               ? apiError.data.error
               : "An error occurred while uploading."
@@ -60,7 +62,7 @@ export function DocumentUpload({ onUploadSuccess }: DocumentUploadProps) {
   })
 
   return (
-    <Card className="border-dashed border-2 hover:border-primary/50 transition-colors">
+    <Card className="border-2 border-dashed transition-colors hover:border-primary/50">
       <CardContent className="p-8">
         <div
           {...getRootProps()}
@@ -83,7 +85,7 @@ export function DocumentUpload({ onUploadSuccess }: DocumentUploadProps) {
               </p>
             </div>
             <Button variant="outline" disabled={isLoading}>
-              <Upload className="h-4 w-4 mr-2" />
+              <Upload className="mr-2 h-4 w-4" />
               {isLoading ? "Uploading..." : "Select Files"}
             </Button>
           </div>

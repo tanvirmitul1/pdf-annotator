@@ -8,7 +8,11 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { useListDocumentsQuery, useDeleteDocumentMutation, useRestoreDocumentMutation } from "@/features/documents/api"
+import {
+  useListDocumentsQuery,
+  useDeleteDocumentMutation,
+  useRestoreDocumentMutation,
+} from "@/features/documents/api"
 import { toast } from "sonner"
 
 interface DocumentListProps {
@@ -17,7 +21,11 @@ interface DocumentListProps {
 
 export function DocumentList({ showDeleted = false }: DocumentListProps) {
   const [search, setSearch] = useState("")
-  const { data, isLoading } = useListDocumentsQuery({ search, sort: "lastOpenedAt", limit: 20 })
+  const { data, isLoading } = useListDocumentsQuery({
+    search,
+    sort: "lastOpenedAt",
+    limit: 20,
+  })
   const [deleteDocument] = useDeleteDocumentMutation()
   const [restoreDocument] = useRestoreDocumentMutation()
 
@@ -32,7 +40,8 @@ export function DocumentList({ showDeleted = false }: DocumentListProps) {
     } catch (error: unknown) {
       const apiError = error as ApiError
       const message =
-        typeof error === "object" && error !== null &&
+        typeof error === "object" &&
+        error !== null &&
         "data" in error &&
         typeof apiError.data?.error === "string"
           ? apiError.data.error
@@ -53,7 +62,8 @@ export function DocumentList({ showDeleted = false }: DocumentListProps) {
     } catch (error: unknown) {
       const apiError = error as ApiError
       const message =
-        typeof error === "object" && error !== null &&
+        typeof error === "object" &&
+        error !== null &&
         "data" in error &&
         typeof apiError.data?.error === "string"
           ? apiError.data.error
@@ -69,7 +79,7 @@ export function DocumentList({ showDeleted = false }: DocumentListProps) {
     return <div>Loading...</div>
   }
 
-  const documents = (data?.items ?? []).filter(doc =>
+  const documents = (data?.items ?? []).filter((doc) =>
     showDeleted ? doc.deletedAt : !doc.deletedAt
   )
 
@@ -93,18 +103,24 @@ export function DocumentList({ showDeleted = false }: DocumentListProps) {
                     <img
                       src={doc.thumbnailKey}
                       alt={doc.name}
-                      className="w-12 h-12 object-cover rounded"
+                      className="h-12 w-12 rounded object-cover"
                     />
                   )}
                   <div>
                     <h3 className="font-medium">{doc.name}</h3>
                     <p className="text-sm text-muted-foreground">
                       {doc.lastOpenedAt
-                        ? formatDistanceToNow(new Date(doc.lastOpenedAt), { addSuffix: true })
-                        : formatDistanceToNow(new Date(doc.createdAt), { addSuffix: true })}
+                        ? formatDistanceToNow(new Date(doc.lastOpenedAt), {
+                            addSuffix: true,
+                          })
+                        : formatDistanceToNow(new Date(doc.createdAt), {
+                            addSuffix: true,
+                          })}
                     </p>
-                    <div className="flex gap-2 mt-1">
-                      <Badge variant="outline">{(doc.fileSize / 1024 / 1024).toFixed(2)} MB</Badge>
+                    <div className="mt-1 flex gap-2">
+                      <Badge variant="outline">
+                        {(doc.fileSize / 1024 / 1024).toFixed(2)} MB
+                      </Badge>
                     </div>
                   </div>
                 </div>
@@ -141,7 +157,7 @@ export function DocumentList({ showDeleted = false }: DocumentListProps) {
       </div>
 
       {documents.length === 0 && (
-        <div className="text-center py-8 text-muted-foreground">
+        <div className="py-8 text-center text-muted-foreground">
           {showDeleted ? "No deleted documents" : "No documents found"}
         </div>
       )}
