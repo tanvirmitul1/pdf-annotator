@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react"
 import Link from "next/link"
 import { formatDistanceToNow } from "date-fns"
-import { Download, Edit2, Trash2, RotateCcw, FileText, Check, X } from "lucide-react"
+import { Download, Edit2, Trash2, RotateCcw, RefreshCw, FileText, Check, X } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -22,6 +22,7 @@ import {
   useRestoreDocumentMutation,
   useRenameDocumentMutation,
   useDownloadDocumentQuery,
+  useReprocessDocumentMutation,
 } from "@/features/documents/api"
 import { cn } from "@/lib/utils"
 
@@ -145,6 +146,7 @@ export function DocumentList({ showDeleted = false }: DocumentListProps) {
   )
   const [deleteDocument] = useDeleteDocumentMutation()
   const [restoreDocument] = useRestoreDocumentMutation()
+  const [reprocessDocument] = useReprocessDocumentMutation()
 
   type ApiError = { data?: { error?: string } }
 
@@ -176,6 +178,21 @@ export function DocumentList({ showDeleted = false }: DocumentListProps) {
     } catch (error: unknown) {
       const apiError = error as ApiError
       toast.error("Restore failed", {
+        description:
+          typeof apiError.data?.error === "string"
+            ? apiError.data.error
+            : "Something went wrong.",
+      })
+    }
+  }
+
+  const handleReprocess = async (id: string) => {
+    try {
+      await reprocessDocument(id).unwrap()
+      toast("Reprocessing started", { description: "The document will be processed again." })
+    } catch (error: unknown) {
+      const apiError = error as ApiError
+      toast.error("Reprocess failed", {
         description:
           typeof apiError.data?.error === "string"
             ? apiError.data.error
@@ -277,9 +294,21 @@ export function DocumentList({ showDeleted = false }: DocumentListProps) {
                     </div>
                   )}
                   {doc.status === "FAILED" && (
-                    <Badge variant="destructive" className="text-xs">
-                      Processing failed
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="destructive" className="text-xs">
+                        Processing failed
+                      </Badge>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-5 gap-1 px-1.5 text-xs"
+                        onClick={(e) => { e.preventDefault(); void handleReprocess(doc.id) }}
+                        aria-label="Retry processing"
+                      >
+                        <RefreshCw className="size-3" />
+                        Retry
+                      </Button>
+                    </div>
                   )}
                 </div>
               </div>

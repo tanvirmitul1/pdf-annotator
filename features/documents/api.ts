@@ -83,6 +83,14 @@ const documentsApi = api.injectEndpoints({
         params: { flavor },
       }),
     }),
+
+    reprocessDocument: builder.mutation<void, string>({
+      query: (id) => ({
+        url: `/documents/${id}/reprocess`,
+        method: "POST",
+      }),
+      invalidatesTags: ["Document"],
+    }),
   }),
 })
 
@@ -94,4 +102,5 @@ export const {
   useDeleteDocumentMutation,
   useRestoreDocumentMutation,
   useDownloadDocumentQuery,
+  useReprocessDocumentMutation,
 } = documentsApi
