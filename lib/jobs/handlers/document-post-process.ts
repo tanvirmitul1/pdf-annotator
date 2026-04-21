@@ -74,8 +74,10 @@ type PdfDocumentRecord = Pick<Document, "id" | "userId" | "name" | "fileSize" | 
 const PAGE_CONCURRENCY = 5
 
 async function processPdf(document: PdfDocumentRecord, storage: StorageAdapter) {
+  const t0 = Date.now()
   const originalStream = await storage.get(`${document.userId}/${document.id}/original`)
   const buffer = await streamToBuffer(originalStream)
+  console.log(`[${document.id}] Downloaded original in ${Date.now() - t0}ms`)
 
   // Load PDF
   const pdf = await pdfjs.getDocument({
@@ -84,19 +86,25 @@ async function processPdf(document: PdfDocumentRecord, storage: StorageAdapter) 
     wasmUrl: WASM_URL,
   }).promise
   const numPages = pdf.numPages
+  console.log(`[${document.id}] Loaded PDF: ${numPages} pages`)
 
   // Generate thumbnail from first page at reduced scale for speed
+  const tThumb = Date.now()
   const thumbnailKey = await generatePdfThumbnail(pdf, document, storage)
+  console.log(`[${document.id}] Thumbnail generated in ${Date.now() - tThumb}ms`)
 
   // Extract text (batched) and outline concurrently
+  const tExtract = Date.now()
   const [textEntries, outlineEntries] = await Promise.all([
     extractTextBatched(pdf, document.id, numPages),
     pdf.getOutline().then((outline) =>
       outline ? extractOutline(outline as unknown as OutlineItem[]) : []
     ),
   ])
+  console.log(`[${document.id}] Text + outline extracted in ${Date.now() - tExtract}ms`)
 
   // Single transaction for all DB writes
+  const tDb = Date.now()
   await prisma.$transaction([
     prisma.documentText.createMany({ data: textEntries, skipDuplicates: true }),
     prisma.documentOutline.upsert({
@@ -109,6 +117,7 @@ async function processPdf(document: PdfDocumentRecord, storage: StorageAdapter) 
       data: { pageCount: numPages, thumbnailKey },
     }),
   ])
+  console.log(`[${document.id}] DB writes in ${Date.now() - tDb}ms (total: ${Date.now() - t0}ms)`)
 }
 
 async function extractTextBatched(
