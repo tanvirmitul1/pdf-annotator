@@ -20,5 +20,12 @@ export function documentsFor(userId: string) {
           userId: true,
         },
       }),
+    exists: (id: string) =>
+      prisma.document.findFirst({
+        where: { id, userId, deletedAt: null },
+        select: {
+          id: true,
+        },
+      }),
   }
 }
