@@ -16,6 +16,19 @@ const MIME_TYPES: Record<string, string> = {
     ".gif": "image/gif",
 }
 
+function buildContentDispositionFilename(documentId: string, filename: string, isThumbnail: boolean) {
+    const rawName = isThumbnail ? `${documentId}-thumbnail.webp` : filename
+    const asciiFallback = rawName
+        .normalize("NFKD")
+        .replace(/[^\x20-\x7E]+/g, "-")
+        .replace(/["\\]/g, "")
+        .replace(/\s+/g, " ")
+        .trim() || `${documentId}${isThumbnail ? "-thumbnail.webp" : ""}`
+
+    const encodedName = encodeURIComponent(rawName)
+    return `inline; filename="${asciiFallback}"; filename*=UTF-8''${encodedName}`
+}
+
 async function getHandler(
     _req: NextRequest,
     { params }: { params: Promise<{ path: string[] }> }
@@ -26,7 +39,7 @@ async function getHandler(
         return NextResponse.json({ error: "Invalid storage key" }, { status: 400 })
     }
 
-    const [_pathUserId, documentId, ...rest] = path
+    const [, documentId, ...rest] = path
     const user = await requireUser()
 
     const document = await prisma.document.findFirst({
@@ -53,7 +66,8 @@ async function getHandler(
     }
 
     const flavor = rest.join("/")
-    const extension = flavor.startsWith("thumb")
+    const isThumbnail = flavor.startsWith("thumb")
+    const extension = isThumbnail
         ? ".webp"
         : extname(document.name).toLowerCase()
 
@@ -65,8 +79,11 @@ async function getHandler(
         headers: {
             "Content-Type": contentType,
             "Cache-Control": "private, max-age=60",
-            "Content-Disposition": `inline; filename="${flavor.startsWith("thumb") ? `${documentId}-thumbnail.webp` : document.name
-                }"`,
+            "Content-Disposition": buildContentDispositionFilename(
+                documentId,
+                document.name,
+                isThumbnail
+            ),
         },
     })
 }
