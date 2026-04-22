@@ -6,17 +6,42 @@ import { AlertCircle, RefreshCw } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 
+interface TextLayerItem {
+  id: string
+  text: string
+  left: number
+  top: number
+  fontSize: number
+  scaleX: number
+  angle: number
+  fontFamily: string
+}
+
 export interface PdfCanvasProps {
   page: PDFPageProxy | null
   zoom: number
   rotation: number
-  /** If true, render actively; if false, show placeholder */
   active: boolean
-  /** Pre-computed natural width/height at zoom=1 */
   naturalWidth: number
   naturalHeight: number
   searchMatches?: Array<{ startOffset: number; endOffset: number }>
   isCurrentMatch?: boolean
+}
+
+type TransformMatrix = [number, number, number, number, number, number]
+
+function multiplyTransform(
+  left: number[],
+  right: number[]
+): TransformMatrix {
+  return [
+    left[0] * right[0] + left[2] * right[1],
+    left[1] * right[0] + left[3] * right[1],
+    left[0] * right[2] + left[2] * right[3],
+    left[1] * right[2] + left[3] * right[3],
+    left[0] * right[4] + left[2] * right[5] + left[4],
+    left[1] * right[4] + left[3] * right[5] + left[5],
+  ]
 }
 
 export function PdfCanvas({
@@ -31,7 +56,7 @@ export function PdfCanvas({
 }: PdfCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [renderError, setRenderError] = useState(false)
-  // Keep the actual RenderTask so we can await its cancellation
+  const [textItems, setTextItems] = useState<TextLayerItem[]>([])
   const renderTaskRef = useRef<RenderTask | null>(null)
 
   const scaledW = Math.round(naturalWidth * zoom)
@@ -42,19 +67,15 @@ export function PdfCanvas({
 
     let cancelled = false
     const canvas = canvasRef.current
+    const pageProxy = page
 
     async function render() {
-      // Cancel the previous task and wait for it to fully stop.
-      // pdfjs uses a WeakSet to track canvas-in-use; if we start a new
-      // render before the previous one releases the canvas from the WeakSet,
-      // the private-field WeakSet.add() call fails with
-      // "Object.defineProperty called on non-object" in bundled environments.
       if (renderTaskRef.current) {
         renderTaskRef.current.cancel()
         try {
           await renderTaskRef.current.promise
         } catch {
-          // RenderingCancelledException is expected — swallow it
+          // Ignore cancelled render passes while zoom/rotation changes.
         }
         renderTaskRef.current = null
       }
@@ -63,15 +84,14 @@ export function PdfCanvas({
 
       setRenderError(false)
 
-      if (!page) return
-      const viewport = page.getViewport({ scale: zoom, rotation })
+      const viewport = pageProxy.getViewport({ scale: zoom, rotation })
       canvas.width = viewport.width
       canvas.height = viewport.height
 
       const ctx = canvas.getContext("2d")
       if (!ctx) return
 
-      const task = page.render({
+      const task = pageProxy.render({
         canvas,
         canvasContext: ctx,
         viewport,
@@ -80,10 +100,10 @@ export function PdfCanvas({
 
       try {
         await task.promise
-      } catch (err: unknown) {
+      } catch (error: unknown) {
         if (
           !cancelled &&
-          (err as { name?: string })?.name !== "RenderingCancelledException"
+          (error as { name?: string })?.name !== "RenderingCancelledException"
         ) {
           setRenderError(true)
         }
@@ -99,13 +119,71 @@ export function PdfCanvas({
         renderTaskRef.current = null
       }
     }
-  }, [page, zoom, rotation, active])
+  }, [active, page, rotation, zoom])
 
-  // Clear canvas when page leaves the virtual window
+  useEffect(() => {
+    if (!active || !page) {
+      setTextItems([])
+      return
+    }
+
+    let cancelled = false
+    const pageProxy = page
+
+    async function loadTextLayer() {
+      const viewport = pageProxy.getViewport({ scale: zoom, rotation })
+      const textContent = await pageProxy.getTextContent()
+      const styles = textContent.styles as Record<
+        string,
+        { ascent?: number; fontFamily?: string; vertical?: boolean }
+      >
+
+      const nextItems: TextLayerItem[] = textContent.items.flatMap((item, index) => {
+        if (!("str" in item)) {
+          return []
+        }
+
+        const tx = multiplyTransform(
+          viewport.transform as TransformMatrix,
+          item.transform as TransformMatrix
+        )
+
+        const style = styles[item.fontName] ?? {}
+        const angle = style.vertical ? Math.PI / 2 : Math.atan2(tx[1], tx[0])
+        const fontHeight = Math.hypot(tx[2], tx[3])
+        const fontAscent = (style.ascent ?? 0.8) * fontHeight
+        const fontWidth = Math.hypot(tx[0], tx[1])
+
+        return [
+          {
+            id: `${pageProxy.pageNumber}-${index}`,
+            text: item.str,
+            left: tx[4],
+            top: tx[5] - fontAscent,
+            fontSize: Math.max(fontHeight, 1),
+            scaleX: fontWidth / Math.max(fontHeight, 1),
+            angle,
+            fontFamily: style.fontFamily ?? "sans-serif",
+          },
+        ]
+      })
+
+      if (!cancelled) {
+        setTextItems(nextItems)
+      }
+    }
+
+    void loadTextLayer()
+
+    return () => {
+      cancelled = true
+    }
+  }, [active, page, rotation, zoom])
+
   useEffect(() => {
     if (!active && canvasRef.current) {
-      const ctx = canvasRef.current.getContext("2d")
-      ctx?.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height)
+      const context = canvasRef.current.getContext("2d")
+      context?.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height)
     }
   }, [active])
 
@@ -140,20 +218,50 @@ export function PdfCanvas({
     )
   }
 
+  const pageNumberForLayer = page?.pageNumber ?? "unknown"
+
   return (
     <div style={{ width: scaledW, height: scaledH }} className="relative">
       <canvas ref={canvasRef} className="block" aria-label="PDF page" />
-      {/* Search highlight overlays */}
-      {searchMatches.length > 0 && (
+
+      <div
+        aria-hidden="true"
+        data-text-layer={pageNumberForLayer}
+        className="absolute inset-0 overflow-hidden select-text"
+      >
+        {textItems.map((item) => (
+          <span
+            key={item.id}
+            data-text-span="true"
+            data-text-content={item.text}
+            style={{
+              position: "absolute",
+              left: item.left,
+              top: item.top,
+              fontSize: item.fontSize,
+              fontFamily: item.fontFamily,
+              transform: `scaleX(${item.scaleX}) rotate(${item.angle}rad)`,
+              transformOrigin: "0 0",
+              whiteSpace: "pre",
+              color: "transparent",
+              userSelect: "text",
+              cursor: "text",
+            }}
+          >
+            {item.text}
+          </span>
+        ))}
+      </div>
+
+      {searchMatches.length > 0 ? (
         <div
           className={`pointer-events-none absolute inset-0 ${
             isCurrentMatch ? "ring-2 ring-primary" : ""
           }`}
         >
-          {/* Yellow highlight band for current match page */}
           <div className="absolute inset-x-0 top-0 h-1 bg-yellow-400/60" />
         </div>
-      )}
+      ) : null}
     </div>
   )
 }

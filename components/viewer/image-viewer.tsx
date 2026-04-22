@@ -70,11 +70,13 @@ export function ImageViewer({ documentId, documentName }: ImageViewerProps) {
       <div className="flex-1 overflow-auto bg-muted/30 p-8">
         <div className="flex min-h-full items-center justify-center">
           <div style={{ transform: `scale(${zoom})`, transformOrigin: "center", transition: "transform 0.2s" }}>
-            <img
+            <Image
               src={imageUrl}
               alt={documentName}
-              className="max-w-full rounded-lg shadow-lg"
-              style={{ maxHeight: "80vh" }}
+              unoptimized
+              width={1200}
+              height={1600}
+              className="h-auto max-h-[80vh] w-auto max-w-full rounded-lg shadow-lg"
             />
           </div>
         </div>

@@ -7,6 +7,7 @@ import type { PDFDocumentProxy, PDFPageProxy } from "pdfjs-dist"
 import { useViewer } from "@/features/viewer/provider"
 import type { SearchMatch } from "@/features/viewer/store"
 import { PdfCanvas } from "./pdf-canvas"
+import { AnnotationOverlay } from "@/components/annotations/annotation-overlay"
 
 interface PageDimension {
   width: number
@@ -15,12 +16,17 @@ interface PageDimension {
 
 interface PdfViewerProps {
   pdfDocument: PDFDocumentProxy
+  documentId: string
   onProgressUpdate?: (page: number, percent: number) => void
 }
 
 const PAGE_GAP = 16
 
-export function PdfViewer({ pdfDocument, onProgressUpdate }: PdfViewerProps) {
+export function PdfViewer({
+  pdfDocument,
+  documentId,
+  onProgressUpdate,
+}: PdfViewerProps) {
   const zoom = useViewer((s) => s.zoom)
   const rotation = useViewer((s) => s.rotation)
   const currentPage = useViewer((s) => s.currentPage)
@@ -29,6 +35,7 @@ export function PdfViewer({ pdfDocument, onProgressUpdate }: PdfViewerProps) {
   const totalPages = useViewer((s) => s.totalPages)
   const searchMatches = useViewer((s) => s.searchMatches)
   const currentMatchIndex = useViewer((s) => s.currentMatchIndex)
+  const activeTool = useViewer((s) => s.activeTool)
 
   const [pageDimensions, setPageDimensions] = useState<PageDimension[]>([])
   const [loadedPages, setLoadedPages] = useState<Map<number, PDFPageProxy>>(
@@ -40,7 +47,7 @@ export function PdfViewer({ pdfDocument, onProgressUpdate }: PdfViewerProps) {
   const currentMatchRef = useRef(currentMatchIndex)
   currentMatchRef.current = currentMatchIndex
 
-  // Load page dimensions
+  // Load page dimensions (at rotation=0, zoom=1)
   useEffect(() => {
     let cancelled = false
 
@@ -69,7 +76,6 @@ export function PdfViewer({ pdfDocument, onProgressUpdate }: PdfViewerProps) {
     (index: number) => {
       if (!pageDimensions[index]) return 800 * zoom + PAGE_GAP
       const dim = pageDimensions[index]
-      // Swap width/height for 90/270 rotation
       const isRotated = rotation === 90 || rotation === 270
       const h = isRotated ? dim.width : dim.height
       return Math.round(h * zoom) + PAGE_GAP
@@ -144,14 +150,12 @@ export function PdfViewer({ pdfDocument, onProgressUpdate }: PdfViewerProps) {
     const scrollTop = scrollRef.current.scrollTop
     const containerHeight = scrollRef.current.clientHeight
 
-    // Find the page whose center is closest to viewport center
     const center = scrollTop + containerHeight / 2
     let accumulated = 0
     for (let i = 0; i < totalPages; i++) {
       const size = getItemSize(i)
       if (accumulated + size / 2 >= center) {
         setPage(i + 1)
-
         const percent =
           totalPages > 1 ? Math.round(((i + 1) / totalPages) * 100) : 100
         onProgressUpdate?.(i + 1, percent)
@@ -162,7 +166,7 @@ export function PdfViewer({ pdfDocument, onProgressUpdate }: PdfViewerProps) {
     setPage(totalPages)
   }, [totalPages, getItemSize, setPage, onProgressUpdate])
 
-  // Compute max page width for centering
+  // Max page width for centering
   const maxPageWidth = useMemo(() => {
     if (pageDimensions.length === 0) return 600
     const isRotated = rotation === 90 || rotation === 270
@@ -171,6 +175,22 @@ export function PdfViewer({ pdfDocument, onProgressUpdate }: PdfViewerProps) {
         zoom
     )
   }, [pageDimensions, zoom, rotation])
+
+  // Change cursor for annotation tools
+  const cursorStyle = useMemo(() => {
+    if (activeTool === "select") return "default"
+    if (activeTool === "eraser") return "cell"
+    if (
+      activeTool === "note" ||
+      activeTool === "textbox" ||
+      activeTool === "freehand" ||
+      activeTool === "rectangle" ||
+      activeTool === "circle" ||
+      activeTool === "arrow"
+    )
+      return "crosshair"
+    return "text"
+  }, [activeTool])
 
   if (pageDimensions.length === 0) {
     return (
@@ -186,6 +206,7 @@ export function PdfViewer({ pdfDocument, onProgressUpdate }: PdfViewerProps) {
       className="flex-1 overflow-y-auto bg-[linear-gradient(180deg,color-mix(in_oklab,var(--background)_96%,white)_0%,color-mix(in_oklab,var(--muted)_65%,transparent)_100%)]"
       onScroll={handleScroll}
       tabIndex={-1}
+      style={{ cursor: cursorStyle }}
     >
       <div
         style={{
@@ -202,6 +223,13 @@ export function PdfViewer({ pdfDocument, onProgressUpdate }: PdfViewerProps) {
           const naturalW = isRotated ? dim.height : dim.width
           const naturalH = isRotated ? dim.width : dim.height
 
+          const scaledW = Math.round(naturalW * zoom)
+          const scaledH = Math.round(naturalH * zoom)
+
+          // Source dims (rotation=0, zoom=1)
+          const srcW = dim.width
+          const srcH = dim.height
+
           const pageMatches = searchMatches.filter(
             (m: SearchMatch) => m.pageNumber === pageNum
           )
@@ -211,6 +239,7 @@ export function PdfViewer({ pdfDocument, onProgressUpdate }: PdfViewerProps) {
             <div
               key={vi.key}
               data-index={vi.index}
+              data-testid={`pdf-page-${pageNum}`}
               style={{
                 position: "absolute",
                 top: 0,
@@ -227,20 +256,36 @@ export function PdfViewer({ pdfDocument, onProgressUpdate }: PdfViewerProps) {
                 <div className="mb-1 text-xs text-muted-foreground">
                   {pageNum}
                 </div>
+
+                {/* Page card */}
                 <div
-                  className="rounded-[1.4rem] bg-white/70 p-2 shadow-[0_30px_80px_-48px_rgba(15,23,42,0.65)] dark:bg-black/12"
+                  className="relative rounded-[1.4rem] bg-white/70 p-2 shadow-[0_30px_80px_-48px_rgba(15,23,42,0.65)] dark:bg-black/12"
                   style={{ maxWidth: maxPageWidth }}
                 >
-                  <PdfCanvas
-                    page={loadedPages.get(pageNum) ?? null}
-                    zoom={zoom}
-                    rotation={rotation}
-                    active={true}
-                    naturalWidth={naturalW}
-                    naturalHeight={naturalH}
-                    searchMatches={pageMatches}
-                    isCurrentMatch={isCurrentMatchPage}
-                  />
+                  <div className="relative" style={{ width: scaledW, height: scaledH }}>
+                    <PdfCanvas
+                      page={loadedPages.get(pageNum) ?? null}
+                      zoom={zoom}
+                      rotation={rotation}
+                      active={true}
+                      naturalWidth={naturalW}
+                      naturalHeight={naturalH}
+                      searchMatches={pageMatches}
+                      isCurrentMatch={isCurrentMatchPage}
+                    />
+
+                    {/* Annotation overlay */}
+                    <AnnotationOverlay
+                      documentId={documentId}
+                      pageNumber={pageNum}
+                      zoom={zoom}
+                      rotation={rotation}
+                      srcW={srcW}
+                      srcH={srcH}
+                      screenW={scaledW}
+                      screenH={scaledH}
+                    />
+                  </div>
                 </div>
               </div>
             </div>

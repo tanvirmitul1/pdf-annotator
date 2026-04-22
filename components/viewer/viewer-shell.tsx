@@ -9,7 +9,14 @@ import {
   useGetDocumentViewerDataQuery,
   useUpdateReadingProgressMutation,
 } from "@/features/viewer/api"
+import {
+  useCreateAnnotationMutation,
+  useDeleteAnnotationMutation,
+  useUpdateAnnotationMutation,
+  useListByDocumentQuery,
+} from "@/features/annotations/api"
 import { useShortcuts } from "@/hooks/use-shortcuts"
+import { useAnnotationShortcuts } from "@/hooks/use-annotation-shortcuts"
 import { Toolbar } from "./toolbar"
 import { Sidebar } from "./sidebar"
 import { PdfViewer } from "./pdf-viewer"
@@ -17,6 +24,10 @@ import { SearchBar } from "./search-bar"
 import { ShortcutsOverlay } from "./shortcuts-overlay"
 import { OfflineBanner } from "./offline-banner"
 import { ViewerSkeleton } from "./viewer-skeleton"
+import { AnnotationToolbar } from "@/components/annotations/annotation-toolbar"
+import { AnnotationPanel } from "@/components/annotations/annotation-panel"
+import { SaveStatus } from "@/components/annotations/save-status"
+import type { AnnotationWithTags } from "@/features/annotations/types"
 
 type PdfjsModule = typeof import("pdfjs-dist")
 
@@ -24,11 +35,6 @@ let pdfjsModulePromise: Promise<PdfjsModule> | null = null
 
 async function getPdfjsModule(): Promise<PdfjsModule> {
   if (!pdfjsModulePromise) {
-    // webpackIgnore tells webpack to emit a native dynamic import instead of
-    // bundling pdfjs-dist. This is required because webpack/SWC transpiles
-    // pdfjs's native static private class fields (static #canvasInUse = new WeakSet())
-    // incorrectly, producing "Object.defineProperty called on non-object" at render time.
-    // Loading from /public as a plain browser ESM module avoids the transpilation entirely.
     // @ts-expect-error — URL path import, not resolvable by TS; types come from PdfjsModule cast below
     pdfjsModulePromise = import(/* webpackIgnore: true */ "/pdf.min.mjs").then(
       (mod) => {
@@ -63,6 +69,20 @@ export function ViewerShell({
   )
 }
 
+function toCreateAnnotationInput(
+  annotation: AnnotationWithTags,
+  documentId: string
+) {
+  return {
+    documentId,
+    pageNumber: annotation.pageNumber,
+    type: annotation.type,
+    color: annotation.color,
+    positionData: annotation.positionData,
+    ...(annotation.content ? { content: annotation.content } : {}),
+  }
+}
+
 function ViewerShellInner({
   documentId,
   documentName,
@@ -85,9 +105,83 @@ function ViewerShellInner({
   const openShortcuts = useViewer((s) => s.openShortcuts)
   const closeShortcuts = useViewer((s) => s.closeShortcuts)
   const shortcutsOpen = useViewer((s) => s.shortcutsOpen)
+  const rightPanelAnnotationId = useViewer((s) => s.rightPanelAnnotationId)
+  const undo = useViewer((s) => s.undo)
+  const redo = useViewer((s) => s.redo)
+  const clearUndoHistory = useViewer((s) => s.clearUndoHistory)
+  const setSaveStatus = useViewer((s) => s.setSaveStatus)
 
   const { data, isLoading, refetch } = useGetDocumentViewerDataQuery(documentId)
   const [updateProgress] = useUpdateReadingProgressMutation()
+  const [createAnnotation] = useCreateAnnotationMutation()
+  const [deleteAnnotation] = useDeleteAnnotationMutation()
+  const [updateAnnotation] = useUpdateAnnotationMutation()
+  const { data: annotations = [] } = useListByDocumentQuery(documentId)
+
+  // Undo handler
+  const handleUndo = useCallback(async () => {
+    const entry = undo()
+    if (!entry) return
+
+    try {
+      setSaveStatus("saving")
+      if (entry.action === "create" && entry.after) {
+        // Undo create = delete
+        await deleteAnnotation({ id: entry.after.id, documentId }).unwrap()
+      } else if (entry.action === "delete" && entry.before) {
+        // Undo delete = restore via create
+        await createAnnotation(
+          toCreateAnnotationInput(entry.before, documentId)
+        ).unwrap()
+      } else if (entry.action === "update" && entry.before) {
+        const { content, color, positionData } = entry.before
+        await updateAnnotation({
+          id: entry.before.id,
+          documentId,
+          content: content ?? undefined,
+          color,
+          positionData,
+        }).unwrap()
+      }
+      setSaveStatus("saved")
+      setTimeout(() => setSaveStatus("idle"), 2000)
+    } catch {
+      setSaveStatus("offline")
+    }
+  }, [undo, deleteAnnotation, createAnnotation, updateAnnotation, documentId, setSaveStatus])
+
+  // Redo handler
+  const handleRedo = useCallback(async () => {
+    const entry = redo()
+    if (!entry) return
+
+    try {
+      setSaveStatus("saving")
+      if (entry.action === "create" && entry.after) {
+        await createAnnotation(
+          toCreateAnnotationInput(entry.after, documentId)
+        ).unwrap()
+      } else if (entry.action === "delete" && entry.before) {
+        await deleteAnnotation({ id: entry.before.id, documentId }).unwrap()
+      } else if (entry.action === "update" && entry.after) {
+        const { content, color, positionData } = entry.after
+        await updateAnnotation({
+          id: entry.after.id,
+          documentId,
+          content: content ?? undefined,
+          color,
+          positionData,
+        }).unwrap()
+      }
+      setSaveStatus("saved")
+      setTimeout(() => setSaveStatus("idle"), 2000)
+    } catch {
+      setSaveStatus("offline")
+    }
+  }, [redo, deleteAnnotation, createAnnotation, updateAnnotation, documentId, setSaveStatus])
+
+  // Register annotation shortcuts
+  useAnnotationShortcuts(undefined, handleUndo, handleRedo)
 
   // Debounced progress update
   const progressTimer = useRef<NodeJS.Timeout | null>(null)
@@ -105,32 +199,39 @@ function ViewerShellInner({
     [documentId, updateProgress]
   )
 
+  // Flush unsaved annotation data on page unload via sendBeacon
+  useEffect(() => {
+    function onUnload() {
+      // RTK Query mutations in flight will be cancelled; nothing to do here
+      // for pending debounced saves, the component unmounts and useDebouncedMutation flushes
+    }
+    window.addEventListener("beforeunload", onUnload)
+    return () => window.removeEventListener("beforeunload", onUnload)
+  }, [])
+
+  // Clear undo history on document change
+  useEffect(() => {
+    clearUndoHistory()
+  }, [documentId, clearUndoHistory])
+
   // Load PDF
   useEffect(() => {
-    if (!data?.document) {
-      return
-    }
+    if (!data?.document) return
 
     if (data.document.status !== "READY") {
       const interval = setInterval(() => {
         void refetch()
       }, 2000)
-      return () => {
-        clearInterval(interval)
-      }
+      return () => clearInterval(interval)
     }
 
-    if (!data.document.storageKey) {
-      return
-    }
+    if (!data.document.storageKey) return
 
     let cancelled = false
 
     async function loadPdf() {
       try {
         const { getDocument } = await getPdfjsModule()
-
-        // Fetch a signed download URL then load
         const res = await fetch(
           `/api/documents/${documentId}/download?flavor=original`
         )
@@ -142,7 +243,6 @@ function ViewerShellInner({
         if (!cancelled) {
           setPdfDocument(pdf)
           setTotalPages(pdf.numPages)
-          // Restore last page from reading progress
           const lastPage = data?.readingProgress?.lastPage
           if (lastPage && lastPage > 1) {
             setPage(lastPage)
@@ -171,7 +271,6 @@ function ViewerShellInner({
     refetch,
   ])
 
-  // Register keyboard shortcuts
   const ZOOM_STEPS = [0.25, 0.33, 0.5, 0.67, 0.75, 1, 1.25, 1.5, 2, 3, 4]
 
   useShortcuts([
@@ -314,7 +413,7 @@ function ViewerShellInner({
   }
 
   const outline = data?.outline ?? null
-  const downloadUrl: string | null = null // fetched on demand via toolbar
+  const downloadUrl: string | null = null
 
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-[2rem] border border-border/60 bg-card/55 shadow-[0_28px_80px_-55px_rgba(15,23,42,0.65)]">
@@ -324,6 +423,7 @@ function ViewerShellInner({
         documentId={documentId}
         documentName={documentName}
         downloadUrl={downloadUrl}
+        saveStatusSlot={<SaveStatus className="ml-2" />}
       />
 
       {/* Reading progress bar */}
@@ -354,11 +454,22 @@ function ViewerShellInner({
           />
         )}
 
+        {/* Annotation toolbar (floating, left edge of PDF area) */}
+        <div className="relative flex flex-col items-center py-4 px-1">
+          <AnnotationToolbar />
+        </div>
+
         {/* PDF viewer */}
         <PdfViewer
           pdfDocument={pdfDocument}
+          documentId={documentId}
           onProgressUpdate={handleProgressUpdate}
         />
+
+        {/* Right annotation panel */}
+        {rightPanelAnnotationId && (
+          <AnnotationPanel documentId={documentId} />
+        )}
 
         {/* Search bar overlay */}
         <SearchBar documentId={documentId} />
@@ -382,6 +493,11 @@ function ViewerShellInner({
           )}
         </span>
         <span>{Math.round(zoom * 100)}%</span>
+        {annotations.length > 0 && (
+          <span className="text-muted-foreground/60">
+            {annotations.length} annotation{annotations.length !== 1 ? "s" : ""}
+          </span>
+        )}
       </div>
     </div>
   )

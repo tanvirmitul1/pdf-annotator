@@ -39,6 +39,7 @@ interface ToolbarProps {
   documentId: string
   documentName: string
   downloadUrl?: string | null
+  saveStatusSlot?: React.ReactNode
 }
 
 function Tip({
@@ -68,6 +69,7 @@ export function Toolbar({
   documentId,
   documentName,
   downloadUrl,
+  saveStatusSlot,
 }: ToolbarProps) {
   const zoom = useViewer((s) => s.zoom)
   const setZoom = useViewer((s) => s.setZoom)
@@ -268,6 +270,9 @@ export function Toolbar({
       <span className="hidden max-w-[220px] truncate rounded-full border border-border/70 bg-card/75 px-3 py-1 text-sm font-medium md:block">
         {documentName}
       </span>
+
+      {/* Save status slot */}
+      {saveStatusSlot}
 
       {/* Right-side actions */}
       <div className="ml-auto flex items-center gap-1">

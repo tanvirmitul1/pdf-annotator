@@ -81,9 +81,15 @@ export function SignInForm({ compact = false }: { compact?: boolean }) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className={compact ? "space-y-3" : "space-y-4"}>
       <div className="text-center">
-        <h2 className="font-heading text-2xl font-semibold tracking-tight text-foreground">
+        <h2
+          className={
+            compact
+              ? "font-heading text-xl font-semibold tracking-tight text-foreground"
+              : "font-heading text-2xl font-semibold tracking-tight text-foreground"
+          }
+        >
           Welcome back
         </h2>
         <p className="mt-1.5 text-sm text-muted-foreground">
