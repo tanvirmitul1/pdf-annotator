@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from "next/server"
 
 import { auth } from "@/auth"
-import { prisma } from "@/lib/db/prisma"
+import { logAudit } from "@/lib/audit"
 import { withErrorHandling } from "@/lib/api/handler"
 import { requireUser } from "@/lib/auth/require"
 import { decrementUsage } from "@/lib/authz/plan"
-import { logAudit } from "@/lib/audit"
+import { prisma } from "@/lib/db/prisma"
 
-async function handler(request: NextRequest, { params }: { params: { id: string } }) {
+async function handler(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params
   const session = await auth()
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
@@ -17,7 +21,7 @@ async function handler(request: NextRequest, { params }: { params: { id: string 
 
   const document = await prisma.document.findFirst({
     where: {
-      id: params.id,
+      id,
       userId: user.id,
       deletedAt: null,
     },
@@ -27,23 +31,28 @@ async function handler(request: NextRequest, { params }: { params: { id: string 
     return NextResponse.json({ error: "Document not found" }, { status: 404 })
   }
 
-  // Soft delete
   await prisma.document.update({
-    where: { id: params.id },
+    where: { id },
     data: { deletedAt: new Date() },
   })
 
-  // Decrement usage
   await decrementUsage(user.id, "DOCUMENTS", 1)
-  await decrementUsage(user.id, "STORAGE_MB", Math.ceil(document.fileSize / (1024 * 1024)))
+  await decrementUsage(
+    user.id,
+    "STORAGE_MB",
+    Math.ceil(document.fileSize / (1024 * 1024))
+  )
 
   await logAudit({
     userId: user.id,
     action: "document.delete",
     resourceType: "document",
-    resourceId: params.id,
+    resourceId: id,
     metadata: {},
-    ipAddress: request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown",
+    ipAddress:
+      request.headers.get("x-forwarded-for") ||
+      request.headers.get("x-real-ip") ||
+      "unknown",
   })
 
   return NextResponse.json({ success: true })

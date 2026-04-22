@@ -63,7 +63,7 @@ const documentsApi = api.injectEndpoints({
 
     deleteDocument: builder.mutation<void, string>({
       query: (id) => ({
-        url: `/documents/${id}/delete`,
+        url: `/documents/${id}`,
         method: "DELETE",
       }),
       invalidatesTags: ["Document"],
