@@ -10,6 +10,14 @@ import {
   useListByDocumentQuery,
   useUpdateAnnotationMutation,
 } from "@/features/annotations/api"
+import {
+  isMovablePosition,
+  isResizablePosition,
+  positionDataEquals,
+  resizePositionData,
+  translatePositionData,
+  type ResizeHandle,
+} from "@/features/annotations/geometry"
 import { resolveTextAnchor } from "@/features/annotations/reanchor"
 import {
   screenToSrc,
@@ -45,8 +53,19 @@ interface ResolvedAnnotationMeta {
   orphaned: boolean
 }
 
+interface ManipulationState {
+  annotation: AnnotationWithTags
+  mode: "move" | "resize"
+  handle?: ResizeHandle
+  startSrc: { x: number; y: number }
+  startClient: { x: number; y: number }
+  originalPosition: PositionData
+}
+
 const HOVER_DELAY_MS = 150
 const DESKTOP_ONLY_TOOLS = new Set(["freehand", "rectangle", "circle", "arrow"])
+const HANDLE_RADIUS = 6
+const DRAG_THRESHOLD_PX = 4
 
 function useCoarsePointer() {
   const [coarsePointer, setCoarsePointer] = useState(false)
@@ -125,11 +144,15 @@ export function AnnotationOverlay({
     x: number
     y: number
   } | null>(null)
+  const [, setLivePositions] = useState<Record<string, PositionData>>({})
 
   const drawingRef = useRef(false)
   const startPosRef = useRef<{ x: number; y: number } | null>(null)
   const hoverTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const hoveredIdRef = useRef<string | null>(null)
+  const manipulationRef = useRef<ManipulationState | null>(null)
+  const livePositionsRef = useRef<Record<string, PositionData>>({})
+  const movedDuringManipulationRef = useRef(false)
 
   const relocateTextAnnotation = useCallback(
     async (anchor: TextAnchor) => {
@@ -352,6 +375,178 @@ export function AnnotationOverlay({
     setHoveredAnnotation(null)
     setHoverPos(null)
   }
+
+  const setLivePosition = useCallback((annotationId: string, positionData: PositionData) => {
+    setLivePositions((previous) => {
+      const next = { ...previous, [annotationId]: positionData }
+      livePositionsRef.current = next
+      return next
+    })
+  }, [])
+
+  const clearLivePosition = useCallback((annotationId: string) => {
+    setLivePositions((previous) => {
+      if (!(annotationId in previous)) {
+        return previous
+      }
+
+      const next = { ...previous }
+      delete next[annotationId]
+      livePositionsRef.current = next
+      return next
+    })
+  }, [])
+
+  function getEffectivePositionData(annotation: AnnotationWithTags) {
+    return (
+      livePositionsRef.current[annotation.id] ??
+      resolvedMap[annotation.id]?.positionData ??
+      annotation.positionData
+    )
+  }
+
+  const getRelativeClientPoint = useCallback((clientX: number, clientY: number) => {
+    const rect = overlayRef.current?.getBoundingClientRect()
+
+    return {
+      x: clientX - (rect?.left ?? 0),
+      y: clientY - (rect?.top ?? 0),
+    }
+  }, [])
+
+  const getSourcePointFromClient = useCallback(
+    (clientX: number, clientY: number) => {
+      const relative = getRelativeClientPoint(clientX, clientY)
+      return screenToSrc(relative.x, relative.y, srcW, srcH, zoom, rotation)
+    },
+    [getRelativeClientPoint, rotation, srcH, srcW, zoom]
+  )
+
+  function beginManipulation(
+    annotation: AnnotationWithTags,
+    mode: "move" | "resize",
+    clientX: number,
+    clientY: number,
+    handle?: ResizeHandle
+  ) {
+    const originalPosition = getEffectivePositionData(annotation)
+
+    if (mode === "move" && !isMovablePosition(originalPosition)) {
+      return
+    }
+
+    if (mode === "resize" && (!handle || !isResizablePosition(originalPosition))) {
+      return
+    }
+
+    manipulationRef.current = {
+      annotation,
+      mode,
+      handle,
+      startSrc: getSourcePointFromClient(clientX, clientY),
+      startClient: { x: clientX, y: clientY },
+      originalPosition,
+    }
+    movedDuringManipulationRef.current = false
+    openAnnotation(annotation.id)
+    setContextMenu(null)
+    clearHoverState()
+  }
+
+  useEffect(() => {
+    async function commitManipulation(state: ManipulationState) {
+      const latestPosition = livePositionsRef.current[state.annotation.id]
+      clearLivePosition(state.annotation.id)
+      manipulationRef.current = null
+
+      if (!latestPosition || positionDataEquals(latestPosition, state.originalPosition)) {
+        return
+      }
+
+      try {
+        const updated = await updateAnnotation({
+          id: state.annotation.id,
+          documentId,
+          positionData: latestPosition,
+        }).unwrap()
+
+        pushUndo({
+          action: "update",
+          before: state.annotation,
+          after: updated,
+        })
+      } catch {
+        toast.error("Could not update annotation")
+      }
+    }
+
+    function handlePointerMove(event: PointerEvent) {
+      const state = manipulationRef.current
+      if (!state) {
+        return
+      }
+
+      const currentSrc = getSourcePointFromClient(event.clientX, event.clientY)
+      const nextPosition =
+        state.mode === "move"
+          ? translatePositionData(
+              state.originalPosition,
+              {
+                x: currentSrc.x - state.startSrc.x,
+                y: currentSrc.y - state.startSrc.y,
+              },
+              srcW,
+              srcH
+            )
+          : resizePositionData(
+              state.originalPosition,
+              state.handle!,
+              currentSrc,
+              zoom,
+              srcW,
+              srcH
+            )
+
+      const movedDistance = Math.hypot(
+        event.clientX - state.startClient.x,
+        event.clientY - state.startClient.y
+      )
+      if (movedDistance >= DRAG_THRESHOLD_PX) {
+        movedDuringManipulationRef.current = true
+      }
+
+      setLivePosition(state.annotation.id, nextPosition)
+    }
+
+    function handlePointerEnd() {
+      const state = manipulationRef.current
+      if (!state) {
+        return
+      }
+
+      void commitManipulation(state)
+    }
+
+    window.addEventListener("pointermove", handlePointerMove)
+    window.addEventListener("pointerup", handlePointerEnd)
+    window.addEventListener("pointercancel", handlePointerEnd)
+
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove)
+      window.removeEventListener("pointerup", handlePointerEnd)
+      window.removeEventListener("pointercancel", handlePointerEnd)
+    }
+  }, [
+    clearLivePosition,
+    documentId,
+    getSourcePointFromClient,
+    pushUndo,
+    setLivePosition,
+    srcH,
+    srcW,
+    updateAnnotation,
+    zoom,
+  ])
 
   function setHoverForTarget(event: React.MouseEvent | React.FocusEvent, annotationId: string) {
     if (coarsePointer && "clientX" in event === false) {
@@ -687,18 +882,95 @@ export function AnnotationOverlay({
       setDrawRect(null)
     }
 
+    setDrawPath([])
+    setArrowDraw(null)
+    setDrawRect(null)
     startPosRef.current = null
+  }
+
+  function renderResizeHandles(annotation: AnnotationWithTags, positionData: PositionData) {
+    if (activeTool !== "select" || annotation.id !== selectedAnnotationId) {
+      return null
+    }
+
+    if (!isResizablePosition(positionData)) {
+      return null
+    }
+
+    const handleProps = (handle: ResizeHandle, x: number, y: number, cursorStyle: string) => (
+      <circle
+        key={handle}
+        cx={x}
+        cy={y}
+        r={HANDLE_RADIUS}
+        data-annotation-handle="true"
+        fill="hsl(var(--background))"
+        stroke={annotation.color}
+        strokeWidth={2}
+        style={{ cursor: cursorStyle, pointerEvents: "auto" }}
+        onPointerDown={(event) => {
+          event.preventDefault()
+          event.stopPropagation()
+          beginManipulation(annotation, "resize", event.clientX, event.clientY, handle)
+        }}
+      />
+    )
+
+    if (positionData.kind === "RECT") {
+      const topLeft = srcToScreen(positionData.x, positionData.y, srcW, srcH, zoom, rotation)
+      const bottomRight = srcToScreen(
+        positionData.x + positionData.width,
+        positionData.y + positionData.height,
+        srcW,
+        srcH,
+        zoom,
+        rotation
+      )
+      const x1 = Math.min(topLeft.x, bottomRight.x)
+      const y1 = Math.min(topLeft.y, bottomRight.y)
+      const x2 = Math.max(topLeft.x, bottomRight.x)
+      const y2 = Math.max(topLeft.y, bottomRight.y)
+
+      return [
+        handleProps("nw", x1, y1, "nwse-resize"),
+        handleProps("ne", x2, y1, "nesw-resize"),
+        handleProps("sw", x1, y2, "nesw-resize"),
+        handleProps("se", x2, y2, "nwse-resize"),
+      ]
+    }
+
+    if (positionData.kind === "ARROW") {
+      const from = srcToScreen(positionData.from.x, positionData.from.y, srcW, srcH, zoom, rotation)
+      const to = srcToScreen(positionData.to.x, positionData.to.y, srcW, srcH, zoom, rotation)
+
+      return [
+        handleProps("start", from.x, from.y, "grab"),
+        handleProps("end", to.x, to.y, "grab"),
+      ]
+    }
+
+    return null
   }
 
   function renderAnnotation(annotation: AnnotationWithTags) {
     const meta = resolvedMap[annotation.id]
-    const resolvedPosition = meta?.positionData ?? annotation.positionData
+    const resolvedPosition = getEffectivePositionData(annotation)
     const orphaned = meta?.orphaned ?? false
     const isHovered = annotation.id === hoveredAnnotationId
     const isSelected = annotation.id === selectedAnnotationId
     const isEraser = activeTool === "eraser"
     const opacity = isHovered ? (isEraser ? 0.4 : 0.8) : 1
     const ringColor = isEraser ? "#ef4444" : annotation.color
+    const canMove = activeTool === "select" && isMovablePosition(resolvedPosition)
+    const isManipulating = manipulationRef.current?.annotation.id === annotation.id
+    const cursorStyle =
+      activeTool === "eraser"
+        ? "cell"
+        : canMove
+          ? isManipulating
+            ? "grabbing"
+            : "grab"
+          : "pointer"
 
     const sharedProps = {
       "data-annotation": annotation.id,
@@ -719,8 +991,25 @@ export function AnnotationOverlay({
       onBlur: clearHoverState,
       onClick: (event: React.MouseEvent) => {
         event.stopPropagation()
+        if (movedDuringManipulationRef.current) {
+          movedDuringManipulationRef.current = false
+          return
+        }
         setContextMenu(null)
         void handleAnnotationActivate(annotation)
+      },
+      onPointerDown: (event: React.PointerEvent) => {
+        if (activeTool !== "select" || !canMove) {
+          return
+        }
+
+        if ((event.target as Element).closest("[data-annotation-handle='true']")) {
+          return
+        }
+
+        event.preventDefault()
+        event.stopPropagation()
+        beginManipulation(annotation, "move", event.clientX, event.clientY)
       },
       onContextMenu: (event: React.MouseEvent) => {
         event.preventDefault()
@@ -737,7 +1026,7 @@ export function AnnotationOverlay({
           void handleAnnotationActivate(annotation)
         }
       },
-      style: { pointerEvents: "auto" as const },
+      style: { pointerEvents: "auto" as const, cursor: cursorStyle },
     }
 
     if (resolvedPosition.kind === "TEXT") {
@@ -878,6 +1167,7 @@ export function AnnotationOverlay({
           >
             N
           </text>
+          {renderResizeHandles(annotation, resolvedPosition)}
         </g>
       )
     }
@@ -945,6 +1235,7 @@ export function AnnotationOverlay({
               strokeOpacity={isSelected ? 0.95 : 0.7}
             />
           ) : null}
+          {renderResizeHandles(annotation, resolvedPosition)}
         </g>
       )
     }
@@ -1055,6 +1346,7 @@ export function AnnotationOverlay({
             stroke="transparent"
             strokeWidth={Math.max(12, resolvedPosition.strokeWidth * zoom * 3)}
           />
+          {renderResizeHandles(annotation, resolvedPosition)}
         </g>
       )
     }
@@ -1149,6 +1441,7 @@ export function AnnotationOverlay({
       : activeTool === "note" || activeTool === "textbox" || isDrawingTool
         ? "crosshair"
         : "default"
+  const overlayInteractive = activeTool === "select" || isDrawingTool || activeTool === "eraser"
 
   return (
     <div
@@ -1159,16 +1452,24 @@ export function AnnotationOverlay({
       <svg
         width={screenW}
         height={screenH}
+        viewBox={`0 0 ${screenW} ${screenH}`}
+        preserveAspectRatio="none"
         xmlns="http://www.w3.org/2000/svg"
-        className="absolute inset-0"
+        className="absolute inset-0 size-full"
         style={{
           cursor,
-          pointerEvents: isDrawingTool || activeTool === "eraser" ? "auto" : "none",
+          pointerEvents: overlayInteractive ? "auto" : "none",
           overflow: "visible",
         }}
         onMouseDown={isDrawingTool ? (event) => void handleSvgMouseDown(event) : undefined}
         onMouseMove={isDrawingTool ? handleSvgMouseMove : undefined}
         onMouseUp={isDrawingTool ? () => void handleSvgMouseUp() : undefined}
+        onClick={(event) => {
+          if ((event.target as Element).closest("[data-annotation]")) {
+            return
+          }
+          setContextMenu(null)
+        }}
         onContextMenu={(event) => {
           if (!(event.target as Element).closest("[data-annotation]")) {
             event.preventDefault()
