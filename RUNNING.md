@@ -212,9 +212,9 @@ pnpm db:seed
 
 ---
 
-## Production Deployment (VPS with Docker)
+## Production Deployment (Oracle VPS with Nginx)
 
-Tested on Oracle Cloud free tier (Ubuntu). Works on any VPS with Docker installed.
+Deploy to Oracle Cloud VPS (or any Ubuntu VPS) with Nginx reverse proxy. All services (PostgreSQL, Redis, Next.js app, background worker) run in Docker containers. Access the app by visiting your server IP or domain.
 
 ### 1. Server setup
 
@@ -303,17 +303,21 @@ This starts 4 services:
 | `postgres` | PostgreSQL 16 database |
 | `redis` | Redis 7 for job queue + caching |
 
-### 4. Reverse proxy (Nginx + SSL)
+### 4. Setup Nginx reverse proxy
+
+Install Nginx:
 
 ```bash
-sudo apt-get install nginx certbot python3-certbot-nginx
+sudo apt-get update
+sudo apt-get install nginx certbot python3-certbot-nginx -y
 ```
 
 Create `/etc/nginx/sites-available/pdf-annotator`:
 
 ```nginx
 server {
-    server_name yourdomain.com;
+    listen 80;
+    server_name your-server-ip yourdomain.com;  # Use your VPS IP or domain
 
     client_max_body_size 50M;
 
@@ -331,36 +335,59 @@ server {
 }
 ```
 
-Enable and get SSL:
+Enable the site:
 
 ```bash
 sudo ln -s /etc/nginx/sites-available/pdf-annotator /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
+```
 
+**For SSL with domain (optional):**
+
+```bash
 # Get free SSL certificate (auto-configures Nginx)
 sudo certbot --nginx -d yourdomain.com
 ```
 
+**For IP-only access:** Skip SSL setup. The app will be accessible at `http://your-server-ip`
+
 ### 5. Update Google OAuth redirect URI
 
-In Google Cloud Console, update the authorized redirect URI to:
+In Google Cloud Console, update the authorized redirect URI:
 
+**With domain:**
 ```
 https://yourdomain.com/api/auth/callback/google
 ```
 
-### 6. Verify
+**With IP only:**
+```
+http://your-server-ip/api/auth/callback/google
+```
+
+Also update `APP_URL` and `NEXTAUTH_URL` in `.env` to match your IP or domain.
+
+### 6. Verify deployment
 
 ```bash
-# Check all services are running
+# Check all 4 services are running (app, worker, postgres, redis)
 docker compose -f docker-compose.prod.yml ps
 
-# Check app responds
+# Check app responds locally
 curl http://localhost:3000
 
-# View logs
+# Check Nginx is running
+sudo systemctl status nginx
+
+# View application logs
 docker compose -f docker-compose.prod.yml logs -f app worker
 ```
+
+**Access the app:**
+- With domain: `http://yourdomain.com` or `https://yourdomain.com` (if SSL configured)
+- With IP: `http://your-server-ip`
+
+All services (database, backend, frontend, worker) are now running and accessible through Nginx.
 
 ---
 
