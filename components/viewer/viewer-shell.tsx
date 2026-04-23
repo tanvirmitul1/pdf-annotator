@@ -1,8 +1,8 @@
 "use client"
 
-import { useEffect, useRef, useCallback } from "react"
+import { useEffect, useRef, useCallback, useState } from "react"
 import type { PDFDocumentProxy, PDFDocumentLoadingTask } from "pdfjs-dist"
-import { useState } from "react"
+import { Loader2 } from "lucide-react"
 
 import { ViewerProvider, useViewer } from "@/features/viewer/provider"
 import {
@@ -27,6 +27,7 @@ import { ViewerSkeleton } from "./viewer-skeleton"
 import { AnnotationToolbar } from "@/components/annotations/annotation-toolbar"
 import { AnnotationPanel } from "@/components/annotations/annotation-panel"
 import { SaveStatus } from "@/components/annotations/save-status"
+import { LoginGateModal } from "./login-gate-modal"
 import type { AnnotationWithTags } from "@/features/annotations/types"
 
 type PdfjsModule = typeof import("pdfjs-dist")
@@ -51,21 +52,41 @@ export interface ViewerShellProps {
   documentId: string
   documentName: string
   initialPage?: number
+  isAuthenticated?: boolean
 }
 
 export function ViewerShell({
   documentId,
   documentName,
   initialPage = 1,
+  isAuthenticated = false,
 }: ViewerShellProps) {
+  const [showLoginGate, setShowLoginGate] = useState(false)
+
+  const handleAnnotationAttempt = useCallback(() => {
+    if (!isAuthenticated) {
+      setShowLoginGate(true)
+      return false
+    }
+    return true
+  }, [isAuthenticated])
+
   return (
-    <ViewerProvider documentId={documentId}>
-      <ViewerShellInner
+    <>
+      <ViewerProvider documentId={documentId} isAuthenticated={isAuthenticated} onAnnotationAttempt={handleAnnotationAttempt}>
+        <ViewerShellInner
+          documentId={documentId}
+          documentName={documentName}
+          initialPage={initialPage}
+          isAuthenticated={isAuthenticated}
+        />
+      </ViewerProvider>
+      <LoginGateModal
+        open={showLoginGate}
+        onOpenChange={setShowLoginGate}
         documentId={documentId}
-        documentName={documentName}
-        initialPage={initialPage}
       />
-    </ViewerProvider>
+    </>
   )
 }
 
@@ -87,6 +108,7 @@ function ViewerShellInner({
   documentId,
   documentName,
   initialPage,
+  isAuthenticated = false,
 }: ViewerShellProps) {
   const [pdfDocument, setPdfDocument] = useState<PDFDocumentProxy | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -399,11 +421,20 @@ function ViewerShellInner({
             </button>
           </div>
         ) : status !== "READY" ? (
-          <div className="flex flex-1 flex-col items-center justify-center gap-4">
-            <ViewerSkeleton />
-            <p className="text-sm text-muted-foreground">
-              Preparing your document… this usually takes a few seconds.
-            </p>
+          <div className="flex flex-1 items-center justify-center px-6">
+            <div className="flex max-w-sm flex-col items-center gap-5 text-center">
+              <div className="flex size-14 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-primary">
+                <Loader2 className="size-5 animate-spin" />
+              </div>
+              <div className="space-y-2">
+                <p className="font-heading text-lg font-semibold text-foreground">
+                  Preparing document
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  Your pages and annotations will appear here as soon as they are ready.
+                </p>
+              </div>
+            </div>
           </div>
         ) : (
           <ViewerSkeleton />
@@ -502,3 +533,4 @@ function ViewerShellInner({
     </div>
   )
 }
+

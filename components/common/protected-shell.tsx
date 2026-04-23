@@ -241,7 +241,7 @@ export function ProtectedShell({
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     className="rounded-xl"
-                    onSelect={() => void signOut({ callbackUrl: "/login" })}
+                    onSelect={() => void signOut({ callbackUrl: "/" })}
                   >
                     <LogOut className="size-4" />
                     Sign out

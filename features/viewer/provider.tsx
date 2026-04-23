@@ -10,12 +10,14 @@ const ViewerContext = createContext<StoreApi<ViewerState> | null>(null)
 export interface ViewerProviderProps {
   documentId: string
   children: ReactNode
+  isAuthenticated?: boolean
+  onAnnotationAttempt?: () => boolean
 }
 
-export function ViewerProvider({ documentId, children }: ViewerProviderProps) {
+export function ViewerProvider({ documentId, children, isAuthenticated = false, onAnnotationAttempt }: ViewerProviderProps) {
   const storeRef = useRef<ViewerStore | null>(null)
   if (!storeRef.current) {
-    storeRef.current = createViewerStore(documentId)
+    storeRef.current = createViewerStore(documentId, isAuthenticated, onAnnotationAttempt)
   }
   return (
     <ViewerContext.Provider value={storeRef.current}>

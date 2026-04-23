@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server"
 
 import { withErrorHandling } from "@/lib/api/handler"
-import { requireUser } from "@/lib/auth/require"
+import { requireRequestIdentity } from "@/lib/auth/request-identity"
 import { enforceRateLimit } from "@/lib/ratelimit"
 import { logAudit } from "@/lib/audit"
 import { track } from "@/lib/analytics"
@@ -17,11 +17,11 @@ import {
 export const PATCH = withErrorHandling(
   async (req: NextRequest, ctx: { params: Promise<{ id: string }> }) => {
     const { id } = await ctx.params
-    const user = await requireUser()
-    await enforceRateLimit(req, user.id, "annotation-write")
+    const identity = await requireRequestIdentity(req)
+    await enforceRateLimit(req, identity.userId, "annotation-write")
     const input = UpdateAnnotationSchema.parse(await req.json())
 
-    const annotation = await updateAnnotation(user.id, id, input)
+    const annotation = await updateAnnotation(identity.userId, id, input)
 
     // Determine which field was updated for analytics
     const field = input.content !== undefined
@@ -31,7 +31,7 @@ export const PATCH = withErrorHandling(
         : "color"
 
     await logAudit({
-      userId: user.id,
+      userId: identity.userId,
       action: "annotation.update",
       resourceType: "Annotation",
       resourceId: id,
@@ -39,7 +39,7 @@ export const PATCH = withErrorHandling(
       ipAddress: getIpAddress(req),
     })
 
-    void track(user.id, "annotation_updated", { field })
+    void track(identity.userId, "annotation_updated", { field })
 
     return NextResponse.json({ data: annotation })
   }
@@ -50,13 +50,13 @@ export const PATCH = withErrorHandling(
 export const DELETE = withErrorHandling(
   async (req: NextRequest, ctx: { params: Promise<{ id: string }> }) => {
     const { id } = await ctx.params
-    const user = await requireUser()
-    await enforceRateLimit(req, user.id, "annotation-write")
+    const identity = await requireRequestIdentity(req)
+    await enforceRateLimit(req, identity.userId, "annotation-write")
 
-    const annotation = await softDeleteAnnotation(user.id, id)
+    const annotation = await softDeleteAnnotation(identity.userId, id)
 
     await logAudit({
-      userId: user.id,
+      userId: identity.userId,
       action: "annotation.delete",
       resourceType: "Annotation",
       resourceId: id,
@@ -64,7 +64,7 @@ export const DELETE = withErrorHandling(
       ipAddress: getIpAddress(req),
     })
 
-    void track(user.id, "annotation_deleted", { type: annotation.type })
+    void track(identity.userId, "annotation_deleted", { type: annotation.type })
 
     return NextResponse.json({ data: annotation })
   }

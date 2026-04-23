@@ -217,3 +217,84 @@
     transparent 70%
   );
 }
+
+/* ── Auth modal / card ───────────────────────────────────── */
+@layer components {
+  /* Bottom gradient overlay — uses theme primary/accent so it adapts to light & dark */
+  .auth-card-gradient {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 52%;
+    pointer-events: none;
+    border-radius: 0 0 2rem 2rem;
+  }
+
+  .auth-card-gradient--signin {
+    background: linear-gradient(
+      to top,
+      color-mix(in oklab, var(--primary) 35%, var(--background)) 0%,
+      color-mix(in oklab, var(--primary) 12%, transparent) 58%,
+      transparent
+    );
+  }
+
+  .auth-card-gradient--signup {
+    background: linear-gradient(
+      to top,
+      color-mix(in oklab, var(--accent) 45%, var(--background)) 0%,
+      color-mix(in oklab, var(--accent) 15%, transparent) 58%,
+      transparent
+    );
+  }
+
+  /* Social OAuth pill buttons */
+  .auth-social-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 3.75rem;
+    height: 2.75rem;
+    border-radius: 9999px;
+    background: var(--secondary);
+    border: 1px solid var(--border);
+    color: var(--secondary-foreground);
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+    flex-shrink: 0;
+  }
+
+  .auth-social-btn:hover {
+    background: color-mix(in oklab, var(--secondary) 75%, var(--primary) 25%);
+    border-color: color-mix(in oklab, var(--border) 55%, var(--primary) 45%);
+    transform: translateY(-1px);
+  }
+
+  .auth-social-btn:active {
+    background: var(--muted);
+    transform: translateY(0);
+  }
+
+  /* Pill-shaped text inputs with icon prefix support */
+  .auth-pill-input {
+    width: 100%;
+    height: 3rem;
+    border-radius: 9999px;
+    background: var(--muted);
+    border: 1px solid var(--border);
+    color: var(--foreground);
+    font-size: 0.875rem;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .auth-pill-input::placeholder {
+    color: var(--muted-foreground);
+  }
+
+  .auth-pill-input:focus {
+    border-color: color-mix(in oklab, var(--ring) 70%, transparent);
+    box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 18%, transparent);
+  }
+}

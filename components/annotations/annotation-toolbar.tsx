@@ -134,6 +134,8 @@ export function AnnotationToolbar() {
   const selectedColor = useViewer((state) => state.selectedColor)
   const setSelectedColor = useViewer((state) => state.setSelectedColor)
   const discardDraft = useViewer((state) => state.discardDraft)
+  const isAuthenticated = useViewer((state) => state.isAuthenticated)
+  const onAnnotationAttempt = useViewer((state) => state.onAnnotationAttempt)
   const [coarsePointer, setCoarsePointer] = useState(false)
 
   useEffect(() => {
@@ -189,6 +191,12 @@ export function AnnotationToolbar() {
                   <button
                     type="button"
                     onClick={() => {
+                      if (tool.id !== "select" && tool.id !== "eraser") {
+                        if (!isAuthenticated && onAnnotationAttempt) {
+                          const allowed = onAnnotationAttempt()
+                          if (!allowed) return
+                        }
+                      }
                       if (
                         coarsePointer &&
                         (tool.id === "freehand" ||

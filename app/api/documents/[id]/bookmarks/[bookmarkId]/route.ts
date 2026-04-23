@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 
-import { requireUser } from "@/lib/auth/require"
+import { requireRequestIdentity } from "@/lib/auth/request-identity"
 import { prisma } from "@/lib/db/prisma"
 import { withErrorHandling } from "@/lib/api/handler"
 import { enforceRateLimit } from "@/lib/ratelimit"
@@ -14,12 +14,12 @@ async function patchHandler(
   { params }: { params: Promise<{ id: string; bookmarkId: string }> }
 ) {
   const { id, bookmarkId } = await params
-  const user = await requireUser()
+  const identity = await requireRequestIdentity(req)
 
-  await enforceRateLimit(req, user.id, "default")
+  await enforceRateLimit(req, identity.userId, "default")
 
   const bookmark = await prisma.bookmark.findFirst({
-    where: { id: bookmarkId, userId: user.id, documentId: id },
+    where: { id: bookmarkId, userId: identity.userId, documentId: id },
   })
   if (!bookmark) throw new NotFoundError("Bookmark")
 
@@ -31,7 +31,7 @@ async function patchHandler(
   })
 
   await logAudit({
-    userId: user.id,
+    userId: identity.userId,
     action: "bookmark.update",
     resourceType: "Bookmark",
     resourceId: bookmarkId,
@@ -47,19 +47,19 @@ async function deleteHandler(
   { params }: { params: Promise<{ id: string; bookmarkId: string }> }
 ) {
   const { id, bookmarkId } = await params
-  const user = await requireUser()
+  const identity = await requireRequestIdentity(req)
 
-  await enforceRateLimit(req, user.id, "default")
+  await enforceRateLimit(req, identity.userId, "default")
 
   const bookmark = await prisma.bookmark.findFirst({
-    where: { id: bookmarkId, userId: user.id, documentId: id },
+    where: { id: bookmarkId, userId: identity.userId, documentId: id },
   })
   if (!bookmark) throw new NotFoundError("Bookmark")
 
   await prisma.bookmark.delete({ where: { id: bookmarkId } })
 
   await logAudit({
-    userId: user.id,
+    userId: identity.userId,
     action: "bookmark.delete",
     resourceType: "Bookmark",
     resourceId: bookmarkId,

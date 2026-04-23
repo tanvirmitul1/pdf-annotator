@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server"
 
 import { withErrorHandling } from "@/lib/api/handler"
-import { requireUser } from "@/lib/auth/require"
+import { requireRequestIdentity } from "@/lib/auth/request-identity"
 import { enforceRateLimit } from "@/lib/ratelimit"
 import { logAudit } from "@/lib/audit"
 import { track } from "@/lib/analytics"
@@ -16,13 +16,13 @@ export const DELETE = withErrorHandling(
     ctx: { params: Promise<{ id: string; tagId: string }> }
   ) => {
     const { id: annotationId, tagId } = await ctx.params
-    const user = await requireUser()
-    await enforceRateLimit(req, user.id, "annotation-write")
+    const identity = await requireRequestIdentity(req)
+    await enforceRateLimit(req, identity.userId, "annotation-write")
 
-    await removeTagFromAnnotation(user.id, annotationId, tagId)
+    await removeTagFromAnnotation(identity.userId, annotationId, tagId)
 
     await logAudit({
-      userId: user.id,
+      userId: identity.userId,
       action: "annotation.tag.remove",
       resourceType: "Annotation",
       resourceId: annotationId,
@@ -30,7 +30,7 @@ export const DELETE = withErrorHandling(
       ipAddress: getIpAddress(req),
     })
 
-    void track(user.id, "annotation_updated", { field: "tags" })
+    void track(identity.userId, "annotation_updated", { field: "tags" })
 
     return NextResponse.json({ data: null })
   }

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { extname } from "path"
 import { Readable } from "stream"
 
-import { requireUser } from "@/lib/auth/require"
+import { requireRequestIdentity } from "@/lib/auth/request-identity"
 import { prisma } from "@/lib/db/prisma"
 import { createStorageAdapter } from "@/lib/storage"
 import { withErrorHandling } from "@/lib/api/handler"
@@ -30,7 +30,7 @@ function buildContentDispositionFilename(documentId: string, filename: string, i
 }
 
 async function getHandler(
-    _req: NextRequest,
+    req: NextRequest,
     { params }: { params: Promise<{ path: string[] }> }
 ) {
     const { path } = await params
@@ -40,10 +40,10 @@ async function getHandler(
     }
 
     const [, documentId, ...rest] = path
-    const user = await requireUser()
+    const identity = await requireRequestIdentity(req)
 
     const document = await prisma.document.findFirst({
-        where: { id: documentId, userId: user.id, deletedAt: null },
+        where: { id: documentId, userId: identity.userId, deletedAt: null },
         select: { name: true, storageKey: true, thumbnailKey: true },
     })
 

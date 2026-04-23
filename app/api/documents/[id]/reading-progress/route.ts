@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 
-import { requireUser } from "@/lib/auth/require"
+import { requireRequestIdentity } from "@/lib/auth/request-identity"
 import { prisma } from "@/lib/db/prisma"
 import { withErrorHandling } from "@/lib/api/handler"
 import { enforceRateLimit } from "@/lib/ratelimit"
@@ -17,16 +17,16 @@ async function getHandler(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-  const user = await requireUser()
+  const identity = await requireRequestIdentity(_req)
 
   const doc = await prisma.document.findFirst({
-    where: { id, userId: user.id, deletedAt: null },
+    where: { id, userId: identity.userId, deletedAt: null },
     select: { id: true },
   })
   if (!doc) throw new NotFoundError("Document")
 
   const progress = await prisma.readingProgress.findUnique({
-    where: { userId_documentId: { userId: user.id, documentId: id } },
+    where: { userId_documentId: { userId: identity.userId, documentId: id } },
   })
 
   return NextResponse.json({ data: progress })
@@ -37,12 +37,12 @@ async function putHandler(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-  const user = await requireUser()
+  const identity = await requireRequestIdentity(req)
 
-  await enforceRateLimit(req, user.id, "default")
+  await enforceRateLimit(req, identity.userId, "default")
 
   const doc = await prisma.document.findFirst({
-    where: { id, userId: user.id, deletedAt: null },
+    where: { id, userId: identity.userId, deletedAt: null },
     select: { id: true },
   })
   if (!doc) throw new NotFoundError("Document")
@@ -50,9 +50,9 @@ async function putHandler(
   const input = UpdateReadingProgressSchema.parse(await req.json())
 
   const progress = await prisma.readingProgress.upsert({
-    where: { userId_documentId: { userId: user.id, documentId: id } },
+    where: { userId_documentId: { userId: identity.userId, documentId: id } },
     create: {
-      userId: user.id,
+      userId: identity.userId,
       documentId: id,
       lastPage: input.lastPage,
       percentComplete: input.percentComplete,

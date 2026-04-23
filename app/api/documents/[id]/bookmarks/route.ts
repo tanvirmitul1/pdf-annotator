@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 
-import { requireUser } from "@/lib/auth/require"
+import { requireRequestIdentity } from "@/lib/auth/request-identity"
 import { prisma } from "@/lib/db/prisma"
 import { withErrorHandling } from "@/lib/api/handler"
 import { enforceRateLimit } from "@/lib/ratelimit"
@@ -14,16 +14,16 @@ async function getHandler(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-  const user = await requireUser()
+  const identity = await requireRequestIdentity(_req)
 
   const doc = await prisma.document.findFirst({
-    where: { id, userId: user.id, deletedAt: null },
+    where: { id, userId: identity.userId, deletedAt: null },
     select: { id: true },
   })
   if (!doc) throw new NotFoundError("Document")
 
   const bookmarks = await prisma.bookmark.findMany({
-    where: { documentId: id, userId: user.id },
+    where: { documentId: id, userId: identity.userId },
     orderBy: { pageNumber: "asc" },
   })
 
@@ -35,12 +35,12 @@ async function postHandler(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-  const user = await requireUser()
+  const identity = await requireRequestIdentity(req)
 
-  await enforceRateLimit(req, user.id, "default")
+  await enforceRateLimit(req, identity.userId, "default")
 
   const doc = await prisma.document.findFirst({
-    where: { id, userId: user.id, deletedAt: null },
+    where: { id, userId: identity.userId, deletedAt: null },
     select: { id: true },
   })
   if (!doc) throw new NotFoundError("Document")
@@ -49,7 +49,7 @@ async function postHandler(
 
   const bookmark = await prisma.bookmark.create({
     data: {
-      userId: user.id,
+      userId: identity.userId,
       documentId: id,
       pageNumber: input.pageNumber,
       label: input.label ?? null,
@@ -57,7 +57,7 @@ async function postHandler(
   })
 
   await logAudit({
-    userId: user.id,
+    userId: identity.userId,
     action: "bookmark.create",
     resourceType: "Bookmark",
     resourceId: bookmark.id,

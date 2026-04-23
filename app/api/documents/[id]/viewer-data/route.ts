@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 
-import { requireUser } from "@/lib/auth/require"
+import { requireRequestIdentity } from "@/lib/auth/request-identity"
 import { prisma } from "@/lib/db/prisma"
 import { withErrorHandling } from "@/lib/api/handler"
 import { NotFoundError } from "@/lib/errors"
@@ -12,10 +12,10 @@ async function getHandler(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-  const user = await requireUser()
+  const identity = await requireRequestIdentity(_req)
 
   const document = await prisma.document.findFirst({
-    where: { id, userId: user.id, deletedAt: null },
+    where: { id, userId: identity.userId, deletedAt: null },
     select: {
       id: true,
       name: true,
@@ -45,11 +45,11 @@ async function getHandler(
       select: { entries: true },
     }),
     prisma.bookmark.findMany({
-      where: { documentId: id, userId: user.id },
+      where: { documentId: id, userId: identity.userId },
       orderBy: { pageNumber: "asc" },
     }),
     prisma.readingProgress.findUnique({
-      where: { userId_documentId: { userId: user.id, documentId: id } },
+      where: { userId_documentId: { userId: identity.userId, documentId: id } },
     }),
   ])
 
@@ -59,7 +59,7 @@ async function getHandler(
     data: { lastOpenedAt: new Date() },
   })
 
-  track(user.id, "document_opened", {
+  track(identity.userId, "document_opened", {
     documentId: id,
     pageCount: document.pageCount ?? 0,
   })

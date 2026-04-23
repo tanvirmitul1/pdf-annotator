@@ -1,24 +1,16 @@
 "use client"
 
-import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { DocumentUpload } from "@/components/documents/upload"
-import { AuthModal } from "@/components/auth/auth-modal"
 
 export function GuestUpload() {
-  const [showAuthModal, setShowAuthModal] = useState(false)
+  const router = useRouter()
 
   return (
-    <>
-      <DocumentUpload 
-        onUploadSuccess={() => {
-          setShowAuthModal(true)
-        }} 
-      />
-      <AuthModal 
-        open={showAuthModal} 
-        onOpenChange={setShowAuthModal}
-        defaultTab="signup"
-      />
-    </>
+    <DocumentUpload
+      onUploadSuccess={({ document }) => {
+        router.push(`/documents/${document.id}`)
+      }}
+    />
   )
 }

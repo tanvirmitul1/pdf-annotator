@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server"
 
 import { withErrorHandling } from "@/lib/api/handler"
-import { requireUser } from "@/lib/auth/require"
+import { requireRequestIdentity } from "@/lib/auth/request-identity"
 import { enforceRateLimit } from "@/lib/ratelimit"
 import { logAudit } from "@/lib/audit"
 import { track } from "@/lib/analytics"
@@ -14,14 +14,18 @@ import { addTagToAnnotation } from "@/features/annotations/service"
 export const POST = withErrorHandling(
   async (req: NextRequest, ctx: { params: Promise<{ id: string }> }) => {
     const { id: annotationId } = await ctx.params
-    const user = await requireUser()
-    await enforceRateLimit(req, user.id, "annotation-write")
+    const identity = await requireRequestIdentity(req)
+    await enforceRateLimit(req, identity.userId, "annotation-write")
     const { label } = AddTagSchema.parse(await req.json())
 
-    const { created, tag } = await addTagToAnnotation(user.id, annotationId, label)
+    const { created, tag } = await addTagToAnnotation(
+      identity.userId,
+      annotationId,
+      label
+    )
 
     await logAudit({
-      userId: user.id,
+      userId: identity.userId,
       action: "annotation.tag.add",
       resourceType: "Annotation",
       resourceId: annotationId,
@@ -33,9 +37,9 @@ export const POST = withErrorHandling(
     })
 
     if (created) {
-      void track(user.id, "tag_created", {})
+      void track(identity.userId, "tag_created", {})
     }
-    void track(user.id, "annotation_updated", { field: "tags" })
+    void track(identity.userId, "annotation_updated", { field: "tags" })
 
     return NextResponse.json({ data: tag }, { status: 201 })
   }

@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server"
 
 import { withErrorHandling } from "@/lib/api/handler"
-import { requireUser } from "@/lib/auth/require"
+import { requireRequestIdentity } from "@/lib/auth/request-identity"
 import { enforceRateLimit } from "@/lib/ratelimit"
 import { assertCanPerform } from "@/lib/authz/assert"
 import { logAudit } from "@/lib/audit"
@@ -19,14 +19,14 @@ import {
 // ─── GET /api/documents/[id]/annotations ─────────────────────────────────────
 
 export const GET = withErrorHandling(
-  async (_req: NextRequest, ctx: { params: Promise<{ id: string }> }) => {
+  async (req: NextRequest, ctx: { params: Promise<{ id: string }> }) => {
     const { id: documentId } = await ctx.params
-    const user = await requireUser()
+    const identity = await requireRequestIdentity(req)
 
-    const doc = await documentsFor(user.id).exists(documentId)
+    const doc = await documentsFor(identity.userId).exists(documentId)
     if (!doc) throw new NotFoundError("Document")
 
-    const annotations = await listAnnotations(user.id, documentId)
+    const annotations = await listAnnotations(identity.userId, documentId)
     return NextResponse.json({ data: annotations })
   }
 )
@@ -36,25 +36,25 @@ export const GET = withErrorHandling(
 export const POST = withErrorHandling(
   async (req: NextRequest, ctx: { params: Promise<{ id: string }> }) => {
     const { id: documentId } = await ctx.params
-    const user = await requireUser()                                  // 1. auth
-    await enforceRateLimit(req, user.id, "annotation-write")         // 2. rate limit
+    const identity = await requireRequestIdentity(req)               // 1. auth
+    await enforceRateLimit(req, identity.userId, "annotation-write") // 2. rate limit
     const input = CreateAnnotationSchema.parse(await req.json())     // 3. validate
 
-    const doc = await documentsFor(user.id).exists(documentId)
+    const doc = await documentsFor(identity.userId).exists(documentId)
     if (!doc) throw new NotFoundError("Document")
 
     // 5. Quota check
-    const currentCount = await annotationsFor(user.id).countByDocument(documentId)
-    await assertCanPerform(user.id, "annotation.create", {
+    const currentCount = await annotationsFor(identity.userId).countByDocument(documentId)
+    await assertCanPerform(identity.userId, "annotation.create", {
       currentAnnotationsPerDoc: currentCount,
     })
 
     // 6. Execute
-    const annotation = await createAnnotation(user.id, documentId, input)
+    const annotation = await createAnnotation(identity.userId, documentId, input)
 
     // 7. Audit
     await logAudit({
-      userId: user.id,
+      userId: identity.userId,
       action: "annotation.create",
       resourceType: "Annotation",
       resourceId: annotation.id,
@@ -63,7 +63,7 @@ export const POST = withErrorHandling(
     })
 
     // 8. Analytics
-    void track(user.id, "annotation_created", {
+    void track(identity.userId, "annotation_created", {
       type: annotation.type,
       hasComment: Boolean(annotation.content),
       tagCount: annotation.tags.length,

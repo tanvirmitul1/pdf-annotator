@@ -50,10 +50,10 @@ export default async function HomePage() {
         <div className="space-y-6">
           <div className="text-center">
             <h1 className="font-heading text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
-              Annotate PDFs & Images
+              Upload and annotate
             </h1>
             <p className="mt-4 text-base leading-7 text-muted-foreground">
-              Upload, highlight, and organize your documents instantly.
+              Drop a PDF or image to start.
             </p>
           </div>
 

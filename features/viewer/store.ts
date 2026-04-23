@@ -20,6 +20,8 @@ export interface SearchMatch {
 
 export interface ViewerState {
   documentId: string
+  isAuthenticated: boolean
+  onAnnotationAttempt?: () => boolean
 
   // ─── Viewer state ────────────────────────────────────────────────────────
   zoom: number
@@ -99,10 +101,12 @@ export interface ViewerState {
   setSaveStatus: (s: SaveStatus) => void
 }
 
-export const createViewerStore = (documentId: string) =>
+export const createViewerStore = (documentId: string, isAuthenticated = false, onAnnotationAttempt?: () => boolean) =>
   create<ViewerState>()(
     subscribeWithSelector((set, get) => ({
       documentId,
+      isAuthenticated,
+      onAnnotationAttempt,
 
       // ─── Viewer defaults ──────────────────────────────────────────────────
       zoom: 1,

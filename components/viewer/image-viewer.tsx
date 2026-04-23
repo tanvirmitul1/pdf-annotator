@@ -2,25 +2,41 @@
 
 import { useState, useEffect } from "react"
 import Image from "next/image"
-import { Download, ZoomIn, ZoomOut } from "lucide-react"
+import { Download, Loader2, ZoomIn, ZoomOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useGetDocumentViewerDataQuery } from "@/features/viewer/api"
 
 interface ImageViewerProps {
   documentId: string
   documentName: string
+  initialStatus?: string
 }
 
-export function ImageViewer({ documentId, documentName }: ImageViewerProps) {
+export function ImageViewer({
+  documentId,
+  documentName,
+  initialStatus = "PROCESSING",
+}: ImageViewerProps) {
   const [zoom, setZoom] = useState(1)
   const [imageUrl, setImageUrl] = useState<string | null>(null)
+  const { data, isLoading, refetch } = useGetDocumentViewerDataQuery(documentId)
+  const status = data?.document.status ?? initialStatus
 
-  // Fetch the signed URL for the image
   useEffect(() => {
-    fetch(`/api/documents/${documentId}/download?flavor=original`)
-      .then(res => res.json())
-      .then(data => setImageUrl(data.url))
-      .catch(console.error)
-  }, [documentId])
+    if (status === "READY") {
+      fetch(`/api/documents/${documentId}/download?flavor=original`)
+        .then((res) => res.json())
+        .then((payload) => setImageUrl(payload.url))
+        .catch(console.error)
+      return
+    }
+
+    const interval = window.setInterval(() => {
+      void refetch()
+    }, 2000)
+
+    return () => window.clearInterval(interval)
+  }, [documentId, refetch, status])
 
   const handleDownload = async () => {
     if (imageUrl) {
@@ -28,10 +44,22 @@ export function ImageViewer({ documentId, documentName }: ImageViewerProps) {
     }
   }
 
-  if (!imageUrl) {
+  if (status !== "READY" || !imageUrl) {
     return (
-      <div className="flex h-full items-center justify-center rounded-[2rem] border border-border/60 bg-card/55">
-        <p className="text-sm text-muted-foreground">Loading image...</p>
+      <div className="flex h-full items-center justify-center rounded-[2rem] border border-border/60 bg-card/55 px-6">
+        <div className="flex max-w-sm flex-col items-center gap-4 text-center">
+          <div className="flex size-14 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-primary">
+            <Loader2 className="size-5 animate-spin" />
+          </div>
+          <div className="space-y-2">
+            <p className="font-heading text-lg font-semibold text-foreground">
+              {isLoading ? "Opening file" : "Preparing file"}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Your image will open here as soon as it is ready.
+            </p>
+          </div>
+        </div>
       </div>
     )
   }
