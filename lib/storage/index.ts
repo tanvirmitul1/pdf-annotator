@@ -183,6 +183,101 @@ export class S3Adapter implements StorageAdapter {
   }
 }
 
+export class CloudinaryAdapter implements StorageAdapter {
+  private cloudinary: any
+  private cloudName: string
+
+  constructor(cloudName: string, apiKey: string, apiSecret: string) {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { v2: cloudinary } = require("cloudinary")
+    cloudinary.config({
+      cloud_name: cloudName,
+      api_key: apiKey,
+      api_secret: apiSecret,
+    })
+    this.cloudinary = cloudinary
+    this.cloudName = cloudName
+  }
+
+  async upload(
+    userId: string,
+    docId: string,
+    stream: Readable,
+    contentType: string,
+    filename: string
+  ): Promise<{ key: string; size: number }> {
+    const key = `${userId}/${docId}/${filename}`
+    
+    // Determine resource type based on content type
+    const resourceType = contentType === "application/pdf" ? "raw" : "image"
+
+    return new Promise((resolve, reject) => {
+      const uploadStream = this.cloudinary.uploader.upload_stream(
+        {
+          public_id: key,
+          resource_type: resourceType,
+          folder: "pdf-annotator",
+        },
+        (error: any, result: any) => {
+          if (error) {
+            reject(error)
+          } else {
+            resolve({ key, size: result.bytes })
+          }
+        }
+      )
+
+      stream.pipe(uploadStream)
+    })
+  }
+
+  async get(key: string): Promise<Readable> {
+    const https = await import("https")
+    const url = this.getPublicUrl(key)
+    
+    return new Promise((resolve, reject) => {
+      https.get(url, (response) => {
+        if (response.statusCode === 200) {
+          resolve(response as unknown as Readable)
+        } else {
+          reject(new Error(`Failed to fetch file: ${response.statusCode}`))
+        }
+      }).on("error", reject)
+    })
+  }
+
+  async delete(key: string): Promise<void> {
+    try {
+      await this.cloudinary.uploader.destroy(`pdf-annotator/${key}`, {
+        resource_type: "raw",
+      })
+    } catch {
+      // Try as image if raw fails
+      try {
+        await this.cloudinary.uploader.destroy(`pdf-annotator/${key}`, {
+          resource_type: "image",
+        })
+      } catch {
+        // Ignore if file doesn't exist
+      }
+    }
+  }
+
+  async getSignedUrl(key: string, expiresIn: number): Promise<string> {
+    void expiresIn
+    // Cloudinary URLs are already signed
+    return this.getPublicUrl(key)
+  }
+
+  getPublicUrl(key: string): string {
+    // Generate Cloudinary URL
+    return this.cloudinary.url(`pdf-annotator/${key}`, {
+      resource_type: "raw",
+      secure: true,
+    })
+  }
+}
+
 export function createStorageAdapter(): StorageAdapter {
   const driver = process.env.STORAGE_DRIVER || "local"
 
@@ -197,6 +292,12 @@ export function createStorageAdapter(): StorageAdapter {
         process.env.S3_ACCESS_KEY_ID!,
         process.env.S3_SECRET_ACCESS_KEY!,
         process.env.S3_ENDPOINT
+      )
+    case "cloudinary":
+      return new CloudinaryAdapter(
+        process.env.CLOUDINARY_CLOUD_NAME!,
+        process.env.CLOUDINARY_API_KEY!,
+        process.env.CLOUDINARY_API_SECRET!
       )
     default:
       throw new Error(`Unknown storage driver: ${driver}`)
