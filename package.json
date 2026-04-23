@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "next dev",
     "dev:all": "concurrently -n next,worker -c cyan,yellow \"pnpm dev\" \"pnpm worker\"",
+    "postinstall": "prisma generate",
     "build": "next build",
     "start": "next start",
     "worker": "tsx lib/jobs/worker.ts",
