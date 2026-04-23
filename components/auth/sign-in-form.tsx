@@ -22,7 +22,7 @@ interface SignInFormProps {
   onSwitchToSignUp?: () => void
 }
 
-export function SignInForm({ compact = false, callbackUrl: propCallbackUrl, onSwitchToSignUp }: SignInFormProps) {
+export function SignInForm({ callbackUrl: propCallbackUrl, onSwitchToSignUp }: SignInFormProps) {
   const searchParams = useSearchParams()
   const [values, setValues] = useState<SignInValues>({ email: "", password: "" })
   const [errors, setErrors] = useState<Partial<Record<keyof SignInValues, string>>>({})

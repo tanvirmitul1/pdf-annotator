@@ -21,7 +21,7 @@ interface SignUpFormProps {
   onSwitchToSignIn?: () => void
 }
 
-export function SignUpForm({ compact = false, callbackUrl: propCallbackUrl, onSwitchToSignIn }: SignUpFormProps) {
+export function SignUpForm({ callbackUrl: propCallbackUrl, onSwitchToSignIn }: SignUpFormProps) {
   const [values, setValues] = useState<SignUpValues>({ email: "", password: "" })
   const [errors, setErrors] = useState<Partial<Record<keyof SignUpValues, string>>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)

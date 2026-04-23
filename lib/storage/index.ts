@@ -184,7 +184,14 @@ export class S3Adapter implements StorageAdapter {
 }
 
 export class CloudinaryAdapter implements StorageAdapter {
-  private cloudinary: any
+  private cloudinary: {
+    config: (config: { cloud_name: string; api_key: string; api_secret: string }) => void
+    uploader: {
+      upload_stream: (options: Record<string, unknown>, callback: (error: Error | null, result: { bytes: number }) => void) => NodeJS.WritableStream
+      destroy: (publicId: string, options: Record<string, unknown>) => Promise<void>
+    }
+    url: (publicId: string, options: Record<string, unknown>) => string
+  }
   private cloudName: string
 
   constructor(cloudName: string, apiKey: string, apiSecret: string) {
@@ -218,7 +225,7 @@ export class CloudinaryAdapter implements StorageAdapter {
           resource_type: resourceType,
           folder: "pdf-annotator",
         },
-        (error: any, result: any) => {
+        (error: Error | null, result: { bytes: number }) => {
           if (error) {
             reject(error)
           } else {

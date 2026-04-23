@@ -108,7 +108,6 @@ function ViewerShellInner({
   documentId,
   documentName,
   initialPage,
-  isAuthenticated = false,
 }: ViewerShellProps) {
   const [pdfDocument, setPdfDocument] = useState<PDFDocumentProxy | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
