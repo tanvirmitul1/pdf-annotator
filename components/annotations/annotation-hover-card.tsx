@@ -1,18 +1,6 @@
 "use client"
 
 import { formatDistanceToNow } from "date-fns"
-import {
-  Circle,
-  Highlighter,
-  MoveRight,
-  Pencil,
-  Square,
-  StickyNote,
-  Strikethrough,
-  Type,
-  Underline,
-  Waves,
-} from "lucide-react"
 
 import type { AnnotationWithTags } from "@/features/annotations/types"
 
@@ -20,19 +8,6 @@ interface AnnotationHoverCardProps {
   annotation: AnnotationWithTags
   position: { x: number; y: number }
   orphaned?: boolean
-}
-
-const TYPE_ICONS: Record<string, React.ReactNode> = {
-  HIGHLIGHT: <Highlighter className="size-3.5" />,
-  UNDERLINE: <Underline className="size-3.5" />,
-  STRIKETHROUGH: <Strikethrough className="size-3.5" />,
-  SQUIGGLY: <Waves className="size-3.5" />,
-  NOTE: <StickyNote className="size-3.5" />,
-  FREEHAND: <Pencil className="size-3.5" />,
-  RECTANGLE: <Square className="size-3.5" />,
-  CIRCLE: <Circle className="size-3.5" />,
-  ARROW: <MoveRight className="size-3.5" />,
-  TEXTBOX: <Type className="size-3.5" />,
 }
 
 const TYPE_LABELS: Record<string, string> = {
@@ -76,7 +51,6 @@ export function AnnotationHoverCard({
     >
       <div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
         <span className="flex items-center gap-1">
-          {TYPE_ICONS[annotation.type]}
           {TYPE_LABELS[annotation.type] ?? annotation.type}
         </span>
         <span

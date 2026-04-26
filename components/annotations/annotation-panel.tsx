@@ -2,17 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import {
-  Circle,
-  Highlighter,
-  MoveRight,
-  Pencil,
-  Square,
-  StickyNote,
-  Strikethrough,
   Trash2,
-  Type,
-  Underline,
-  Waves,
   X,
 } from "lucide-react"
 import { toast } from "sonner"
@@ -42,19 +32,6 @@ const ANNOTATION_TYPE_TO_TOOL: Partial<Record<AnnotationType, ToolId>> = {
   STRIKETHROUGH: "strikethrough",
   SQUIGGLY: "squiggly",
 } as const
-
-const TYPE_ICONS: Record<string, React.ReactNode> = {
-  HIGHLIGHT: <Highlighter className="size-4" />,
-  UNDERLINE: <Underline className="size-4" />,
-  STRIKETHROUGH: <Strikethrough className="size-4" />,
-  SQUIGGLY: <Waves className="size-4" />,
-  NOTE: <StickyNote className="size-4" />,
-  FREEHAND: <Pencil className="size-4" />,
-  RECTANGLE: <Square className="size-4" />,
-  CIRCLE: <Circle className="size-4" />,
-  ARROW: <MoveRight className="size-4" />,
-  TEXTBOX: <Type className="size-4" />,
-}
 
 const TYPE_LABELS: Record<string, string> = {
   HIGHLIGHT: "Highlight",
@@ -373,7 +350,6 @@ export function AnnotationPanel({ documentId }: AnnotationPanelProps) {
       style={{ animation: "slideInRight 180ms ease-out both" }}
     >
       <div className="flex h-12 shrink-0 items-center gap-2 border-b border-border/60 px-3">
-        <span className="text-muted-foreground">{TYPE_ICONS[annotation.type]}</span>
         <span className="text-sm font-medium">
           {TYPE_LABELS[annotation.type] ?? annotation.type}
         </span>

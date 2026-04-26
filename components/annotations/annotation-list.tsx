@@ -3,18 +3,8 @@
 import { useMemo, useRef, useState } from "react"
 import { useVirtualizer } from "@tanstack/react-virtual"
 import {
-  Circle,
   Filter,
-  Highlighter,
-  MoveRight,
-  Pencil,
   Search,
-  Square,
-  StickyNote,
-  Strikethrough,
-  Type,
-  Underline,
-  Waves,
 } from "lucide-react"
 
 import type {
@@ -29,19 +19,6 @@ import {
 import { useViewer } from "@/features/viewer/provider"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
-
-const TYPE_ICONS: Record<AnnotationType, React.ReactNode> = {
-  HIGHLIGHT: <Highlighter className="size-3.5" />,
-  UNDERLINE: <Underline className="size-3.5" />,
-  STRIKETHROUGH: <Strikethrough className="size-3.5" />,
-  SQUIGGLY: <Waves className="size-3.5" />,
-  NOTE: <StickyNote className="size-3.5" />,
-  FREEHAND: <Pencil className="size-3.5" />,
-  RECTANGLE: <Square className="size-3.5" />,
-  CIRCLE: <Circle className="size-3.5" />,
-  ARROW: <MoveRight className="size-3.5" />,
-  TEXTBOX: <Type className="size-3.5" />,
-}
 
 const FILTER_TYPES: Array<{ value: AnnotationType; label: string }> = [
   { value: "HIGHLIGHT", label: "Highlight" },
@@ -281,13 +258,7 @@ export function AnnotationList({ documentId }: AnnotationListProps) {
                         : "hover:bg-accent"
                     )}
                   >
-                    <div className="flex items-start gap-1.5">
-                      <span
-                        className="mt-0.5 shrink-0 text-muted-foreground"
-                        style={{ color: annotation.color }}
-                      >
-                        {TYPE_ICONS[annotation.type]}
-                      </span>
+                    <div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
                           <span
