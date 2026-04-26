@@ -183,43 +183,56 @@ export class S3Adapter implements StorageAdapter {
   }
 }
 
-export class CloudinaryAdapter implements StorageAdapter {
-  private cloudinary: {
-    config: (config: { cloud_name: string; api_key: string; api_secret: string }) => void
-    uploader: {
-      upload_stream: (options: Record<string, unknown>, callback: (error: Error | null, result: { bytes: number }) => void) => NodeJS.WritableStream
-      destroy: (publicId: string, options: Record<string, unknown>) => Promise<void>
-    }
-    url: (publicId: string, options: Record<string, unknown>) => string
+type CloudinaryInstance = {
+  config: (config: { cloud_name: string; api_key: string; api_secret: string }) => void
+  uploader: {
+    upload_stream: (options: Record<string, unknown>, callback: (error: Error | null, result: { bytes: number }) => void) => NodeJS.WritableStream
+    destroy: (publicId: string, options: Record<string, unknown>) => Promise<void>
   }
+  url: (publicId: string, options: Record<string, unknown>) => string
+}
+
+export class CloudinaryAdapter implements StorageAdapter {
+  private _cloudinary: CloudinaryInstance | null = null
   private cloudName: string
+  private apiKey: string
+  private apiSecret: string
 
   constructor(cloudName: string, apiKey: string, apiSecret: string) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { v2: cloudinary } = require("cloudinary")
-    cloudinary.config({
-      cloud_name: cloudName,
-      api_key: apiKey,
-      api_secret: apiSecret,
-    })
-    this.cloudinary = cloudinary
     this.cloudName = cloudName
+    this.apiKey = apiKey
+    this.apiSecret = apiSecret
+  }
+
+  private async getCloudinary(): Promise<CloudinaryInstance> {
+    if (!this._cloudinary) {
+      const { v2: cloudinary } = await import("cloudinary")
+      cloudinary.config({
+        cloud_name: this.cloudName,
+        api_key: this.apiKey,
+        api_secret: this.apiSecret,
+      })
+      this._cloudinary = cloudinary as unknown as CloudinaryInstance
+    }
+    return this._cloudinary
   }
 
   async upload(
     userId: string,
     docId: string,
     stream: Readable,
-    contentType: string,
+    _contentType: string,
     filename: string
   ): Promise<{ key: string; size: number }> {
     const key = `${userId}/${docId}/${filename}`
-    
-    // Determine resource type based on content type
-    const resourceType = contentType === "application/pdf" ? "raw" : "image"
+
+    // Always use "raw" so getPublicUrl() URL format is consistent for all file types
+    const resourceType = "raw" as const
+
+    const cloudinary = await this.getCloudinary()
 
     return new Promise((resolve, reject) => {
-      const uploadStream = this.cloudinary.uploader.upload_stream(
+      const uploadStream = cloudinary.uploader.upload_stream(
         {
           public_id: key,
           resource_type: resourceType,
@@ -254,34 +267,25 @@ export class CloudinaryAdapter implements StorageAdapter {
   }
 
   async delete(key: string): Promise<void> {
+    const cloudinary = await this.getCloudinary()
     try {
-      await this.cloudinary.uploader.destroy(`pdf-annotator/${key}`, {
+      await cloudinary.uploader.destroy(`pdf-annotator/${key}`, {
         resource_type: "raw",
       })
     } catch {
-      // Try as image if raw fails
-      try {
-        await this.cloudinary.uploader.destroy(`pdf-annotator/${key}`, {
-          resource_type: "image",
-        })
-      } catch {
-        // Ignore if file doesn't exist
-      }
+      // Ignore if file doesn't exist
     }
   }
 
   async getSignedUrl(key: string, expiresIn: number): Promise<string> {
     void expiresIn
-    // Cloudinary URLs are already signed
-    return this.getPublicUrl(key)
+    // Proxy through server to avoid CORS issues and keep auth
+    return `/api/storage/${key}`
   }
 
   getPublicUrl(key: string): string {
-    // Generate Cloudinary URL
-    return this.cloudinary.url(`pdf-annotator/${key}`, {
-      resource_type: "raw",
-      secure: true,
-    })
+    // Construct Cloudinary URL directly — no SDK call needed for URL generation
+    return `https://res.cloudinary.com/${this.cloudName}/raw/upload/pdf-annotator/${key}`
   }
 }
 

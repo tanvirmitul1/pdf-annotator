@@ -2,7 +2,9 @@
   "permissions": {
     "allow": [
       "Bash(npx tsc:*)",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "Bash(npx tsx:*)",
+      "WebFetch(domain:res.cloudinary.com)"
     ]
   }
 }
