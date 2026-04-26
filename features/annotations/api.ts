@@ -56,6 +56,7 @@ export const annotationsApi = api.injectEndpoints({
           documentId: input.documentId,
           pageNumber: input.pageNumber,
           type: input.type,
+          status: input.status ?? "OPEN",
           color: input.color,
           positionData: input.positionData,
           content: input.content ?? null,
@@ -63,6 +64,7 @@ export const annotationsApi = api.injectEndpoints({
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           tags: [],
+          assignee: null,
         }
         const patch = dispatch(
           annotationsApi.util.updateQueryData(
@@ -112,12 +114,29 @@ export const annotationsApi = api.injectEndpoints({
             documentId,
             (draft) => {
               const a = draft.find((a) => a.id === id)
-              if (a) Object.assign(a, changes)
+              if (a) {
+                Object.assign(a, changes)
+                if (changes.assigneeId === null) {
+                  a.assignee = null
+                }
+              }
             }
           )
         )
         try {
-          await queryFulfilled
+          const { data } = await queryFulfilled
+          dispatch(
+            annotationsApi.util.updateQueryData(
+              "listByDocument",
+              documentId,
+              (draft) => {
+                const idx = draft.findIndex((annotation) => annotation.id === id)
+                if (idx >= 0) {
+                  draft[idx] = data
+                }
+              }
+            )
+          )
         } catch {
           patch.undo()
         }
@@ -193,6 +212,7 @@ export const annotationsApi = api.injectEndpoints({
           patch.undo()
         }
       },
+      invalidatesTags: ["Tag"],
     }),
 
     // ─── Remove tag from annotation (optimistic) ─────────────────────────────

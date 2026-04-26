@@ -1,8 +1,27 @@
 import { annotationsFor } from "@/lib/db/repositories/annotations"
 import { NotFoundError } from "@/lib/errors"
+import { listDocumentCollaborators } from "@/lib/db/repositories/document-access"
 
 import type { CreateAnnotationInput, UpdateAnnotationInput } from "./schema"
 import type { AnnotationWithTags, TagSummary } from "./types"
+
+async function assertValidAssignee(documentId: string, assigneeId?: string | null) {
+  if (!assigneeId) {
+    return
+  }
+
+  const collaborators = await listDocumentCollaborators(documentId)
+  
+  if (collaborators.length === 0) {
+    throw new NotFoundError("Document")
+  }
+  
+  const isCollaborator = collaborators.some((collaborator) => collaborator.id === assigneeId)
+
+  if (!isCollaborator) {
+    throw new NotFoundError("Assignee")
+  }
+}
 
 export async function listAnnotations(
   userId: string,
@@ -16,6 +35,7 @@ export async function createAnnotation(
   documentId: string,
   input: CreateAnnotationInput
 ): Promise<AnnotationWithTags> {
+  await assertValidAssignee(documentId, input.assigneeId)
   return annotationsFor(userId).create(documentId, input)
 }
 
@@ -30,6 +50,8 @@ export async function updateAnnotation(
   if (!existing) {
     throw new NotFoundError("Annotation")
   }
+
+  await assertValidAssignee(existing.documentId, changes.assigneeId)
 
   return repo.update(annotationId, changes)
 }

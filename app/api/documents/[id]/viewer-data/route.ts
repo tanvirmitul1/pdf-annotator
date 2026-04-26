@@ -6,6 +6,10 @@ import { withErrorHandling } from "@/lib/api/handler"
 import { NotFoundError } from "@/lib/errors"
 import { track } from "@/lib/analytics"
 import { mainQueue } from "@/lib/jobs/queue"
+import {
+  getAccessibleDocument,
+  listDocumentCollaborators,
+} from "@/lib/db/repositories/document-access"
 
 async function getHandler(
   _req: NextRequest,
@@ -13,18 +17,7 @@ async function getHandler(
 ) {
   const { id } = await params
   const identity = await requireRequestIdentity(_req)
-
-  const document = await prisma.document.findFirst({
-    where: { id, userId: identity.userId, deletedAt: null },
-    select: {
-      id: true,
-      name: true,
-      pageCount: true,
-      status: true,
-      storageKey: true,
-      thumbnailKey: true,
-    },
-  })
+  const document = await getAccessibleDocument(identity.userId, id)
 
   if (!document) throw new NotFoundError("Document")
 
@@ -39,7 +32,7 @@ async function getHandler(
     }
   }
 
-  const [outline, bookmarks, readingProgress] = await Promise.all([
+  const [outline, bookmarks, readingProgress, collaborators] = await Promise.all([
     prisma.documentOutline.findUnique({
       where: { documentId: id },
       select: { entries: true },
@@ -51,6 +44,7 @@ async function getHandler(
     prisma.readingProgress.findUnique({
       where: { userId_documentId: { userId: identity.userId, documentId: id } },
     }),
+    listDocumentCollaborators(id),
   ])
 
   // Update lastOpenedAt
@@ -67,6 +61,12 @@ async function getHandler(
   return NextResponse.json({
     data: {
       document,
+      collaborators,
+      permissions: {
+        role: document.role,
+        canManageMembers: document.role === "OWNER",
+        canAnnotate: true,
+      },
       outline: outline?.entries ?? null,
       bookmarks,
       readingProgress,

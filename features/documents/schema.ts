@@ -15,4 +15,5 @@ export const ListDocumentsParamsSchema = z.object({
   sort: z.enum(["name", "createdAt", "lastOpenedAt"]).default("lastOpenedAt"),
   cursor: z.string().optional(),
   limit: z.coerce.number().min(1).max(100).default(20),
+  showDeleted: z.boolean().optional(),
 })

@@ -14,6 +14,7 @@ const ListDocumentsSchema = z.object({
   sort: z.enum(["name", "createdAt", "lastOpenedAt"]).default("lastOpenedAt"),
   cursor: z.string().optional(),
   limit: z.coerce.number().min(1).max(100).default(20),
+  showDeleted: z.string().optional().transform((v) => v === "true"),
 })
 
 async function handler(request: NextRequest) {
@@ -21,12 +22,15 @@ async function handler(request: NextRequest) {
   const identity = await resolveOptionalIdentityFromRequest(request, session?.user?.id ?? null)
 
   if (!identity) {
+    console.log("[Documents List] No identity found, returning empty list")
     return NextResponse.json({
       items: [],
       nextCursor: null,
       hasMore: false,
     })
   }
+
+  console.log(`[Documents List] Listing documents for userId: ${identity.userId}, isAnonymous: ${identity.isAnonymous}`)
 
   const { searchParams } = new URL(request.url)
   const params = ListDocumentsSchema.parse({
@@ -36,12 +40,16 @@ async function handler(request: NextRequest) {
     sort: searchParams.get("sort") || "lastOpenedAt",
     cursor: searchParams.get("cursor") || undefined,
     limit: searchParams.get("limit") || 20,
+    showDeleted: searchParams.get("showDeleted") || undefined,
   })
 
   const where: Prisma.DocumentWhereInput = {
     userId: identity.userId,
-    deletedAt: null,
+    // Only show non-deleted documents unless explicitly requested
+    deletedAt: params.showDeleted === true ? { not: null } : null,
   }
+
+  console.log(`[Documents List] Query where clause:`, JSON.stringify(where))
 
   if (params.collection) {
     where.collections = {
@@ -50,15 +58,6 @@ async function handler(request: NextRequest) {
       },
     }
   }
-
-  // TODO: Add tag filtering when DocumentTag relation is added
-  // if (params.tag) {
-  //   where.tags = {
-  //     some: {
-  //       tagId: params.tag,
-  //     },
-  //   }
-  // }
 
   if (params.search) {
     where.OR = [
@@ -73,12 +72,12 @@ async function handler(request: NextRequest) {
     ]
   }
 
-  const orderBy: Prisma.DocumentOrderByWithRelationInput =
+  const orderBy: Prisma.DocumentOrderByWithRelationInput[] =
     params.sort === "name"
-      ? { name: "asc" }
+      ? [{ name: "asc" }, { createdAt: "desc" }]
       : params.sort === "createdAt"
-      ? { createdAt: "desc" }
-      : { lastOpenedAt: "desc" }
+      ? [{ createdAt: "desc" }]
+      : [{ lastOpenedAt: "desc" }, { createdAt: "desc" }] // Fallback to createdAt for new docs
 
   const documents = await prisma.document.findMany({
     where,
@@ -91,12 +90,14 @@ async function handler(request: NextRequest) {
       },
     },
     orderBy,
-    take: params.limit + 1, // +1 to check if there are more
+    take: params.limit + 1,
     ...(params.cursor && {
       cursor: { id: params.cursor },
       skip: 1,
     }),
   })
+
+  console.log(`[Documents List] Found ${documents.length} documents`)
 
   const hasMore = documents.length > params.limit
   const items = hasMore ? documents.slice(0, -1) : documents

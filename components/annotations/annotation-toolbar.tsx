@@ -36,6 +36,7 @@ interface ToolDef {
   shortcut: string
   icon: React.ReactNode
   hasColor?: boolean
+  hasThickness?: boolean
   desktopOnly?: boolean
 }
 
@@ -52,6 +53,15 @@ const TOOLS: ToolDef[] = [
     shortcut: "H",
     icon: <Highlighter className="size-4" />,
     hasColor: true,
+  },
+  {
+    id: "freehandHighlight",
+    label: "Freehand highlighter",
+    shortcut: "G",
+    icon: <Highlighter className="size-4" />,
+    hasColor: true,
+    hasThickness: true,
+    desktopOnly: true,
   },
   {
     id: "underline",
@@ -87,6 +97,7 @@ const TOOLS: ToolDef[] = [
     shortcut: "P",
     icon: <Pencil className="size-4" />,
     hasColor: true,
+    hasThickness: true,
     desktopOnly: true,
   },
   {
@@ -95,6 +106,7 @@ const TOOLS: ToolDef[] = [
     shortcut: "R",
     icon: <Square className="size-4" />,
     hasColor: true,
+    hasThickness: true,
     desktopOnly: true,
   },
   {
@@ -103,6 +115,7 @@ const TOOLS: ToolDef[] = [
     shortcut: "C",
     icon: <Circle className="size-4" />,
     hasColor: true,
+    hasThickness: true,
     desktopOnly: true,
   },
   {
@@ -111,6 +124,7 @@ const TOOLS: ToolDef[] = [
     shortcut: "A",
     icon: <MoveRight className="size-4" />,
     hasColor: true,
+    hasThickness: true,
     desktopOnly: true,
   },
   {
@@ -118,6 +132,7 @@ const TOOLS: ToolDef[] = [
     label: "Text box",
     shortcut: "X",
     icon: <Type className="size-4" />,
+    hasColor: true,
     desktopOnly: true,
   },
   {
@@ -125,6 +140,7 @@ const TOOLS: ToolDef[] = [
     label: "Eraser",
     shortcut: "E",
     icon: <Eraser className="size-4" />,
+    hasThickness: true,
   },
 ]
 
@@ -133,6 +149,8 @@ export function AnnotationToolbar() {
   const setTool = useViewer((state) => state.setTool)
   const selectedColor = useViewer((state) => state.selectedColor)
   const setSelectedColor = useViewer((state) => state.setSelectedColor)
+  const toolThickness = useViewer((state) => state.toolThickness)
+  const setToolThickness = useViewer((state) => state.setToolThickness)
   const discardDraft = useViewer((state) => state.discardDraft)
   const isAuthenticated = useViewer((state) => state.isAuthenticated)
   const onAnnotationAttempt = useViewer((state) => state.onAnnotationAttempt)
@@ -171,6 +189,9 @@ export function AnnotationToolbar() {
   const activeToolDef = TOOLS.find((tool) => tool.id === activeTool)
   const showColorPicker =
     activeToolDef?.hasColor && activeTool !== "select" && activeTool !== "eraser"
+  const showThicknessControl = Boolean(
+    activeToolDef?.hasThickness && activeTool !== "select"
+  )
 
   return (
     <TooltipProvider delayDuration={400}>
@@ -181,7 +202,7 @@ export function AnnotationToolbar() {
       >
         {TOOLS.map((tool, index) => {
           const isActive = activeTool === tool.id
-          const showSeparator = index === 1 || index === 6 || index === 11
+          const showSeparator = index === 1 || index === 6 || index === 12
 
           return (
             <div key={tool.id} className="flex flex-col items-center gap-1">
@@ -199,7 +220,8 @@ export function AnnotationToolbar() {
                       }
                       if (
                         coarsePointer &&
-                        (tool.id === "freehand" ||
+                        (tool.id === "freehandHighlight" ||
+                          tool.id === "freehand" ||
                           tool.id === "rectangle" ||
                           tool.id === "circle" ||
                           tool.id === "arrow")
@@ -243,6 +265,37 @@ export function AnnotationToolbar() {
               size="sm"
               className="flex-col gap-1.5"
             />
+          </>
+        ) : null}
+
+        {showThicknessControl ? (
+          <>
+            <Separator className="my-0.5 w-6" />
+            <div className="flex w-10 flex-col items-center gap-1 px-1">
+              <label
+                htmlFor="annotation-thickness"
+                className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground"
+              >
+                {activeTool === "eraser" ? "Size" : "Width"}
+              </label>
+              <input
+                id="annotation-thickness"
+                type="range"
+                min={activeTool === "eraser" ? 8 : 2}
+                max={activeTool === "freehandHighlight" ? 28 : activeTool === "eraser" ? 32 : 12}
+                step={1}
+                value={toolThickness}
+                onChange={(event) => setToolThickness(Number(event.target.value))}
+                aria-label={
+                  activeTool === "eraser" ? "Eraser size" : "Annotation thickness"
+                }
+                className="h-24 w-4 cursor-pointer [writing-mode:bt-lr]"
+                style={{ writingMode: "vertical-lr" }}
+              />
+              <span className="text-[10px] tabular-nums text-muted-foreground">
+                {toolThickness}px
+              </span>
+            </div>
           </>
         ) : null}
       </div>

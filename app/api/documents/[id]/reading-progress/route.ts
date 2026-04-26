@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db/prisma"
 import { withErrorHandling } from "@/lib/api/handler"
 import { enforceRateLimit } from "@/lib/ratelimit"
 import { NotFoundError } from "@/lib/errors"
+import { getAccessibleDocument } from "@/lib/db/repositories/document-access"
 
 const UpdateReadingProgressSchema = z.object({
   lastPage: z.number().int().min(1),
@@ -19,10 +20,7 @@ async function getHandler(
   const { id } = await params
   const identity = await requireRequestIdentity(_req)
 
-  const doc = await prisma.document.findFirst({
-    where: { id, userId: identity.userId, deletedAt: null },
-    select: { id: true },
-  })
+  const doc = await getAccessibleDocument(identity.userId, id)
   if (!doc) throw new NotFoundError("Document")
 
   const progress = await prisma.readingProgress.findUnique({
@@ -41,10 +39,7 @@ async function putHandler(
 
   await enforceRateLimit(req, identity.userId, "default")
 
-  const doc = await prisma.document.findFirst({
-    where: { id, userId: identity.userId, deletedAt: null },
-    select: { id: true },
-  })
+  const doc = await getAccessibleDocument(identity.userId, id)
   if (!doc) throw new NotFoundError("Document")
 
   const input = UpdateReadingProgressSchema.parse(await req.json())

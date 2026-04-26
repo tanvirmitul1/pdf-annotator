@@ -15,6 +15,7 @@ import {
   useUpdateAnnotationMutation,
   useListByDocumentQuery,
 } from "@/features/annotations/api"
+import { useGetMeQuery } from "@/features/auth/slice"
 import { useShortcuts } from "@/hooks/use-shortcuts"
 import { useAnnotationShortcuts } from "@/hooks/use-annotation-shortcuts"
 import { Toolbar } from "./toolbar"
@@ -62,23 +63,40 @@ export function ViewerShell({
   isAuthenticated = false,
 }: ViewerShellProps) {
   const [showLoginGate, setShowLoginGate] = useState(false)
+  const [verifiedAuth, setVerifiedAuth] = useState(isAuthenticated)
+
+  // Verify authentication on client-side
+  const { data: authData } = useGetMeQuery(undefined, {
+    skip: isAuthenticated, // Skip if already authenticated from server
+    pollingInterval: 30000, // Check every 30 seconds
+  })
+
+  // Update verified auth status based on API response
+  useEffect(() => {
+    if (authData) {
+      setVerifiedAuth(authData.authenticated)
+    }
+  }, [authData])
+
+  // Use the verified auth status (server-side or client-side verified)
+  const effectiveAuth = isAuthenticated || verifiedAuth
 
   const handleAnnotationAttempt = useCallback(() => {
-    if (!isAuthenticated) {
+    if (!effectiveAuth) {
       setShowLoginGate(true)
       return false
     }
     return true
-  }, [isAuthenticated])
+  }, [effectiveAuth])
 
   return (
     <>
-      <ViewerProvider documentId={documentId} isAuthenticated={isAuthenticated} onAnnotationAttempt={handleAnnotationAttempt}>
+      <ViewerProvider documentId={documentId} isAuthenticated={effectiveAuth} onAnnotationAttempt={handleAnnotationAttempt}>
         <ViewerShellInner
           documentId={documentId}
           documentName={documentName}
           initialPage={initialPage}
-          isAuthenticated={isAuthenticated}
+          isAuthenticated={effectiveAuth}
         />
       </ViewerProvider>
       <LoginGateModal
@@ -446,7 +464,7 @@ function ViewerShellInner({
   const downloadUrl: string | null = null
 
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-[2rem] border border-border/60 bg-card/55 shadow-[0_28px_80px_-55px_rgba(15,23,42,0.65)]">
+    <div className="flex h-full w-full flex-col overflow-hidden rounded-[2rem] border border-border/60 bg-card/55 shadow-[0_28px_80px_-55px_rgba(15,23,42,0.65)]">
       <OfflineBanner />
 
       <Toolbar
@@ -454,6 +472,8 @@ function ViewerShellInner({
         documentName={documentName}
         downloadUrl={downloadUrl}
         saveStatusSlot={<SaveStatus className="ml-2" />}
+        collaborators={data?.collaborators ?? []}
+        canManageMembers={Boolean(data?.permissions.canManageMembers)}
       />
 
       {/* Reading progress bar */}

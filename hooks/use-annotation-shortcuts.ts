@@ -37,6 +37,13 @@ export function useAnnotationShortcuts(
       handler: makeTool("highlight"),
     },
     {
+      key: "g",
+      label: "G",
+      category: "Annotation",
+      description: "Freehand highlighter",
+      handler: makeTool("freehandHighlight"),
+    },
+    {
       key: "u",
       label: "U",
       category: "Annotation",

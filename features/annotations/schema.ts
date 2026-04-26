@@ -54,6 +54,7 @@ const PathPositionDataSchema = z.object({
     )
     .min(2),
   strokeWidth: z.number().positive(),
+  style: z.enum(["pen", "highlighter"]).optional(),
 })
 
 const ArrowPositionDataSchema = z.object({
@@ -84,12 +85,21 @@ export const AnnotationTypeSchema = z.enum([
   "CIRCLE",
   "ARROW",
   "TEXTBOX",
+  "IMAGE_SHAPE",
+])
+
+export const AnnotationStatusSchema = z.enum([
+  "OPEN",
+  "IN_PROGRESS",
+  "RESOLVED",
 ])
 
 // ─── Create annotation ─────────────────────────────────────────────────────────
 export const CreateAnnotationSchema = z.object({
   pageNumber: z.number().int().positive(),
   type: AnnotationTypeSchema,
+  status: AnnotationStatusSchema.optional(),
+  assigneeId: z.string().cuid().nullable().optional(),
   color: hexColor,
   positionData: PositionDataSchema,
   content: z.string().max(10_000).optional(),
@@ -103,6 +113,8 @@ export const UpdateAnnotationSchema = z
     content: z.string().max(10_000),
     color: hexColor,
     positionData: PositionDataSchema,
+    status: AnnotationStatusSchema,
+    assigneeId: z.string().cuid().nullable(),
   })
   .partial()
   .refine((data) => Object.keys(data).length > 0, {

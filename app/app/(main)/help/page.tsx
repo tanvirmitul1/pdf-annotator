@@ -1,41 +1,98 @@
+import { Separator } from "@/components/ui/separator"
+
+const shortcuts = [
+  { keys: ["?"], description: "Open keyboard shortcuts" },
+  { keys: ["H"], description: "Highlight tool" },
+  { keys: ["U"], description: "Underline tool" },
+  { keys: ["S"], description: "Strikethrough tool" },
+  { keys: ["N"], description: "Note tool" },
+  { keys: ["F"], description: "Freehand draw" },
+  { keys: ["Esc"], description: "Deselect / close panel" },
+  { keys: ["←", "→"], description: "Previous / next page" },
+  { keys: ["Ctrl", "+"], description: "Zoom in" },
+  { keys: ["Ctrl", "−"], description: "Zoom out" },
+  { keys: ["Ctrl", "0"], description: "Reset zoom" },
+  { keys: ["Ctrl", "F"], description: "Search in document" },
+  { keys: ["Ctrl", "B"], description: "Toggle bookmarks panel" },
+  { keys: ["Delete"], description: "Delete selected annotation" },
+]
+
+const faqs = [
+  {
+    q: "What file types are supported?",
+    a: "PDF, PNG, JPG, JPEG, GIF, and WebP files up to 50 MB.",
+  },
+  {
+    q: "Are my documents private?",
+    a: "Yes. Documents are only accessible to you unless you explicitly share them via a share link.",
+  },
+  {
+    q: "How do I share a document?",
+    a: "Open the document viewer, click the share icon in the toolbar, and copy the generated link.",
+  },
+  {
+    q: "Can I restore a deleted document?",
+    a: "Yes. Go to Trash in the sidebar and click the restore icon next to the document.",
+  },
+]
+
+function Kbd({ children }: { children: string }) {
+  return (
+    <kbd className="inline-flex items-center rounded-md border border-border/70 bg-muted px-2 py-0.5 font-mono text-[0.7rem] text-muted-foreground">
+      {children}
+    </kbd>
+  )
+}
+
 export default function HelpPage() {
   return (
-    <section className="space-y-4">
-      <div className="glass-panel surface-border rounded-[2rem] px-6 py-7 sm:px-8">
-        <p className="text-[0.72rem] font-semibold tracking-[0.24em] text-primary uppercase">
+    <div className="space-y-6">
+      <div>
+        <h1 className="font-heading text-3xl font-semibold tracking-tight text-foreground">
           Help
-        </p>
-        <h1 className="mt-4 font-heading text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-          Support and product guidance now feel like part of the actual app.
         </h1>
-        <p className="mt-4 max-w-3xl text-sm leading-7 text-muted-foreground">
-          Legal pages, settings, keyboard shortcuts, and viewer guidance now all
-          have a stronger presentation layer.
+        <p className="mt-2 text-sm text-muted-foreground">
+          Keyboard shortcuts, tips, and frequently asked questions.
         </p>
       </div>
-      <div className="grid gap-4 md:grid-cols-3">
-        <article className="glass-panel surface-border rounded-[2rem] p-6">
-          <p className="text-sm font-semibold text-foreground">Shortcuts</p>
-          <p className="mt-2 text-sm leading-7 text-muted-foreground">
-            Use <strong>?</strong> inside the viewer to open the keyboard
-            reference.
-          </p>
-        </article>
-        <article className="glass-panel surface-border rounded-[2rem] p-6">
-          <p className="text-sm font-semibold text-foreground">Privacy</p>
-          <p className="mt-2 text-sm leading-7 text-muted-foreground">
-            Review the legal pages for cookies, retention, user rights, and
-            Google OAuth usage.
-          </p>
-        </article>
-        <article className="glass-panel surface-border rounded-[2rem] p-6">
-          <p className="text-sm font-semibold text-foreground">Workspace</p>
-          <p className="mt-2 text-sm leading-7 text-muted-foreground">
-            The redesigned shell is responsive on mobile, tablet, and desktop by
-            default.
-          </p>
-        </article>
-      </div>
-    </section>
+
+      {/* Shortcuts */}
+      <section className="glass-panel surface-border rounded-[2rem] p-6 space-y-4">
+        <p className="text-xs font-semibold tracking-[0.2em] text-muted-foreground uppercase">
+          Keyboard Shortcuts
+        </p>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {shortcuts.map(({ keys, description }) => (
+            <div
+              key={description}
+              className="flex items-center justify-between gap-4 rounded-[1rem] border border-border/50 bg-card/60 px-4 py-2.5"
+            >
+              <span className="text-sm text-foreground">{description}</span>
+              <div className="flex shrink-0 items-center gap-1">
+                {keys.map((k) => (
+                  <Kbd key={k}>{k}</Kbd>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="glass-panel surface-border rounded-[2rem] p-6 space-y-4">
+        <p className="text-xs font-semibold tracking-[0.2em] text-muted-foreground uppercase">
+          FAQ
+        </p>
+        <div className="space-y-4">
+          {faqs.map(({ q, a }, i) => (
+            <div key={q}>
+              {i > 0 && <Separator className="mb-4 opacity-50" />}
+              <p className="text-sm font-medium text-foreground">{q}</p>
+              <p className="mt-1 text-sm text-muted-foreground leading-6">{a}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+    </div>
   )
 }

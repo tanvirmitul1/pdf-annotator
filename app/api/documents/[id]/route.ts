@@ -7,6 +7,7 @@ import { withErrorHandling } from "@/lib/api/handler"
 import { requireUser } from "@/lib/auth/require"
 import { logAudit } from "@/lib/audit"
 import { decrementUsage } from "@/lib/authz/plan"
+import { createStorageAdapter } from "@/lib/storage"
 
 const UpdateDocumentSchema = z.object({
   name: z.string().min(1).max(255),
@@ -102,11 +103,20 @@ async function deleteHandler(request: NextRequest, { params }: { params: Promise
 
   const user = await requireUser()
 
+  // Get document (including already deleted ones for cleanup)
   const document = await prisma.document.findFirst({
     where: {
       id,
       userId: user.id,
-      deletedAt: null,
+    },
+    include: {
+      annotations: {
+        include: {
+          comments: true,
+          tags: true,
+        },
+      },
+      bookmarks: true,
     },
   })
 
@@ -114,10 +124,43 @@ async function deleteHandler(request: NextRequest, { params }: { params: Promise
     return NextResponse.json({ error: "Document not found" }, { status: 404 })
   }
 
-  // Soft delete
-  await prisma.document.update({
-    where: { id },
-    data: { deletedAt: new Date() },
+  const storage = createStorageAdapter()
+
+  // Delete all files from storage
+  try {
+    const documentPrefix = `${user.id}/${id}`
+    await storage.deletePrefix(documentPrefix)
+    await storage.delete(document.storageKey)
+    if (document.thumbnailKey) {
+      await storage.delete(document.thumbnailKey)
+    }
+  } catch (error) {
+    console.error(`Failed to delete storage files for document ${id}:`, error)
+  }
+
+  // Delete all related data from database in a transaction
+  await prisma.$transaction(async (tx) => {
+    const annotationIds = document.annotations.map((a) => a.id)
+    if (annotationIds.length > 0) {
+      await tx.annotationComment.deleteMany({
+        where: { annotationId: { in: annotationIds } },
+      })
+      await tx.annotationTag.deleteMany({
+        where: { annotationId: { in: annotationIds } },
+      })
+      await tx.annotation.deleteMany({
+        where: { id: { in: annotationIds } },
+      })
+    }
+
+    await tx.bookmark.deleteMany({ where: { documentId: id } })
+    await tx.documentText.deleteMany({ where: { documentId: id } })
+    await tx.documentOutline.deleteMany({ where: { documentId: id } })
+    await tx.readingProgress.deleteMany({ where: { documentId: id } })
+    await tx.shareLink.deleteMany({ where: { documentId: id } })
+    await tx.documentMember.deleteMany({ where: { documentId: id } })
+    await tx.documentCollection.deleteMany({ where: { documentId: id } })
+    await tx.document.delete({ where: { id } })
   })
 
   // Decrement usage
@@ -126,14 +169,21 @@ async function deleteHandler(request: NextRequest, { params }: { params: Promise
 
   await logAudit({
     userId: user.id,
-    action: "document.delete",
+    action: "document.hard_delete",
     resourceType: "document",
     resourceId: id,
-    metadata: {},
+    metadata: {
+      documentName: document.name,
+      fileSize: document.fileSize,
+      annotationCount: document.annotations.length,
+    },
     ipAddress: request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown",
   })
 
-  return NextResponse.json({ success: true })
+  return NextResponse.json({ 
+    success: true,
+    message: "Document permanently deleted"
+  })
 }
 
 export const GET = withErrorHandling(getHandler)

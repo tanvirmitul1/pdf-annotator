@@ -17,6 +17,7 @@ import {
   Bookmark,
   BookmarkCheck,
 } from "lucide-react"
+import type { DocumentMemberRole } from "@prisma/client"
 
 import { useViewer } from "@/features/viewer/provider"
 import {
@@ -27,11 +28,20 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
+  Avatar,
+  AvatarFallback,
+  AvatarGroup,
+  AvatarImage,
+} from "@/components/ui/avatar"
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { DocumentCollaborationDialog } from "./document-collaboration-dialog"
+import { NotificationBell } from "@/components/notifications/notification-bell"
+import { DocumentShareDialog } from "./document-share-dialog"
 
 const ZOOM_STEPS = [0.25, 0.33, 0.5, 0.67, 0.75, 1, 1.25, 1.5, 2, 3, 4]
 
@@ -40,6 +50,18 @@ interface ToolbarProps {
   documentName: string
   downloadUrl?: string | null
   saveStatusSlot?: React.ReactNode
+  collaborators?: Array<{
+    id: string
+    name: string | null
+    email: string | null
+    image: string | null
+    role: DocumentMemberRole | "OWNER"
+  }>
+  canManageMembers?: boolean
+}
+
+function initials(name: string | null, email: string | null) {
+  return (name || email || "?").slice(0, 2).toUpperCase()
 }
 
 function Tip({
@@ -70,6 +92,8 @@ export function Toolbar({
   documentName,
   downloadUrl,
   saveStatusSlot,
+  collaborators = [],
+  canManageMembers = false,
 }: ToolbarProps) {
   const zoom = useViewer((s) => s.zoom)
   const setZoom = useViewer((s) => s.setZoom)
@@ -80,6 +104,7 @@ export function Toolbar({
   const setRotation = useViewer((s) => s.setRotation)
   const sidebarOpen = useViewer((s) => s.sidebarOpen)
   const toggleSidebar = useViewer((s) => s.toggleSidebar)
+  const [showShareDialog, setShowShareDialog] = useState(false)
   const openSearch = useViewer((s) => s.openSearch)
   const searchOpen = useViewer((s) => s.searchOpen)
 
@@ -267,9 +292,30 @@ export function Toolbar({
       <Divider />
 
       {/* Document title */}
-      <span className="hidden max-w-[220px] truncate rounded-full border border-border/70 bg-card/75 px-3 py-1 text-sm font-medium md:block">
-        {documentName}
-      </span>
+      <div className="hidden min-w-0 items-center gap-3 md:flex">
+        <span className="max-w-[220px] truncate rounded-full border border-border/70 bg-card/75 px-3 py-1 text-sm font-medium">
+          {documentName}
+        </span>
+        {collaborators.length > 0 ? (
+          <AvatarGroup>
+            {collaborators.slice(0, 4).map((collaborator) => (
+              <Avatar
+                key={collaborator.id}
+                size="sm"
+                title={`${collaborator.name || collaborator.email || "Collaborator"} (${collaborator.role})`}
+              >
+                <AvatarImage
+                  src={collaborator.image ?? undefined}
+                  alt={collaborator.name ?? "Collaborator"}
+                />
+                <AvatarFallback>
+                  {initials(collaborator.name, collaborator.email)}
+                </AvatarFallback>
+              </Avatar>
+            ))}
+          </AvatarGroup>
+        ) : null}
+      </div>
 
       {/* Save status slot */}
       {saveStatusSlot}
@@ -342,18 +388,27 @@ export function Toolbar({
           </Tip>
         )}
 
-        {/* Share (Phase 7 placeholder) */}
-        <Tip label="Share (coming soon)">
+        {/* Share Button */}
+        <Tip label="Share document">
           <Button
             variant="ghost"
             size="icon"
             className="size-8 rounded-[1rem]"
-            disabled
-            aria-label="Share document (coming soon)"
+            onClick={() => setShowShareDialog(true)}
+            aria-label="Share document"
           >
             <Share2 className="size-4" />
           </Button>
         </Tip>
+
+        {/* Share Dialog */}
+        <DocumentShareDialog
+          documentId={documentId}
+          open={showShareDialog}
+          onOpenChange={setShowShareDialog}
+        />
+
+        <NotificationBell />
       </div>
     </header>
   )

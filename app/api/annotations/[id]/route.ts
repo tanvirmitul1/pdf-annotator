@@ -28,6 +28,10 @@ export const PATCH = withErrorHandling(
       ? "comment"
       : input.color !== undefined
         ? "color"
+        : input.status !== undefined
+          ? "status"
+          : input.assigneeId !== undefined
+            ? "assignee"
         : "color"
 
     await logAudit({

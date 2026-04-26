@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 
-import { requireUser } from "@/lib/auth/require"
+import { requireRequestIdentity } from "@/lib/auth/request-identity"
 import { prisma } from "@/lib/db/prisma"
 import { withErrorHandling } from "@/lib/api/handler"
 import { NotFoundError } from "@/lib/errors"
 import type { SearchMatch } from "@/features/viewer/store"
+import { getAccessibleDocument } from "@/lib/db/repositories/document-access"
 
 const SearchSchema = z.object({
   q: z.string().min(1).max(500),
@@ -16,12 +17,9 @@ async function getHandler(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-  const user = await requireUser()
+  const identity = await requireRequestIdentity(req)
 
-  const doc = await prisma.document.findFirst({
-    where: { id, userId: user.id, deletedAt: null },
-    select: { id: true },
-  })
+  const doc = await getAccessibleDocument(identity.userId, id)
   if (!doc) throw new NotFoundError("Document")
 
   const url = new URL(req.url)

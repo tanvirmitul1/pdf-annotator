@@ -11,6 +11,22 @@ import type {
 } from "@/features/annotations/schema"
 
 const annotationInclude = {
+  user: {
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      image: true,
+    },
+  },
+  assignee: {
+    select: {
+      id: true,
+      name: true,
+      email: true,
+      image: true,
+    },
+  },
   tags: {
     include: {
       tag: {
@@ -35,6 +51,7 @@ function toClient(row: AnnotationRow): AnnotationWithTags {
     documentId: row.documentId,
     pageNumber: row.pageNumber,
     type: row.type as AnnotationWithTags["type"],
+    status: row.status as AnnotationWithTags["status"],
     color: row.color,
     positionData: row.positionData as unknown as AnnotationWithTags["positionData"],
     content: row.content,
@@ -46,6 +63,22 @@ function toClient(row: AnnotationRow): AnnotationWithTags {
       label: item.tag.label,
       color: item.tag.color,
     })),
+    author: row.user
+      ? {
+          id: row.user.id,
+          name: row.user.name,
+          email: row.user.email,
+          image: row.user.image,
+        }
+      : null,
+    assignee: row.assignee
+      ? {
+          id: row.assignee.id,
+          name: row.assignee.name,
+          email: row.assignee.email,
+          image: row.assignee.image,
+        }
+      : null,
   }
 }
 
@@ -59,7 +92,6 @@ export function annotationsFor(userId: string) {
     listByDocument: async (documentId: string): Promise<AnnotationWithTags[]> => {
       const rows = await prisma.annotation.findMany({
         where: {
-          userId,
           documentId,
           deletedAt: null,
         },
@@ -99,6 +131,8 @@ export function annotationsFor(userId: string) {
           documentId,
           pageNumber: input.pageNumber,
           type: input.type,
+          status: input.status ?? "OPEN",
+          assigneeId: input.assigneeId ?? null,
           color: input.color,
           positionData: input.positionData as Prisma.InputJsonValue,
           content: input.content ?? null,
@@ -117,6 +151,10 @@ export function annotationsFor(userId: string) {
         data: {
           ...(changes.content !== undefined ? { content: changes.content } : {}),
           ...(changes.color !== undefined ? { color: changes.color } : {}),
+          ...(changes.status !== undefined ? { status: changes.status } : {}),
+          ...(changes.assigneeId !== undefined
+            ? { assigneeId: changes.assigneeId }
+            : {}),
           ...(changes.positionData !== undefined
             ? { positionData: changes.positionData as Prisma.InputJsonValue }
             : {}),

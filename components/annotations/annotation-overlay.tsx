@@ -32,6 +32,7 @@ import type {
 } from "@/features/annotations/types"
 import { useViewer } from "@/features/viewer/provider"
 import { cn } from "@/lib/utils"
+import { useAppSelector } from "@/store/hooks"
 
 import { AnnotationHoverCard } from "./annotation-hover-card"
 import { ColorPicker } from "./color-picker"
@@ -65,9 +66,16 @@ interface ManipulationState {
 }
 
 const HOVER_DELAY_MS = 150
-const DESKTOP_ONLY_TOOLS = new Set(["freehand", "rectangle", "circle", "arrow"])
+const DESKTOP_ONLY_TOOLS = new Set([
+  "freehandHighlight",
+  "freehand",
+  "rectangle",
+  "circle",
+  "arrow",
+])
 const HANDLE_RADIUS = 6
 const DRAG_THRESHOLD_PX = 4
+const TEXTBOX_PADDING = 8
 
 function useCoarsePointer() {
   const [coarsePointer, setCoarsePointer] = useState(false)
@@ -108,26 +116,40 @@ export function AnnotationOverlay({
   const selectedColor = useViewer((state) => state.selectedColor)
   const toolThickness = useViewer((state) => state.toolThickness)
   const hoveredAnnotationId = useViewer((state) => state.hoveredAnnotationId)
-  const selectedAnnotationId = useViewer((state) => state.rightPanelAnnotationId)
-  const relocatingAnnotationId = useViewer((state) => state.relocatingAnnotationId)
+  const selectedAnnotationId = useViewer(
+    (state) => state.rightPanelAnnotationId
+  )
+  const relocatingAnnotationId = useViewer(
+    (state) => state.relocatingAnnotationId
+  )
   const setHoveredAnnotation = useViewer((state) => state.setHoveredAnnotation)
   const openAnnotation = useViewer((state) => state.openAnnotation)
   const cancelRelocatingAnnotation = useViewer(
     (state) => state.cancelRelocatingAnnotation
   )
   const pushUndo = useViewer((state) => state.pushUndo)
-  const setAnnotationOrphaned = useViewer((state) => state.setAnnotationOrphaned)
+  const setAnnotationOrphaned = useViewer(
+    (state) => state.setAnnotationOrphaned
+  )
+  const currentUser = useAppSelector((state) => state.auth.user)
 
   const coarsePointer = useCoarsePointer()
   const overlayRef = useRef<HTMLDivElement>(null)
 
   const pageAnnotations = useMemo(
-    () => allAnnotations.filter((annotation) => annotation.pageNumber === pageNumber),
+    () =>
+      allAnnotations.filter(
+        (annotation) => annotation.pageNumber === pageNumber
+      ),
     [allAnnotations, pageNumber]
   )
 
-  const [resolvedMap, setResolvedMap] = useState<Record<string, ResolvedAnnotationMeta>>({})
-  const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null)
+  const [resolvedMap, setResolvedMap] = useState<
+    Record<string, ResolvedAnnotationMeta>
+  >({})
+  const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(
+    null
+  )
   const [selectionInfo, setSelectionInfo] = useState<{
     anchor: TextAnchor
     pos: { x: number; y: number }
@@ -157,6 +179,9 @@ export function AnnotationOverlay({
   const manipulationRef = useRef<ManipulationState | null>(null)
   const livePositionsRef = useRef<Record<string, PositionData>>({})
   const movedDuringManipulationRef = useRef(false)
+  const erasingRef = useRef(false)
+  const erasedAnnotationIdsRef = useRef<Set<string>>(new Set())
+  const lastEraserPointRef = useRef<{ x: number; y: number } | null>(null)
 
   const relocateTextAnnotation = useCallback(
     async (anchor: TextAnchor) => {
@@ -301,22 +326,31 @@ export function AnnotationOverlay({
   ])
 
   useEffect(() => {
-    if (textLayerReadyKey !== textLayerGenerationKey) {
-      return
-    }
-
     if (!overlayRef.current) {
       return
     }
 
-    const textLayer = overlayRef.current.parentElement?.querySelector<HTMLElement>(
-      `[data-text-layer="${pageNumber}"]`
-    )
+    const textLayer =
+      overlayRef.current.parentElement?.querySelector<HTMLElement>(
+        `[data-text-layer="${pageNumber}"]`
+      )
 
     const nextResolved: Record<string, ResolvedAnnotationMeta> = {}
 
     pageAnnotations.forEach((annotation) => {
-      if (annotation.positionData.kind !== "TEXT" || !textLayer) {
+      // Non-text annotations pass through unchanged
+      if (annotation.positionData.kind !== "TEXT") {
+        nextResolved[annotation.id] = {
+          positionData: annotation.positionData,
+          orphaned: false,
+        }
+        setAnnotationOrphaned(annotation.id, false)
+        return
+      }
+
+      // If no text layer or spans not ready yet, use ORIGINAL position as fallback
+      // This ensures annotations are ALWAYS visible, even during zoom transitions
+      if (!textLayer) {
         nextResolved[annotation.id] = {
           positionData: annotation.positionData,
           orphaned: false,
@@ -329,36 +363,71 @@ export function AnnotationOverlay({
         textLayer.querySelectorAll<HTMLElement>("[data-text-span='true']")
       )
 
-      const overlayRect = overlayRef.current!.getBoundingClientRect()
-      const segments = spanNodes.map((span) => {
-        const spanRect = span.getBoundingClientRect()
-        const relativeX = spanRect.left - overlayRect.left
-        const relativeY = spanRect.top - overlayRect.top
-        const srcPoint = screenToSrc(relativeX, relativeY, srcW, srcH, zoom, rotation)
-
-        return {
-          text: span.dataset.textContent ?? span.textContent ?? "",
-          rect: {
-            x: srcPoint.x,
-            y: srcPoint.y,
-            width: spanRect.width / zoom,
-            height: spanRect.height / zoom,
-          },
+      // If spans haven't rendered yet, use original position
+      if (spanNodes.length === 0) {
+        nextResolved[annotation.id] = {
+          positionData: annotation.positionData,
+          orphaned: false,
         }
-      })
-
-      const reanchored = resolveTextAnchor(segments, annotation.positionData.anchor)
-      nextResolved[annotation.id] = {
-        positionData: {
-          ...annotation.positionData,
-          anchor: {
-            ...annotation.positionData.anchor,
-            rects: reanchored.rects,
-          },
-        },
-        orphaned: reanchored.orphaned,
+        setAnnotationOrphaned(annotation.id, false)
+        return
       }
-      setAnnotationOrphaned(annotation.id, reanchored.orphaned)
+
+      // Re-anchor to current text layer positions
+      try {
+        const overlayRect = overlayRef.current!.getBoundingClientRect()
+        const segments = spanNodes.map((span) => {
+          const spanRect = span.getBoundingClientRect()
+          const relativeX = spanRect.left - overlayRect.left
+          const relativeY = spanRect.top - overlayRect.top
+          const srcPoint = screenToSrc(
+            relativeX,
+            relativeY,
+            srcW,
+            srcH,
+            zoom,
+            rotation
+          )
+
+          return {
+            text: span.dataset.textContent ?? span.textContent ?? "",
+            rect: {
+              x: srcPoint.x,
+              y: srcPoint.y,
+              width: spanRect.width / zoom,
+              height: spanRect.height / zoom,
+            },
+          }
+        })
+
+        const reanchored = resolveTextAnchor(
+          segments,
+          annotation.positionData.anchor
+        )
+        nextResolved[annotation.id] = {
+          positionData: {
+            kind: "TEXT" as const,
+            pageNumber: annotation.positionData.pageNumber,
+            anchor: {
+              ...annotation.positionData.anchor,
+              rects: reanchored.rects,
+            },
+          },
+          orphaned: reanchored.orphaned,
+        }
+        setAnnotationOrphaned(annotation.id, reanchored.orphaned)
+      } catch (error) {
+        // If re-anchoring fails, use original position to ensure annotation is still visible
+        console.warn(
+          `[AnnotationOverlay] Failed to re-anchor annotation ${annotation.id}:`,
+          error
+        )
+        nextResolved[annotation.id] = {
+          positionData: annotation.positionData,
+          orphaned: false,
+        }
+        setAnnotationOrphaned(annotation.id, false)
+      }
     })
 
     setResolvedMap(nextResolved)
@@ -386,13 +455,16 @@ export function AnnotationOverlay({
     setHoverPos(null)
   }
 
-  const setLivePosition = useCallback((annotationId: string, positionData: PositionData) => {
-    setLivePositions((previous) => {
-      const next = { ...previous, [annotationId]: positionData }
-      livePositionsRef.current = next
-      return next
-    })
-  }, [])
+  const setLivePosition = useCallback(
+    (annotationId: string, positionData: PositionData) => {
+      setLivePositions((previous) => {
+        const next = { ...previous, [annotationId]: positionData }
+        livePositionsRef.current = next
+        return next
+      })
+    },
+    []
+  )
 
   const clearLivePosition = useCallback((annotationId: string) => {
     setLivePositions((previous) => {
@@ -415,14 +487,17 @@ export function AnnotationOverlay({
     )
   }
 
-  const getRelativeClientPoint = useCallback((clientX: number, clientY: number) => {
-    const rect = overlayRef.current?.getBoundingClientRect()
+  const getRelativeClientPoint = useCallback(
+    (clientX: number, clientY: number) => {
+      const rect = overlayRef.current?.getBoundingClientRect()
 
-    return {
-      x: clientX - (rect?.left ?? 0),
-      y: clientY - (rect?.top ?? 0),
-    }
-  }, [])
+      return {
+        x: clientX - (rect?.left ?? 0),
+        y: clientY - (rect?.top ?? 0),
+      }
+    },
+    []
+  )
 
   const getSourcePointFromClient = useCallback(
     (clientX: number, clientY: number) => {
@@ -431,6 +506,239 @@ export function AnnotationOverlay({
     },
     [getRelativeClientPoint, rotation, srcH, srcW, zoom]
   )
+
+  function canEditAnnotation(annotation: AnnotationWithTags) {
+    if (!currentUser) {
+      return false
+    }
+
+    return (
+      annotation.author?.id === currentUser.id ||
+      annotation.userId === currentUser.id ||
+      annotation.userId === "optimistic"
+    )
+  }
+
+  function getScreenBounds(positionData: PositionData) {
+    if (positionData.kind === "TEXT") {
+      const points = positionData.anchor.rects.flatMap((rect) => {
+        const topLeft = srcToScreen(rect.x, rect.y, srcW, srcH, zoom, rotation)
+        const bottomRight = srcToScreen(
+          rect.x + rect.width,
+          rect.y + rect.height,
+          srcW,
+          srcH,
+          zoom,
+          rotation
+        )
+
+        return [topLeft, bottomRight]
+      })
+
+      if (points.length === 0) {
+        return null
+      }
+
+      const xs = points.map((point) => point.x)
+      const ys = points.map((point) => point.y)
+      return {
+        x: Math.min(...xs),
+        y: Math.min(...ys),
+        width: Math.max(...xs) - Math.min(...xs),
+        height: Math.max(...ys) - Math.min(...ys),
+      }
+    }
+
+    if (positionData.kind === "POINT") {
+      const point = srcToScreen(
+        positionData.x,
+        positionData.y,
+        srcW,
+        srcH,
+        zoom,
+        rotation
+      )
+      return {
+        x: point.x - 12,
+        y: point.y - 12,
+        width: 24,
+        height: 24,
+      }
+    }
+
+    if (positionData.kind === "RECT") {
+      const topLeft = srcToScreen(
+        positionData.x,
+        positionData.y,
+        srcW,
+        srcH,
+        zoom,
+        rotation
+      )
+      const bottomRight = srcToScreen(
+        positionData.x + positionData.width,
+        positionData.y + positionData.height,
+        srcW,
+        srcH,
+        zoom,
+        rotation
+      )
+
+      return {
+        x: Math.min(topLeft.x, bottomRight.x),
+        y: Math.min(topLeft.y, bottomRight.y),
+        width: Math.abs(bottomRight.x - topLeft.x),
+        height: Math.abs(bottomRight.y - topLeft.y),
+      }
+    }
+
+    if (positionData.kind === "PATH") {
+      const screenPoints = positionData.points.map((point) =>
+        srcToScreen(point.x, point.y, srcW, srcH, zoom, rotation)
+      )
+      const xs = screenPoints.map((point) => point.x)
+      const ys = screenPoints.map((point) => point.y)
+      const padding = Math.max(8, positionData.strokeWidth * zoom)
+
+      return {
+        x: Math.min(...xs) - padding,
+        y: Math.min(...ys) - padding,
+        width: Math.max(...xs) - Math.min(...xs) + padding * 2,
+        height: Math.max(...ys) - Math.min(...ys) + padding * 2,
+      }
+    }
+
+    const from = srcToScreen(
+      positionData.from.x,
+      positionData.from.y,
+      srcW,
+      srcH,
+      zoom,
+      rotation
+    )
+    const to = srcToScreen(
+      positionData.to.x,
+      positionData.to.y,
+      srcW,
+      srcH,
+      zoom,
+      rotation
+    )
+    const padding = Math.max(10, positionData.strokeWidth * zoom * 1.5)
+
+    return {
+      x: Math.min(from.x, to.x) - padding,
+      y: Math.min(from.y, to.y) - padding,
+      width: Math.abs(to.x - from.x) + padding * 2,
+      height: Math.abs(to.y - from.y) + padding * 2,
+    }
+  }
+
+  function segmentTouchesBounds(
+    from: { x: number; y: number },
+    to: { x: number; y: number },
+    bounds: { x: number; y: number; width: number; height: number },
+    padding: number
+  ) {
+    const expanded = {
+      x: bounds.x - padding,
+      y: bounds.y - padding,
+      width: bounds.width + padding * 2,
+      height: bounds.height + padding * 2,
+    }
+
+    const length = Math.hypot(to.x - from.x, to.y - from.y)
+    const samples = Math.max(1, Math.ceil(length / Math.max(padding / 2, 4)))
+
+    for (let index = 0; index <= samples; index += 1) {
+      const ratio = index / samples
+      const x = from.x + (to.x - from.x) * ratio
+      const y = from.y + (to.y - from.y) * ratio
+
+      if (
+        x >= expanded.x &&
+        x <= expanded.x + expanded.width &&
+        y >= expanded.y &&
+        y <= expanded.y + expanded.height
+      ) {
+        return true
+      }
+    }
+
+    return false
+  }
+
+  const restoreDeletedAnnotation = useCallback(
+    async (annotation: AnnotationWithTags) => {
+      const recreated = await createAnnotation({
+        documentId,
+        pageNumber: annotation.pageNumber,
+        type: annotation.type,
+        color: annotation.color,
+        positionData: annotation.positionData,
+        ...(annotation.content ? { content: annotation.content } : {}),
+      }).unwrap()
+
+      pushUndo({ action: "create", before: null, after: recreated })
+    },
+    [createAnnotation, documentId, pushUndo]
+  )
+
+  const deleteAnnotationImmediate = useCallback(
+    (annotation: AnnotationWithTags, options?: { showToast?: boolean }) => {
+      if (erasedAnnotationIdsRef.current.has(annotation.id)) {
+        return
+      }
+
+      erasedAnnotationIdsRef.current.add(annotation.id)
+      pushUndo({ action: "delete", before: annotation, after: null })
+
+      void deleteAnnotation({ id: annotation.id, documentId })
+        .unwrap()
+        .then(() => {
+          if (options?.showToast !== false) {
+            toast.success("Annotation deleted", {
+              duration: 5000,
+              action: {
+                label: "Undo",
+                onClick: () => {
+                  void restoreDeletedAnnotation(annotation)
+                },
+              },
+            })
+          }
+        })
+        .catch(() => {
+          erasedAnnotationIdsRef.current.delete(annotation.id)
+          toast.error("Could not delete annotation")
+        })
+    },
+    [deleteAnnotation, documentId, pushUndo, restoreDeletedAnnotation]
+  )
+
+  function eraseAtPoint(
+    point: { x: number; y: number },
+    previousPoint?: { x: number; y: number } | null
+  ) {
+    const segmentStart = previousPoint ?? point
+    const eraserRadius = Math.max(8, toolThickness)
+
+    pageAnnotations.forEach((annotation) => {
+      if (!canEditAnnotation(annotation)) {
+        return
+      }
+
+      const bounds = getScreenBounds(getEffectivePositionData(annotation))
+
+      if (!bounds) {
+        return
+      }
+
+      if (segmentTouchesBounds(segmentStart, point, bounds, eraserRadius)) {
+        deleteAnnotationImmediate(annotation, { showToast: false })
+      }
+    })
+  }
 
   function beginManipulation(
     annotation: AnnotationWithTags,
@@ -445,7 +753,10 @@ export function AnnotationOverlay({
       return
     }
 
-    if (mode === "resize" && (!handle || !isResizablePosition(originalPosition))) {
+    if (
+      mode === "resize" &&
+      (!handle || !isResizablePosition(originalPosition))
+    ) {
       return
     }
 
@@ -469,7 +780,10 @@ export function AnnotationOverlay({
       clearLivePosition(state.annotation.id)
       manipulationRef.current = null
 
-      if (!latestPosition || positionDataEquals(latestPosition, state.originalPosition)) {
+      if (
+        !latestPosition ||
+        positionDataEquals(latestPosition, state.originalPosition)
+      ) {
         return
       }
 
@@ -558,7 +872,10 @@ export function AnnotationOverlay({
     zoom,
   ])
 
-  function setHoverForTarget(event: React.MouseEvent | React.FocusEvent, annotationId: string) {
+  function setHoverForTarget(
+    event: React.MouseEvent | React.FocusEvent,
+    annotationId: string
+  ) {
     if (coarsePointer && "clientX" in event === false) {
       return
     }
@@ -571,7 +888,9 @@ export function AnnotationOverlay({
       x = event.clientX - (rect?.left ?? 0)
       y = event.clientY - (rect?.top ?? 0)
     } else {
-      const targetRect = (event.currentTarget as SVGElement).getBoundingClientRect()
+      const targetRect = (
+        event.currentTarget as SVGElement
+      ).getBoundingClientRect()
       x = targetRect.left - (rect?.left ?? 0)
       y = targetRect.top - (rect?.top ?? 0)
     }
@@ -594,31 +913,23 @@ export function AnnotationOverlay({
     hoverTimerRef.current = setTimeout(apply, HOVER_DELAY_MS)
   }
 
-  async function restoreDeletedAnnotation(annotation: AnnotationWithTags) {
-    const recreated = await createAnnotation({
-      documentId,
-      pageNumber: annotation.pageNumber,
-      type: annotation.type,
-      color: annotation.color,
-      positionData: annotation.positionData,
-      ...(annotation.content ? { content: annotation.content } : {}),
-    }).unwrap()
-
-    pushUndo({ action: "create", before: null, after: recreated })
-  }
-
   async function createAndTrack(
     input: Parameters<typeof createAnnotation>[0],
     options?: { openPanel?: boolean }
   ) {
-    const created = await createAnnotation(input).unwrap()
-    pushUndo({ action: "create", before: null, after: created })
+    try {
+      const created = await createAnnotation(input).unwrap()
+      pushUndo({ action: "create", before: null, after: created })
 
-    if (options?.openPanel) {
-      openAnnotation(created.id)
+      if (options?.openPanel) {
+        openAnnotation(created.id)
+      }
+
+      return created
+    } catch {
+      toast.error("Could not create annotation")
+      return null
     }
-
-    return created
   }
 
   async function commitTextAnnotation(
@@ -657,17 +968,11 @@ export function AnnotationOverlay({
 
   async function handleAnnotationActivate(annotation: AnnotationWithTags) {
     if (activeTool === "eraser") {
-      pushUndo({ action: "delete", before: annotation, after: null })
-      await deleteAnnotation({ id: annotation.id, documentId }).unwrap()
-      toast.success("Annotation deleted", {
-        duration: 5000,
-        action: {
-          label: "Undo",
-          onClick: () => {
-            void restoreDeletedAnnotation(annotation)
-          },
-        },
-      })
+      if (!canEditAnnotation(annotation)) {
+        toast.message("You can only erase annotations that you created.")
+        return
+      }
+      deleteAnnotationImmediate(annotation)
       return
     }
 
@@ -676,21 +981,18 @@ export function AnnotationOverlay({
   }
 
   async function handleContextDelete(annotation: AnnotationWithTags) {
-    pushUndo({ action: "delete", before: annotation, after: null })
     setContextMenu(null)
-    await deleteAnnotation({ id: annotation.id, documentId }).unwrap()
-    toast.success("Annotation deleted", {
-      duration: 5000,
-      action: {
-        label: "Undo",
-        onClick: () => {
-          void restoreDeletedAnnotation(annotation)
-        },
-      },
-    })
+    if (!canEditAnnotation(annotation)) {
+      toast.message("You can only delete annotations that you created.")
+      return
+    }
+    deleteAnnotationImmediate(annotation)
   }
 
-  async function handleContextColorChange(annotation: AnnotationWithTags, color: string) {
+  async function handleContextColorChange(
+    annotation: AnnotationWithTags,
+    color: string
+  ) {
     if (annotation.color === color) {
       setContextMenu(null)
       return
@@ -745,7 +1047,7 @@ export function AnnotationOverlay({
     const rel = getRelPos(event)
     startPosRef.current = rel
 
-    if (activeTool === "freehand") {
+    if (activeTool === "freehand" || activeTool === "freehandHighlight") {
       setDrawPath([rel])
       return
     }
@@ -812,23 +1114,44 @@ export function AnnotationOverlay({
     if (!drawingRef.current || !startPosRef.current) return
     const rel = getRelPos(event)
 
-    if (activeTool === "freehand") {
+    if (activeTool === "freehand" || activeTool === "freehandHighlight") {
       setDrawPath((previous) => [...previous, rel])
       return
     }
 
     if (activeTool === "arrow") {
-      setArrowDraw((previous) => (previous ? { ...previous, to: rel } : null))
+      const start = startPosRef.current
+      const dx = rel.x - start.x
+      const dy = rel.y - start.y
+      const constrainedTo = event.shiftKey
+        ? Math.abs(dx) >= Math.abs(dy)
+          ? { x: rel.x, y: start.y }
+          : { x: start.x, y: rel.y }
+        : rel
+      setArrowDraw((previous) =>
+        previous ? { ...previous, to: constrainedTo } : null
+      )
       return
     }
 
     if (activeTool === "rectangle" || activeTool === "circle") {
       const start = startPosRef.current
+      const deltaX = rel.x - start.x
+      const deltaY = rel.y - start.y
+      const side = Math.max(Math.abs(deltaX), Math.abs(deltaY))
+      const width = event.shiftKey ? side : Math.abs(deltaX)
+      const height = event.shiftKey ? side : Math.abs(deltaY)
+      const targetX = event.shiftKey
+        ? start.x + Math.sign(deltaX || 1) * side
+        : rel.x
+      const targetY = event.shiftKey
+        ? start.y + Math.sign(deltaY || 1) * side
+        : rel.y
       setDrawRect({
-        x: Math.min(start.x, rel.x),
-        y: Math.min(start.y, rel.y),
-        w: Math.abs(rel.x - start.x),
-        h: Math.abs(rel.y - start.y),
+        x: Math.min(start.x, targetX),
+        y: Math.min(start.y, targetY),
+        w: width,
+        h: height,
       })
     }
   }
@@ -838,36 +1161,45 @@ export function AnnotationOverlay({
 
     drawingRef.current = false
 
-    if (activeTool === "freehand" && drawPath.length >= 2) {
+    if (
+      (activeTool === "freehand" || activeTool === "freehandHighlight") &&
+      drawPath.length >= 2
+    ) {
       const srcPoints = drawPath.map((point) => getSrcPos(point))
-      await createAndTrack({
+      const pathStyle =
+        activeTool === "freehandHighlight" ? "highlighter" : "pen"
+      const nextPath = {
         documentId,
         pageNumber,
-        type: "FREEHAND",
+        type: "FREEHAND" as const,
         color: selectedColor,
         positionData: {
-          kind: "PATH",
+          kind: "PATH" as const,
           pageNumber,
           points: srcPoints,
           strokeWidth: toolThickness / zoom,
+          style: pathStyle as "pen" | "highlighter",
         },
-      })
+      }
       setDrawPath([])
+      void createAndTrack(nextPath)
     } else if (activeTool === "arrow" && arrowDraw) {
-      await createAndTrack({
+      const nextArrow = {
         documentId,
         pageNumber,
-        type: "ARROW",
+        type: "ARROW" as const,
         color: selectedColor,
         positionData: {
-          kind: "ARROW",
+          kind: "ARROW" as const,
           pageNumber,
           from: getSrcPos(arrowDraw.from),
           to: getSrcPos(arrowDraw.to),
           strokeWidth: toolThickness / zoom,
         },
-      })
+      }
+      setDrawPath([])
       setArrowDraw(null)
+      void createAndTrack(nextArrow)
     } else if (
       (activeTool === "rectangle" || activeTool === "circle") &&
       drawRect &&
@@ -875,21 +1207,24 @@ export function AnnotationOverlay({
       drawRect.h > 4
     ) {
       const srcTopLeft = getSrcPos({ x: drawRect.x, y: drawRect.y })
-      await createAndTrack({
+      const nextShape = {
         documentId,
         pageNumber,
-        type: activeTool === "rectangle" ? "RECTANGLE" : "CIRCLE",
+        type: (activeTool === "rectangle" ? "RECTANGLE" : "CIRCLE") as
+          | "RECTANGLE"
+          | "CIRCLE",
         color: selectedColor,
         positionData: {
-          kind: "RECT",
+          kind: "RECT" as const,
           pageNumber,
           x: srcTopLeft.x,
           y: srcTopLeft.y,
           width: drawRect.w / zoom,
           height: drawRect.h / zoom,
         },
-      })
+      }
       setDrawRect(null)
+      void createAndTrack(nextShape)
     }
 
     setDrawPath([])
@@ -898,7 +1233,43 @@ export function AnnotationOverlay({
     startPosRef.current = null
   }
 
-  function renderResizeHandles(annotation: AnnotationWithTags, positionData: PositionData) {
+  function handleEraserPointerDown(event: React.PointerEvent<SVGSVGElement>) {
+    if (activeTool !== "eraser") {
+      return
+    }
+
+    const point = getRelativeClientPoint(event.clientX, event.clientY)
+    erasingRef.current = true
+    erasedAnnotationIdsRef.current.clear()
+    lastEraserPointRef.current = point
+    clearHoverState()
+    eraseAtPoint(point)
+  }
+
+  function handleEraserPointerMove(event: React.PointerEvent<SVGSVGElement>) {
+    if (activeTool !== "eraser" || !erasingRef.current) {
+      return
+    }
+
+    const point = getRelativeClientPoint(event.clientX, event.clientY)
+    eraseAtPoint(point, lastEraserPointRef.current)
+    lastEraserPointRef.current = point
+  }
+
+  function handleEraserPointerEnd() {
+    if (!erasingRef.current) {
+      return
+    }
+
+    erasingRef.current = false
+    erasedAnnotationIdsRef.current.clear()
+    lastEraserPointRef.current = null
+  }
+
+  function renderResizeHandles(
+    annotation: AnnotationWithTags,
+    positionData: PositionData
+  ) {
     if (activeTool !== "select" || annotation.id !== selectedAnnotationId) {
       return null
     }
@@ -907,7 +1278,12 @@ export function AnnotationOverlay({
       return null
     }
 
-    const handleProps = (handle: ResizeHandle, x: number, y: number, cursorStyle: string) => (
+    const handleProps = (
+      handle: ResizeHandle,
+      x: number,
+      y: number,
+      cursorStyle: string
+    ) => (
       <circle
         key={handle}
         cx={x}
@@ -921,13 +1297,26 @@ export function AnnotationOverlay({
         onPointerDown={(event) => {
           event.preventDefault()
           event.stopPropagation()
-          beginManipulation(annotation, "resize", event.clientX, event.clientY, handle)
+          beginManipulation(
+            annotation,
+            "resize",
+            event.clientX,
+            event.clientY,
+            handle
+          )
         }}
       />
     )
 
     if (positionData.kind === "RECT") {
-      const topLeft = srcToScreen(positionData.x, positionData.y, srcW, srcH, zoom, rotation)
+      const topLeft = srcToScreen(
+        positionData.x,
+        positionData.y,
+        srcW,
+        srcH,
+        zoom,
+        rotation
+      )
       const bottomRight = srcToScreen(
         positionData.x + positionData.width,
         positionData.y + positionData.height,
@@ -950,8 +1339,22 @@ export function AnnotationOverlay({
     }
 
     if (positionData.kind === "ARROW") {
-      const from = srcToScreen(positionData.from.x, positionData.from.y, srcW, srcH, zoom, rotation)
-      const to = srcToScreen(positionData.to.x, positionData.to.y, srcW, srcH, zoom, rotation)
+      const from = srcToScreen(
+        positionData.from.x,
+        positionData.from.y,
+        srcW,
+        srcH,
+        zoom,
+        rotation
+      )
+      const to = srcToScreen(
+        positionData.to.x,
+        positionData.to.y,
+        srcW,
+        srcH,
+        zoom,
+        rotation
+      )
 
       return [
         handleProps("start", from.x, from.y, "grab"),
@@ -969,10 +1372,13 @@ export function AnnotationOverlay({
     const isHovered = annotation.id === hoveredAnnotationId
     const isSelected = annotation.id === selectedAnnotationId
     const isEraser = activeTool === "eraser"
+    const canEdit = canEditAnnotation(annotation)
     const opacity = isHovered ? (isEraser ? 0.4 : 0.8) : 1
     const ringColor = isEraser ? "#ef4444" : annotation.color
-    const canMove = activeTool === "select" && isMovablePosition(resolvedPosition)
-    const isManipulating = manipulationRef.current?.annotation.id === annotation.id
+    const canMove =
+      activeTool === "select" && canEdit && isMovablePosition(resolvedPosition)
+    const isManipulating =
+      manipulationRef.current?.annotation.id === annotation.id
     const cursorStyle =
       activeTool === "eraser"
         ? "cell"
@@ -997,7 +1403,8 @@ export function AnnotationOverlay({
         if (!coarsePointer) setHoverForTarget(event, annotation.id)
       },
       onMouseLeave: clearHoverState,
-      onFocus: (event: React.FocusEvent) => setHoverForTarget(event, annotation.id),
+      onFocus: (event: React.FocusEvent) =>
+        setHoverForTarget(event, annotation.id),
       onBlur: clearHoverState,
       onClick: (event: React.MouseEvent) => {
         event.stopPropagation()
@@ -1013,7 +1420,9 @@ export function AnnotationOverlay({
           return
         }
 
-        if ((event.target as Element).closest("[data-annotation-handle='true']")) {
+        if (
+          (event.target as Element).closest("[data-annotation-handle='true']")
+        ) {
           return
         }
 
@@ -1022,6 +1431,9 @@ export function AnnotationOverlay({
         beginManipulation(annotation, "move", event.clientX, event.clientY)
       },
       onContextMenu: (event: React.MouseEvent) => {
+        if (!canEdit) {
+          return
+        }
         event.preventDefault()
         event.stopPropagation()
         setContextMenu({
@@ -1043,7 +1455,14 @@ export function AnnotationOverlay({
       return (
         <g key={annotation.id} {...sharedProps}>
           {resolvedPosition.anchor.rects.map((rect, index) => {
-            const topLeft = srcToScreen(rect.x, rect.y, srcW, srcH, zoom, rotation)
+            const topLeft = srcToScreen(
+              rect.x,
+              rect.y,
+              srcW,
+              srcH,
+              zoom,
+              rotation
+            )
             const bottomRight = srcToScreen(
               rect.x + rect.width,
               rect.y + rect.height,
@@ -1124,7 +1543,10 @@ export function AnnotationOverlay({
                   fill="transparent"
                 />
                 {orphaned && index === 0 ? (
-                  <g transform={`translate(${x - 8}, ${y - 8})`} aria-hidden="true">
+                  <g
+                    transform={`translate(${x - 8}, ${y - 8})`}
+                    aria-hidden="true"
+                  >
                     <circle cx="8" cy="8" r="8" fill="#f59e0b" />
                     <foreignObject x="2" y="2" width="12" height="12">
                       <AlertTriangle className="size-3 text-white" />
@@ -1245,6 +1667,22 @@ export function AnnotationOverlay({
               strokeOpacity={isSelected ? 0.95 : 0.7}
             />
           ) : null}
+          {annotation.type === "TEXTBOX" ? (
+            <foreignObject
+              x={x + TEXTBOX_PADDING}
+              y={y + TEXTBOX_PADDING}
+              width={Math.max(width - TEXTBOX_PADDING * 2, 1)}
+              height={Math.max(height - TEXTBOX_PADDING * 2, 1)}
+              style={{ pointerEvents: "none" }}
+            >
+              <div
+                className="h-full w-full overflow-hidden text-[13px] leading-5 break-words whitespace-pre-wrap text-foreground"
+                style={{ color: annotation.color }}
+              >
+                {annotation.content}
+              </div>
+            </foreignObject>
+          ) : null}
           {renderResizeHandles(annotation, resolvedPosition)}
         </g>
       )
@@ -1266,6 +1704,8 @@ export function AnnotationOverlay({
         })
         .join(" ")
 
+      const isHighlighterStroke = resolvedPosition.style === "highlighter"
+
       return (
         <g key={annotation.id} {...sharedProps}>
           {isSelected || isHovered ? (
@@ -1273,7 +1713,11 @@ export function AnnotationOverlay({
               d={pathData}
               fill="none"
               stroke={ringColor}
-              strokeWidth={Math.max(4, resolvedPosition.strokeWidth * zoom + 3)}
+              strokeWidth={Math.max(
+                isHighlighterStroke ? 10 : 4,
+                resolvedPosition.strokeWidth * zoom +
+                  (isHighlighterStroke ? 5 : 3)
+              )}
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeOpacity={isSelected ? 0.35 : 0.2}
@@ -1286,7 +1730,12 @@ export function AnnotationOverlay({
             strokeWidth={resolvedPosition.strokeWidth * zoom}
             strokeLinecap="round"
             strokeLinejoin="round"
-            opacity={opacity}
+            opacity={isHighlighterStroke ? 0.28 : opacity}
+            style={
+              isHighlighterStroke
+                ? { mixBlendMode: "multiply" as const }
+                : undefined
+            }
           />
         </g>
       )
@@ -1365,10 +1814,16 @@ export function AnnotationOverlay({
   }
 
   function renderDrawPreview() {
-    if (activeTool === "freehand" && drawPath.length >= 2) {
+    if (
+      (activeTool === "freehand" || activeTool === "freehandHighlight") &&
+      drawPath.length >= 2
+    ) {
       const pathData = drawPath
-        .map((point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`)
+        .map(
+          (point, index) => `${index === 0 ? "M" : "L"} ${point.x} ${point.y}`
+        )
         .join(" ")
+      const isHighlighterPreview = activeTool === "freehandHighlight"
 
       return (
         <path
@@ -1378,8 +1833,13 @@ export function AnnotationOverlay({
           strokeWidth={toolThickness}
           strokeLinecap="round"
           strokeLinejoin="round"
-          opacity={0.7}
-          style={{ pointerEvents: "none" }}
+          opacity={isHighlighterPreview ? 0.28 : 0.7}
+          style={{
+            pointerEvents: "none",
+            ...(isHighlighterPreview
+              ? { mixBlendMode: "multiply" as const }
+              : {}),
+          }}
         />
       )
     }
@@ -1451,7 +1911,8 @@ export function AnnotationOverlay({
       : activeTool === "note" || activeTool === "textbox" || isDrawingTool
         ? "crosshair"
         : "default"
-  const overlayInteractive = activeTool === "select" || isDrawingTool || activeTool === "eraser"
+  const overlayInteractive =
+    activeTool === "select" || isDrawingTool || activeTool === "eraser"
 
   return (
     <div
@@ -1471,9 +1932,26 @@ export function AnnotationOverlay({
           pointerEvents: overlayInteractive ? "auto" : "none",
           overflow: "visible",
         }}
-        onMouseDown={isDrawingTool ? (event) => void handleSvgMouseDown(event) : undefined}
+        onMouseDown={
+          isDrawingTool ? (event) => void handleSvgMouseDown(event) : undefined
+        }
         onMouseMove={isDrawingTool ? handleSvgMouseMove : undefined}
         onMouseUp={isDrawingTool ? () => void handleSvgMouseUp() : undefined}
+        onPointerDown={
+          activeTool === "eraser" ? handleEraserPointerDown : undefined
+        }
+        onPointerMove={
+          activeTool === "eraser" ? handleEraserPointerMove : undefined
+        }
+        onPointerUp={
+          activeTool === "eraser" ? handleEraserPointerEnd : undefined
+        }
+        onPointerCancel={
+          activeTool === "eraser" ? handleEraserPointerEnd : undefined
+        }
+        onPointerLeave={
+          activeTool === "eraser" ? handleEraserPointerEnd : undefined
+        }
         onClick={(event) => {
           if ((event.target as Element).closest("[data-annotation]")) {
             return
@@ -1534,11 +2012,12 @@ export function AnnotationOverlay({
             <button
               type="button"
               role="menuitem"
-              className="flex w-full rounded-lg px-2.5 py-2 text-left text-sm transition-colors hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              className="flex w-full rounded-lg px-2.5 py-2 text-left text-sm transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
               onClick={async () => {
-                const text = contextMenu.annotation.positionData.kind === "TEXT"
-                  ? contextMenu.annotation.positionData.anchor.quotedText
-                  : contextMenu.annotation.content ?? ""
+                const text =
+                  contextMenu.annotation.positionData.kind === "TEXT"
+                    ? contextMenu.annotation.positionData.anchor.quotedText
+                    : (contextMenu.annotation.content ?? "")
                 await navigator.clipboard.writeText(text)
                 setContextMenu(null)
                 toast.success("Copied text")
@@ -1548,7 +2027,7 @@ export function AnnotationOverlay({
             </button>
           ) : null}
           <div className="rounded-lg px-2.5 py-2">
-            <p className="mb-2 text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground">
+            <p className="mb-2 text-[11px] font-medium tracking-[0.18em] text-muted-foreground uppercase">
               Change color
             </p>
             <ColorPicker
@@ -1562,7 +2041,7 @@ export function AnnotationOverlay({
           <button
             type="button"
             role="menuitem"
-            className="flex w-full rounded-lg px-2.5 py-2 text-left text-sm text-destructive transition-colors hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            className="flex w-full rounded-lg px-2.5 py-2 text-left text-sm text-destructive transition-colors hover:bg-destructive/10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
             onClick={() => void handleContextDelete(contextMenu.annotation)}
           >
             Delete

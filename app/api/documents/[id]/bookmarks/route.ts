@@ -8,6 +8,7 @@ import { logAudit } from "@/lib/audit"
 import { NotFoundError } from "@/lib/errors"
 import { getIpAddress } from "@/lib/request"
 import { CreateBookmarkSchema } from "@/features/bookmarks/schema"
+import { getAccessibleDocument } from "@/lib/db/repositories/document-access"
 
 async function getHandler(
   _req: NextRequest,
@@ -16,10 +17,7 @@ async function getHandler(
   const { id } = await params
   const identity = await requireRequestIdentity(_req)
 
-  const doc = await prisma.document.findFirst({
-    where: { id, userId: identity.userId, deletedAt: null },
-    select: { id: true },
-  })
+  const doc = await getAccessibleDocument(identity.userId, id)
   if (!doc) throw new NotFoundError("Document")
 
   const bookmarks = await prisma.bookmark.findMany({
@@ -39,10 +37,7 @@ async function postHandler(
 
   await enforceRateLimit(req, identity.userId, "default")
 
-  const doc = await prisma.document.findFirst({
-    where: { id, userId: identity.userId, deletedAt: null },
-    select: { id: true },
-  })
+  const doc = await getAccessibleDocument(identity.userId, id)
   if (!doc) throw new NotFoundError("Document")
 
   const input = CreateBookmarkSchema.parse(await req.json())

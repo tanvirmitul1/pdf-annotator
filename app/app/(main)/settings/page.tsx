@@ -1,57 +1,101 @@
-export default function SettingsPlaceholderPage() {
+import { requireAppUser } from "@/lib/auth/require"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge"
+import { ThemeToggle } from "@/components/common/theme-toggle"
+import { Separator } from "@/components/ui/separator"
+
+export default async function SettingsPage() {
+  const session = await requireAppUser()
+  const { name, email, image, planId } = session.user
+  const initials = (name ?? "U")
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase() ?? "")
+    .join("")
+
   return (
-    <section className="space-y-4">
-      <div className="glass-panel surface-border rounded-[2rem] px-6 py-7 sm:px-8">
-        <p className="text-[0.72rem] font-semibold tracking-[0.24em] text-primary uppercase">
+    <div className="space-y-6">
+      <div>
+        <h1 className="font-heading text-3xl font-semibold tracking-tight text-foreground">
           Settings
-        </p>
-        <h1 className="mt-4 font-heading text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-          Account controls now have a more credible home.
         </h1>
-        <p className="mt-4 max-w-3xl text-sm leading-7 text-muted-foreground sm:text-base">
-          This phase keeps the settings logic intentionally light, but the route
-          now feels like part of a polished product instead of a leftover
-          scaffold.
+        <p className="mt-2 text-sm text-muted-foreground">
+          Manage your account, appearance, and preferences.
         </p>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <article className="glass-panel surface-border rounded-[2rem] p-6">
-          <p className="text-sm font-semibold text-foreground">
-            Profile and identity
+      {/* Profile */}
+      <section className="glass-panel surface-border rounded-[2rem] p-6 space-y-4">
+        <p className="text-xs font-semibold tracking-[0.2em] text-muted-foreground uppercase">
+          Profile
+        </p>
+        <div className="flex items-center gap-4">
+          <Avatar size="lg">
+            <AvatarImage src={image ?? undefined} alt={name ?? "User"} />
+            <AvatarFallback>{initials}</AvatarFallback>
+          </Avatar>
+          <div className="min-w-0">
+            <p className="font-semibold text-foreground truncate">{name ?? "—"}</p>
+            <p className="text-sm text-muted-foreground truncate">{email ?? "—"}</p>
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground leading-6">
+          Your profile is managed through your Google account. To update your name or photo, edit your Google profile.
+        </p>
+      </section>
+
+      {/* Appearance */}
+      <section className="glass-panel surface-border rounded-[2rem] p-6 space-y-4">
+        <p className="text-xs font-semibold tracking-[0.2em] text-muted-foreground uppercase">
+          Appearance
+        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-foreground">Theme</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Switch between light and dark mode.</p>
+          </div>
+          <ThemeToggle />
+        </div>
+      </section>
+
+      {/* Plan */}
+      <section className="glass-panel surface-border rounded-[2rem] p-6 space-y-4">
+        <p className="text-xs font-semibold tracking-[0.2em] text-muted-foreground uppercase">
+          Plan &amp; Usage
+        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-foreground capitalize">{planId ?? "free"} plan</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Your current subscription tier.
+            </p>
+          </div>
+          <Badge
+            variant="outline"
+            className="rounded-full border-primary/20 bg-primary/10 px-3 py-1 text-primary capitalize"
+          >
+            {planId ?? "free"}
+          </Badge>
+        </div>
+        <Separator className="opacity-50" />
+        <p className="text-xs text-muted-foreground leading-6">
+          Upgrade options and detailed usage metrics will appear here in a future release.
+        </p>
+      </section>
+
+      {/* Danger zone */}
+      <section className="glass-panel surface-border rounded-[2rem] p-6 space-y-4 border-destructive/20">
+        <p className="text-xs font-semibold tracking-[0.2em] text-destructive uppercase">
+          Danger Zone
+        </p>
+        <div>
+          <p className="text-sm font-medium text-foreground">Delete account</p>
+          <p className="text-xs text-muted-foreground mt-0.5 leading-6">
+            Permanently delete your account and all associated data. This action cannot be undone. Contact support to proceed.
           </p>
-          <p className="mt-2 text-sm leading-7 text-muted-foreground">
-            User profile, theme, connected sign-in methods, and account-level
-            controls belong here once the full settings flows are expanded.
-          </p>
-        </article>
-        <article className="glass-panel surface-border rounded-[2rem] p-6">
-          <p className="text-sm font-semibold text-foreground">
-            Plan and usage
-          </p>
-          <p className="mt-2 text-sm leading-7 text-muted-foreground">
-            Free-plan context, quotas, and upgrade messaging can now sit in a
-            layout with enough visual structure to feel premium.
-          </p>
-        </article>
-        <article className="glass-panel surface-border rounded-[2rem] p-6">
-          <p className="text-sm font-semibold text-foreground">Security</p>
-          <p className="mt-2 text-sm leading-7 text-muted-foreground">
-            Session revocation, password changes, and linked providers are
-            easier to understand when grouped inside calmer, higher-contrast
-            surfaces.
-          </p>
-        </article>
-        <article className="glass-panel surface-border rounded-[2rem] p-6">
-          <p className="text-sm font-semibold text-foreground">
-            Data lifecycle
-          </p>
-          <p className="mt-2 text-sm leading-7 text-muted-foreground">
-            Export, deletion grace, restore, and consent controls can expand
-            here next without another layout rewrite.
-          </p>
-        </article>
-      </div>
-    </section>
+        </div>
+      </section>
+    </div>
   )
 }

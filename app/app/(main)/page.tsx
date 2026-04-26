@@ -1,16 +1,27 @@
 import { DocumentUpload } from "@/components/documents/upload"
 import { DocumentList } from "@/components/documents/list"
+import { requireAppUser } from "@/lib/auth/require"
 
-export default function AppDashboardPage() {
+function getGreeting() {
+  const hour = new Date().getHours()
+  if (hour < 12) return "Good morning"
+  if (hour < 17) return "Good afternoon"
+  return "Good evening"
+}
+
+export default async function AppDashboardPage() {
+  const session = await requireAppUser()
+  const firstName = session.user.name?.split(" ")[0] ?? "there"
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="font-heading text-3xl font-semibold tracking-tight text-foreground">
+        <p className="text-sm text-muted-foreground">
+          {getGreeting()}, {firstName}
+        </p>
+        <h1 className="mt-1 font-heading text-3xl font-semibold tracking-tight text-foreground">
           Your Documents
         </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Upload and manage your PDF and image documents.
-        </p>
       </div>
 
       <DocumentUpload />

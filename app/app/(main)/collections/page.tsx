@@ -1,36 +1,31 @@
+import { FolderKanban } from "lucide-react"
+import { Button } from "@/components/ui/button"
+
 export default function CollectionsPage() {
   return (
-    <section className="space-y-4">
-      <div className="glass-panel surface-border rounded-[2rem] px-6 py-7 sm:px-8">
-        <p className="text-[0.72rem] font-semibold tracking-[0.24em] text-primary uppercase">
+    <div className="space-y-6">
+      <div>
+        <h1 className="font-heading text-3xl font-semibold tracking-tight text-foreground">
           Collections
-        </p>
-        <h1 className="mt-4 font-heading text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-          Group documents into themes, courses, or client workspaces.
         </h1>
-        <p className="mt-4 max-w-3xl text-sm leading-7 text-muted-foreground">
-          This route now has a polished shell ready for collection management
-          instead of returning a blank screen.
+        <p className="mt-2 text-sm text-muted-foreground">
+          Group documents into themes, courses, or client workspaces.
         </p>
       </div>
-      <div className="grid gap-4 lg:grid-cols-3">
-        <article className="glass-panel surface-border rounded-[2rem] p-6 lg:col-span-2">
-          <p className="text-sm font-semibold text-foreground">
-            Ready for collection cards, counters, and move actions
-          </p>
-          <p className="mt-2 text-sm leading-7 text-muted-foreground">
-            Documents, filters, and move-to-collection flows can slot into this
-            layout with responsive spacing already solved.
-          </p>
-        </article>
-        <article className="glass-panel surface-border rounded-[2rem] p-6">
-          <p className="text-sm font-semibold text-foreground">Next upgrade</p>
-          <p className="mt-2 text-sm leading-7 text-muted-foreground">
-            Add saved collection views, drag-and-drop sorting, and quick actions
-            from the library.
-          </p>
-        </article>
+
+      <div className="rounded-[1.6rem] border border-dashed border-border/70 bg-card/55 py-20 text-center">
+        <div className="empty-illustration mx-auto mb-4 flex size-16 items-center justify-center rounded-[1.4rem] bg-primary/8">
+          <FolderKanban className="size-8 text-primary/60" />
+        </div>
+        <p className="font-heading text-lg font-semibold text-foreground">No collections yet</p>
+        <p className="mt-2 text-sm text-muted-foreground max-w-xs mx-auto">
+          Create a collection to organise your documents by topic, project, or client.
+        </p>
+        <Button className="mt-6 rounded-full px-6" disabled>
+          Create collection
+        </Button>
+        <p className="mt-3 text-xs text-muted-foreground/60">Coming soon</p>
       </div>
-    </section>
+    </div>
   )
 }

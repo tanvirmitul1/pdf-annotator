@@ -4,16 +4,24 @@ export function documentsFor(userId: string) {
   return {
     list: () =>
       prisma.document.findMany({
-        where: { userId, deletedAt: null },
+        where: {
+          deletedAt: null,
+          OR: [{ userId }, { members: { some: { userId } } }],
+        },
         select: {
           id: true,
           name: true,
+          userId: true,
           lastOpenedAt: true,
         },
       }),
     get: (id: string) =>
       prisma.document.findFirst({
-        where: { id, userId, deletedAt: null },
+        where: {
+          id,
+          deletedAt: null,
+          OR: [{ userId }, { members: { some: { userId } } }],
+        },
         select: {
           id: true,
           name: true,
@@ -22,9 +30,14 @@ export function documentsFor(userId: string) {
       }),
     exists: (id: string) =>
       prisma.document.findFirst({
-        where: { id, userId, deletedAt: null },
+        where: {
+          id,
+          deletedAt: null,
+          OR: [{ userId }, { members: { some: { userId } } }],
+        },
         select: {
           id: true,
+          userId: true,
         },
       }),
   }

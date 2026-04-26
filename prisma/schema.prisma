@@ -41,6 +41,18 @@ enum AnnotationType {
   IMAGE_SHAPE
 }
 
+enum AnnotationStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+}
+
+enum DocumentMemberRole {
+  VIEWER
+  COMMENTER
+  EDITOR
+}
+
 enum ExportJobKind {
   DATA_EXPORT
   ANNOTATION_EXPORT
@@ -84,11 +96,17 @@ model User {
   usage              Usage[]
   documents          Document[]
   annotations        Annotation[]
+  assignedAnnotations Annotation[]       @relation("AnnotationAssignee")
+  comments           AnnotationComment[]
+  mentions           CommentMention[]
+  reactions          CommentReaction[]
+  notifications      Notification[]
   tags               Tag[]
   collections        Collection[]
   bookmarks          Bookmark[]
   readingProgress    ReadingProgress[]
   shareLinks         ShareLink[]
+  documentMemberships DocumentMember[]
   exportJobs         ExportJob[]
   emailLogs          EmailLog[]
   auditLogs          AuditLog[]
@@ -180,6 +198,7 @@ model Document {
   bookmarks     Bookmark[]
   reading       ReadingProgress[]
   shareLinks    ShareLink[]
+  members       DocumentMember[]
   textPages     DocumentText[]
   outline       DocumentOutline?
 
@@ -191,9 +210,11 @@ model Document {
 model Annotation {
   id           String         @id @default(cuid())
   userId       String
+  assigneeId   String?
   documentId   String
   pageNumber   Int
   type         AnnotationType
+  status       AnnotationStatus @default(OPEN)
   color        String
   positionData Json
   content      String?
@@ -201,10 +222,13 @@ model Annotation {
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
   user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assignee     User?          @relation("AnnotationAssignee", fields: [assigneeId], references: [id], onDelete: SetNull)
   document     Document       @relation(fields: [documentId], references: [id], onDelete: Cascade)
   tags         AnnotationTag[]
+  comments     AnnotationComment[]
 
   @@index([userId])
+  @@index([assigneeId])
   @@index([userId, deletedAt])
   @@index([documentId])
 }
@@ -307,6 +331,21 @@ model ShareLink {
   @@index([documentId])
 }
 
+model DocumentMember {
+  id         String             @id @default(cuid())
+  documentId String
+  userId     String
+  role       DocumentMemberRole @default(VIEWER)
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+  document   Document           @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  user       User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([documentId, userId])
+  @@index([documentId])
+  @@index([userId])
+}
+
 model AuditLog {
   id           String   @id @default(cuid())
   userId       String
@@ -385,4 +424,73 @@ model EmailLog {
   user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model AnnotationComment {
+  id           String              @id @default(cuid())
+  annotationId String
+  userId       String
+  parentId     String?
+  content      String
+  editedAt     DateTime?
+  deletedAt    DateTime?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  annotation   Annotation          @relation(fields: [annotationId], references: [id], onDelete: Cascade)
+  user         User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent       AnnotationComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies      AnnotationComment[] @relation("CommentReplies")
+  mentions     CommentMention[]
+  reactions    CommentReaction[]
+
+  @@index([annotationId])
+  @@index([userId])
+  @@index([parentId])
+  @@index([annotationId, createdAt(sort: Asc)])
+  @@index([annotationId, parentId, createdAt(sort: Asc)])
+}
+
+model CommentMention {
+  id        String            @id @default(cuid())
+  commentId String
+  userId    String
+  createdAt DateTime          @default(now())
+  comment   AnnotationComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId])
+  @@index([commentId])
+  @@index([userId])
+}
+
+model CommentReaction {
+  id        String            @id @default(cuid())
+  commentId String
+  userId    String
+  emoji     String
+  createdAt DateTime          @default(now())
+  comment   AnnotationComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([commentId, userId, emoji])
+  @@index([commentId])
+  @@index([userId])
+}
+
+model Notification {
+  id           String   @id @default(cuid())
+  userId       String
+  type         String
+  title        String
+  body         String
+  annotationId String?
+  commentId    String?
+  actorId      String?
+  readAt       DateTime?
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, readAt])
+  @@index([userId, createdAt(sort: Desc)])
 }

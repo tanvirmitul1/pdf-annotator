@@ -207,6 +207,7 @@ export function PdfViewer({
     if (
       activeTool === "note" ||
       activeTool === "textbox" ||
+      activeTool === "freehandHighlight" ||
       activeTool === "freehand" ||
       activeTool === "rectangle" ||
       activeTool === "circle" ||

@@ -11,9 +11,16 @@ interface TagInputProps {
   onAdd: (label: string) => void
   onRemove: (tagId: string) => void
   className?: string
+  disabled?: boolean
 }
 
-export function TagInput({ tags, onAdd, onRemove, className }: TagInputProps) {
+export function TagInput({
+  tags,
+  onAdd,
+  onRemove,
+  className,
+  disabled = false,
+}: TagInputProps) {
   const [input, setInput] = useState("")
   const [focused, setFocused] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -31,6 +38,7 @@ export function TagInput({ tags, onAdd, onRemove, className }: TagInputProps) {
   function commit(label: string) {
     const trimmed = label.trim()
     if (!trimmed) return
+    if (disabled) return
     if (tags.some((t) => t.label.toLowerCase() === trimmed.toLowerCase())) return
     onAdd(trimmed)
     setInput("")
@@ -38,10 +46,17 @@ export function TagInput({ tags, onAdd, onRemove, className }: TagInputProps) {
 
   function handleKeyDown(e: KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter") {
+      if (disabled) return
       e.preventDefault()
       if (suggestions[0]) {
         commit(suggestions[0].label)
       } else if (input.trim()) {
+        commit(input)
+      }
+    } else if (e.key === ",") {
+      if (disabled) return
+      e.preventDefault()
+      if (input.trim()) {
         commit(input)
       }
     } else if (e.key === "Backspace" && !input && tags.length > 0) {
@@ -58,9 +73,12 @@ export function TagInput({ tags, onAdd, onRemove, className }: TagInputProps) {
       <div
         className={cn(
           "flex min-h-8 flex-wrap items-center gap-1 rounded-md border bg-background px-2 py-1 text-sm transition-colors",
-          focused ? "border-primary ring-2 ring-primary/20" : "border-input"
+          focused ? "border-primary ring-2 ring-primary/20" : "border-input",
+          disabled && "cursor-not-allowed opacity-70"
         )}
-        onClick={() => inputRef.current?.focus()}
+        onClick={() => {
+          if (!disabled) inputRef.current?.focus()
+        }}
       >
         {tags.map((tag) => (
           <span
@@ -73,8 +91,9 @@ export function TagInput({ tags, onAdd, onRemove, className }: TagInputProps) {
               aria-label={`Remove tag ${tag.label}`}
               onClick={(e) => {
                 e.stopPropagation()
-                onRemove(tag.id)
+                if (!disabled) onRemove(tag.id)
               }}
+              disabled={disabled}
               className="ml-0.5 rounded-full p-0.5 hover:bg-destructive/20 hover:text-destructive focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
             >
               <X className="size-2.5" />
@@ -89,9 +108,14 @@ export function TagInput({ tags, onAdd, onRemove, className }: TagInputProps) {
           onFocus={() => setFocused(true)}
           onBlur={() => {
             setFocused(false)
+            if (input.trim()) {
+              commit(input)
+              return
+            }
             setInput("")
           }}
           placeholder={tags.length === 0 ? "Add tags…" : ""}
+          disabled={disabled}
           className="min-w-[80px] flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
           aria-label="Tag input"
           aria-autocomplete="list"

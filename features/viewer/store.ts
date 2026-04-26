@@ -18,6 +18,22 @@ export interface SearchMatch {
   endOffset: number
 }
 
+function getDefaultToolThickness(tool: ToolId) {
+  switch (tool) {
+    case "freehandHighlight":
+      return 16
+    case "eraser":
+      return 18
+    case "freehand":
+    case "rectangle":
+    case "circle":
+    case "arrow":
+      return 3
+    default:
+      return 2
+  }
+}
+
 export interface ViewerState {
   documentId: string
   isAuthenticated: boolean
@@ -53,8 +69,10 @@ export interface ViewerState {
   selectedColor: string
   /** Per-tool remembered color */
   toolColors: Partial<Record<ToolId, string>>
-  /** Stroke thickness for shape/freehand tools */
+  /** Current stroke thickness for the active tool */
   toolThickness: number
+  /** Per-tool remembered thickness */
+  toolThicknesses: Partial<Record<ToolId, number>>
   /** Undo history stack */
   undoStack: UndoEntry[]
   /** Redo history stack */
@@ -130,7 +148,8 @@ export const createViewerStore = (documentId: string, isAuthenticated = false, o
       draft: null,
       selectedColor: DEFAULT_ANNOTATION_COLOR,
       toolColors: {},
-      toolThickness: 2,
+      toolThickness: getDefaultToolThickness("select"),
+      toolThicknesses: {},
       undoStack: [],
       redoStack: [],
       saveStatus: "idle" as SaveStatus,
@@ -172,12 +191,14 @@ export const createViewerStore = (documentId: string, isAuthenticated = false, o
 
       // ─── Annotation actions ───────────────────────────────────────────────
       setTool: (activeTool) => {
-        const { toolColors, selectedColor } = get()
+        const { toolColors, selectedColor, toolThicknesses } = get()
         set({
           activeTool,
           draft: null,
           // restore per-tool remembered color
           selectedColor: toolColors[activeTool] ?? selectedColor,
+          toolThickness:
+            toolThicknesses[activeTool] ?? getDefaultToolThickness(activeTool),
         })
       },
       openAnnotation: (id) => set({ rightPanelAnnotationId: id }),
@@ -218,7 +239,16 @@ export const createViewerStore = (documentId: string, isAuthenticated = false, o
           toolColors: { ...get().toolColors, [activeTool]: color },
         })
       },
-      setToolThickness: (toolThickness) => set({ toolThickness }),
+      setToolThickness: (toolThickness) => {
+        const { activeTool } = get()
+        set({
+          toolThickness,
+          toolThicknesses: {
+            ...get().toolThicknesses,
+            [activeTool]: toolThickness,
+          },
+        })
+      },
       pushUndo: (entry) =>
         set((s) => {
           const stack = [entry, ...s.undoStack].slice(0, MAX_UNDO_STACK)

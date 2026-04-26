@@ -3,6 +3,7 @@
 export type ToolId =
   | "select"
   | "highlight"
+  | "freehandHighlight"
   | "underline"
   | "strikethrough"
   | "squiggly"
@@ -27,10 +28,14 @@ export type AnnotationType =
   | "CIRCLE"
   | "ARROW"
   | "TEXTBOX"
+  | "IMAGE_SHAPE"
+
+export type AnnotationStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED"
 
 /** Map from tool ID to the annotation type it creates */
 export const TOOL_TO_TYPE: Partial<Record<ToolId, AnnotationType>> = {
   highlight: "HIGHLIGHT",
+  freehandHighlight: "FREEHAND",
   underline: "UNDERLINE",
   strikethrough: "STRIKETHROUGH",
   squiggly: "SQUIGGLY",
@@ -102,6 +107,7 @@ export interface PathPositionData extends PositionDataBase {
   kind: "PATH"
   points: Array<{ x: number; y: number; pressure?: number }>
   strokeWidth: number
+  style?: "pen" | "highlighter"
 }
 
 export interface ArrowPositionData extends PositionDataBase {
@@ -126,6 +132,20 @@ export interface TagSummary {
   color: string | null
 }
 
+export interface AnnotationAuthorSummary {
+  id: string
+  name: string | null
+  email: string | null
+  image: string | null
+}
+
+export interface AnnotationAssigneeSummary {
+  id: string
+  name: string | null
+  email: string | null
+  image: string | null
+}
+
 // ─── Full annotation with tags ────────────────────────────────────────────────
 
 export interface AnnotationWithTags {
@@ -134,6 +154,7 @@ export interface AnnotationWithTags {
   documentId: string
   pageNumber: number
   type: AnnotationType
+  status: AnnotationStatus
   color: string
   positionData: PositionData
   content: string | null
@@ -141,6 +162,8 @@ export interface AnnotationWithTags {
   createdAt: string
   updatedAt: string
   tags: TagSummary[]
+  author?: AnnotationAuthorSummary | null
+  assignee?: AnnotationAssigneeSummary | null
 }
 
 // ─── Draft annotation (in-progress creation) ────────────────────────────────

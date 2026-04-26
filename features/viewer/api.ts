@@ -1,5 +1,6 @@
 import { api } from "@/store/api"
 import type { Bookmark, ReadingProgress } from "@prisma/client"
+import type { DocumentMemberRole } from "@prisma/client"
 
 export interface DocumentOutlineEntry {
   title: string
@@ -16,6 +17,18 @@ export interface ViewerData {
     status: string
     storageKey: string
     thumbnailKey: string | null
+  }
+  collaborators: Array<{
+    id: string
+    name: string | null
+    email: string | null
+    image: string | null
+    role: DocumentMemberRole | "OWNER"
+  }>
+  permissions: {
+    role: DocumentMemberRole | "OWNER"
+    canManageMembers: boolean
+    canAnnotate: boolean
   }
   outline: DocumentOutlineEntry[] | null
   bookmarks: Bookmark[]

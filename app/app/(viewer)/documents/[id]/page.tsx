@@ -1,9 +1,10 @@
 import { notFound } from "next/navigation"
 
 import { requireUser } from "@/lib/auth/require"
-import { prisma } from "@/lib/db/prisma"
 import { ViewerShellLoader } from "@/components/viewer/viewer-shell-loader"
 import { ImageViewer } from "@/components/viewer/image-viewer"
+import { getAccessibleDocument } from "@/lib/db/repositories/document-access"
+import { auth } from "@/auth"
 
 export default async function DocumentViewerPage({
   params,
@@ -12,11 +13,9 @@ export default async function DocumentViewerPage({
 }) {
   const { id } = await params
   const user = await requireUser()
+  const session = await auth()
 
-  const document = await prisma.document.findFirst({
-    where: { id, userId: user.id, deletedAt: null },
-    select: { id: true, name: true, pageCount: true, status: true },
-  })
+  const document = await getAccessibleDocument(user.id, id)
 
   if (!document) notFound()
 
@@ -37,6 +36,7 @@ export default async function DocumentViewerPage({
       documentId={document.id}
       documentName={document.name}
       initialPage={1}
+      isAuthenticated={Boolean(session?.user?.id)}
     />
   )
 }

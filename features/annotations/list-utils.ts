@@ -1,11 +1,19 @@
-import type { AnnotationType, AnnotationWithTags } from "./types"
+import type {
+  AnnotationStatus,
+  AnnotationType,
+  AnnotationWithTags,
+} from "./types"
 
 export interface AnnotationListFilters {
   search: string
   filterType: AnnotationType | ""
+  filterStatus: AnnotationStatus | ""
   filterColor: string
   filterTag: string
+  filterAssignee: string
+  filterOwnership: "all" | "mine" | "shared" | "assigned"
   hasCommentOnly: boolean
+  currentUserId?: string
 }
 
 export type AnnotationListRow =
@@ -26,13 +34,21 @@ export function filterAnnotations(
   {
     search,
     filterType,
+    filterStatus,
     filterColor,
     filterTag,
+    filterAssignee,
+    filterOwnership,
     hasCommentOnly,
+    currentUserId,
   }: AnnotationListFilters
 ) {
   return annotations.filter((annotation) => {
     if (filterType && annotation.type !== filterType) {
+      return false
+    }
+
+    if (filterStatus && annotation.status !== filterStatus) {
       return false
     }
 
@@ -51,6 +67,28 @@ export function filterAnnotations(
       return false
     }
 
+    if (filterAssignee && annotation.assignee?.id !== filterAssignee) {
+      return false
+    }
+
+    if (currentUserId) {
+      const isMine =
+        annotation.author?.id === currentUserId || annotation.userId === currentUserId
+      const isAssignedToMe = annotation.assignee?.id === currentUserId
+
+      if (filterOwnership === "mine" && !isMine) {
+        return false
+      }
+
+      if (filterOwnership === "shared" && isMine) {
+        return false
+      }
+
+      if (filterOwnership === "assigned" && !isAssignedToMe) {
+        return false
+      }
+    }
+
     if (!search.trim()) {
       return true
     }
@@ -62,11 +100,17 @@ export function filterAnnotations(
         : ""
     const comment = annotation.content?.toLowerCase() ?? ""
     const tags = annotation.tags.map((tag) => tag.label.toLowerCase()).join(" ")
+    const author = `${annotation.author?.name ?? ""} ${annotation.author?.email ?? ""}`.toLowerCase()
+    const assignee = `${annotation.assignee?.name ?? ""} ${annotation.assignee?.email ?? ""}`.toLowerCase()
+    const status = annotation.status.toLowerCase().replaceAll("_", " ")
 
     return (
       quotedText.includes(query) ||
       comment.includes(query) ||
-      tags.includes(query)
+      tags.includes(query) ||
+      author.includes(query) ||
+      assignee.includes(query) ||
+      status.includes(query)
     )
   })
 }

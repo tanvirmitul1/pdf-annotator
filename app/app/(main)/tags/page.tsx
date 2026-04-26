@@ -1,36 +1,26 @@
+import { Tag } from "lucide-react"
+
 export default function TagsPage() {
   return (
-    <section className="space-y-4">
-      <div className="glass-panel surface-border rounded-[2rem] px-6 py-7 sm:px-8">
-        <p className="text-[0.72rem] font-semibold tracking-[0.24em] text-primary uppercase">
+    <div className="space-y-6">
+      <div>
+        <h1 className="font-heading text-3xl font-semibold tracking-tight text-foreground">
           Tags
-        </p>
-        <h1 className="mt-4 font-heading text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-          Build a tag system that stays readable even as notes scale up.
         </h1>
-        <p className="mt-4 max-w-3xl text-sm leading-7 text-muted-foreground">
-          This space is now prepared for tag lists, usage counts, color systems,
-          and smart review workflows.
+        <p className="mt-2 text-sm text-muted-foreground">
+          Tags you apply to annotations will appear here.
         </p>
       </div>
-      <div className="grid gap-4 md:grid-cols-2">
-        <article className="glass-panel surface-border rounded-[2rem] p-6">
-          <p className="text-sm font-semibold text-foreground">Tag taxonomy</p>
-          <p className="mt-2 text-sm leading-7 text-muted-foreground">
-            Organize by topic, class, priority, or research stream without
-            losing visual clarity.
-          </p>
-        </article>
-        <article className="glass-panel surface-border rounded-[2rem] p-6">
-          <p className="text-sm font-semibold text-foreground">
-            Annotation review
-          </p>
-          <p className="mt-2 text-sm leading-7 text-muted-foreground">
-            The same shell can support tag filters, search, and spaced review
-            surfaces when those features land.
-          </p>
-        </article>
+
+      <div className="rounded-[1.6rem] border border-dashed border-border/70 bg-card/55 py-20 text-center">
+        <div className="empty-illustration mx-auto mb-4 flex size-16 items-center justify-center rounded-[1.4rem] bg-accent/10">
+          <Tag className="size-8 text-accent-foreground/50" />
+        </div>
+        <p className="font-heading text-lg font-semibold text-foreground">No tags yet</p>
+        <p className="mt-2 text-sm text-muted-foreground max-w-xs mx-auto">
+          Open a document, create an annotation, and add tags to start building your tag library.
+        </p>
       </div>
-    </section>
+    </div>
   )
 }

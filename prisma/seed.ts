@@ -20,10 +20,10 @@ async function main() {
       name: "Free",
       price: 0,
       limits: {
-        maxDocuments: 10,
-        maxStorageMB: 500,
-        maxAnnotationsPerDoc: 500,
-        maxShareLinks: 3,
+        maxDocuments: 1000,
+        maxStorageMB: 10000,
+        maxAnnotationsPerDoc: 5000,
+        maxShareLinks: 100,
         allowedFeatures: [
           "basic-annotation",
           "pdf-viewer",
@@ -39,10 +39,10 @@ async function main() {
       name: "Free",
       price: 0,
       limits: {
-        maxDocuments: 10,
-        maxStorageMB: 500,
-        maxAnnotationsPerDoc: 500,
-        maxShareLinks: 3,
+        maxDocuments: 1000,
+        maxStorageMB: 10000,
+        maxAnnotationsPerDoc: 5000,
+        maxShareLinks: 100,
         allowedFeatures: [
           "basic-annotation",
           "pdf-viewer",

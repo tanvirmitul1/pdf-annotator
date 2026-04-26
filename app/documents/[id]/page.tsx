@@ -4,7 +4,7 @@ import { ImageViewer } from "@/components/viewer/image-viewer"
 import { ViewerShellLoader } from "@/components/viewer/viewer-shell-loader"
 import { getCurrentIdentity } from "@/lib/auth/require"
 import { auth } from "@/auth"
-import { prisma } from "@/lib/db/prisma"
+import { getAccessibleDocument } from "@/lib/db/repositories/document-access"
 
 export const dynamic = "force-dynamic"
 
@@ -21,10 +21,7 @@ export default async function PublicDocumentViewerPage({
     notFound()
   }
 
-  const document = await prisma.document.findFirst({
-    where: { id, userId: identity.userId, deletedAt: null },
-    select: { id: true, name: true, pageCount: true, status: true },
-  })
+  const document = await getAccessibleDocument(identity.userId, id)
 
   if (!document) {
     notFound()
@@ -39,7 +36,7 @@ export default async function PublicDocumentViewerPage({
     fileName.endsWith(".gif")
 
   return (
-    <main className="min-h-screen overflow-hidden bg-background p-3">
+    <main className="flex h-screen w-full overflow-hidden bg-background">
       {isImage ? (
         <ImageViewer
           documentId={document.id}

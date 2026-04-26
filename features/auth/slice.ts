@@ -1,4 +1,5 @@
 import { createSlice, type PayloadAction } from "@reduxjs/toolkit"
+import { api } from "@/store/api"
 
 type SessionUser = {
   id: string
@@ -28,3 +29,15 @@ const authSlice = createSlice({
 
 export const { setSession } = authSlice.actions
 export const authReducer = authSlice.reducer
+
+// RTK Query endpoint for auth/me
+export const authApi = api.injectEndpoints({
+  endpoints: (builder) => ({
+    getMe: builder.query<{ authenticated: boolean; user: SessionUser | null }, void>({
+      query: () => "/auth/me",
+      providesTags: ["Me"],
+    }),
+  }),
+})
+
+export const { useGetMeQuery } = authApi

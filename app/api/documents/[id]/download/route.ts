@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server"
 
-import { prisma } from "@/lib/db/prisma"
 import { withErrorHandling } from "@/lib/api/handler"
 import { requireRequestIdentity } from "@/lib/auth/request-identity"
 import { createStorageAdapter } from "@/lib/storage"
 import { logAudit } from "@/lib/audit"
+import { getAccessibleDocument } from "@/lib/db/repositories/document-access"
 
 async function handler(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -13,18 +13,7 @@ async function handler(request: NextRequest, { params }: { params: Promise<{ id:
   const { searchParams } = new URL(request.url)
   const flavor = searchParams.get("flavor") || "original"
 
-  const document = await prisma.document.findFirst({
-    where: {
-      id,
-      userId: identity.userId,
-      deletedAt: null,
-    },
-    select: {
-      id: true,
-      storageKey: true,
-      thumbnailKey: true,
-    },
-  })
+  const document = await getAccessibleDocument(identity.userId, id)
 
   if (!document) {
     return NextResponse.json({ error: "Document not found" }, { status: 404 })

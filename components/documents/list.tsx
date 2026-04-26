@@ -177,8 +177,8 @@ export function DocumentList({ showDeleted = false }: DocumentListProps) {
   const [hasProcessing, setHasProcessing] = useState(false)
 
   const { data, isLoading } = useListDocumentsQuery(
-    { search, sort: sortBy, limit: 20 },
-    { 
+    { search, sort: sortBy, limit: 20, showDeleted },
+    {
       pollingInterval: hasProcessing ? 3000 : 0,
       refetchOnMountOrArgChange: true,
     }
@@ -255,9 +255,7 @@ export function DocumentList({ showDeleted = false }: DocumentListProps) {
     }
   }
 
-  const documents = (data?.items ?? []).filter((doc) =>
-    showDeleted ? doc.deletedAt : !doc.deletedAt
-  )
+  const documents = data?.items ?? []
 
   if (isLoading) {
     return (
