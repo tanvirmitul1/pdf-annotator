@@ -41,11 +41,35 @@ export function PdfViewer({
   const [loadedPages, setLoadedPages] = useState<Map<number, PDFPageProxy>>(
     new Map()
   )
+  const [textLayerReadyByPage, setTextLayerReadyByPage] = useState<
+    Record<number, string>
+  >({})
 
   const scrollRef = useRef<HTMLDivElement>(null)
   const programmaticScrollRef = useRef(false)
   const currentMatchRef = useRef(currentMatchIndex)
   currentMatchRef.current = currentMatchIndex
+  const textLayerGenerationKey = `${zoom}:${rotation}`
+
+  const handleTextLayerReady = useCallback(
+    (pageNumber: number, generationKey: string) => {
+      setTextLayerReadyByPage((previous) => {
+        if (previous[pageNumber] === generationKey) {
+          return previous
+        }
+
+        return {
+          ...previous,
+          [pageNumber]: generationKey,
+        }
+      })
+    },
+    []
+  )
+
+  useEffect(() => {
+    setTextLayerReadyByPage({})
+  }, [documentId, pdfDocument])
 
   // Load page dimensions (at rotation=0, zoom=1)
   useEffect(() => {
@@ -270,6 +294,8 @@ export function PdfViewer({
                       active={true}
                       naturalWidth={naturalW}
                       naturalHeight={naturalH}
+                      textLayerGenerationKey={textLayerGenerationKey}
+                      onTextLayerReady={handleTextLayerReady}
                       searchMatches={pageMatches}
                       isCurrentMatch={isCurrentMatchPage}
                     />
@@ -284,6 +310,8 @@ export function PdfViewer({
                       srcH={srcH}
                       screenW={scaledW}
                       screenH={scaledH}
+                      textLayerGenerationKey={textLayerGenerationKey}
+                      textLayerReadyKey={textLayerReadyByPage[pageNum] ?? null}
                     />
                   </div>
                 </div>

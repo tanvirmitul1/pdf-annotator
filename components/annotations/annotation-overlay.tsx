@@ -46,6 +46,8 @@ interface AnnotationOverlayProps {
   srcH: number
   screenW: number
   screenH: number
+  textLayerGenerationKey: string
+  textLayerReadyKey: string | null
 }
 
 interface ResolvedAnnotationMeta {
@@ -94,6 +96,8 @@ export function AnnotationOverlay({
   srcH,
   screenW,
   screenH,
+  textLayerGenerationKey,
+  textLayerReadyKey,
 }: AnnotationOverlayProps) {
   const { data: allAnnotations = [] } = useListByDocumentQuery(documentId)
   const [createAnnotation] = useCreateAnnotationMutation()
@@ -297,6 +301,10 @@ export function AnnotationOverlay({
   ])
 
   useEffect(() => {
+    if (textLayerReadyKey !== textLayerGenerationKey) {
+      return
+    }
+
     if (!overlayRef.current) {
       return
     }
@@ -361,6 +369,8 @@ export function AnnotationOverlay({
     setAnnotationOrphaned,
     srcH,
     srcW,
+    textLayerGenerationKey,
+    textLayerReadyKey,
     zoom,
   ])
 

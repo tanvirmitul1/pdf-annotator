@@ -24,6 +24,8 @@ export interface PdfCanvasProps {
   active: boolean
   naturalWidth: number
   naturalHeight: number
+  textLayerGenerationKey: string
+  onTextLayerReady?: (pageNumber: number, generationKey: string) => void
   searchMatches?: Array<{ startOffset: number; endOffset: number }>
   isCurrentMatch?: boolean
 }
@@ -51,12 +53,17 @@ export function PdfCanvas({
   active,
   naturalWidth,
   naturalHeight,
+  textLayerGenerationKey,
+  onTextLayerReady,
   searchMatches = [],
   isCurrentMatch = false,
 }: PdfCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [renderError, setRenderError] = useState(false)
   const [textItems, setTextItems] = useState<TextLayerItem[]>([])
+  const [readyTextLayerGenerationKey, setReadyTextLayerGenerationKey] = useState<
+    string | null
+  >(null)
   const renderTaskRef = useRef<RenderTask | null>(null)
 
   const scaledW = Math.round(naturalWidth * zoom)
@@ -124,11 +131,14 @@ export function PdfCanvas({
   useEffect(() => {
     if (!active || !page) {
       setTextItems([])
+      setReadyTextLayerGenerationKey(null)
       return
     }
 
     let cancelled = false
     const pageProxy = page
+
+    setReadyTextLayerGenerationKey(null)
 
     async function loadTextLayer() {
       const viewport = pageProxy.getViewport({ scale: zoom, rotation })
@@ -170,6 +180,7 @@ export function PdfCanvas({
 
       if (!cancelled) {
         setTextItems(nextItems)
+        setReadyTextLayerGenerationKey(textLayerGenerationKey)
       }
     }
 
@@ -178,7 +189,19 @@ export function PdfCanvas({
     return () => {
       cancelled = true
     }
-  }, [active, page, rotation, zoom])
+  }, [active, onTextLayerReady, page, rotation, textLayerGenerationKey, zoom])
+
+  useEffect(() => {
+    if (
+      !page ||
+      !onTextLayerReady ||
+      readyTextLayerGenerationKey !== textLayerGenerationKey
+    ) {
+      return
+    }
+
+    onTextLayerReady(page.pageNumber, readyTextLayerGenerationKey)
+  }, [onTextLayerReady, page, readyTextLayerGenerationKey, textLayerGenerationKey])
 
   useEffect(() => {
     if (!active && canvasRef.current) {
