@@ -8,6 +8,7 @@ import { useViewer } from "@/features/viewer/provider"
 import type { SearchMatch } from "@/features/viewer/store"
 import { PdfCanvas } from "./pdf-canvas"
 import { AnnotationOverlay } from "@/components/annotations/annotation-overlay"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 interface PageDimension {
   width: number
@@ -226,13 +227,13 @@ export function PdfViewer({
   }
 
   return (
-    <div
-      ref={scrollRef}
-      className="flex-1 overflow-y-auto bg-[linear-gradient(180deg,color-mix(in_oklab,var(--background)_96%,white)_0%,color-mix(in_oklab,var(--muted)_65%,transparent)_100%)]"
-      onScroll={handleScroll}
-      tabIndex={-1}
-      style={{ cursor: cursorStyle }}
+    <ScrollArea
+      className="flex-1 bg-[linear-gradient(180deg,color-mix(in_oklab,var(--background)_96%,white)_0%,color-mix(in_oklab,var(--muted)_65%,transparent)_100%)]"
+      viewportRef={scrollRef}
+      viewportProps={{ onScroll: handleScroll, tabIndex: -1 }}
+      viewportClassName="overflow-y-auto"
     >
+      <div style={{ cursor: cursorStyle }}>
       <div
         style={{
           height: `${virtualizer.getTotalSize()}px`,
@@ -321,6 +322,7 @@ export function PdfViewer({
           )
         })}
       </div>
-    </div>
+      </div>
+    </ScrollArea>
   )
 }

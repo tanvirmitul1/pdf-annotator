@@ -1,7 +1,7 @@
 "use client"
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react"
-import { AtSign, Trash2, X } from "lucide-react"
+import { Trash2, X } from "lucide-react"
 import { toast } from "sonner"
 
 import {
@@ -142,7 +142,6 @@ export function AnnotationPanel({ documentId }: AnnotationPanelProps) {
   )
   const panelRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const [selectionStart, setSelectionStart] = useState(0)
 
   const [updateAnnotation] = useUpdateAnnotationMutation()
   const [createAnnotation] = useCreateAnnotationMutation()
@@ -272,7 +271,7 @@ export function AnnotationPanel({ documentId }: AnnotationPanelProps) {
     ]
   )
 
-  const { call: debouncedSave, flush: flushSave } = useDebouncedMutation(
+  const { flush: flushSave } = useDebouncedMutation(
     triggerCommentSave,
     300
   )
@@ -429,31 +428,6 @@ export function AnnotationPanel({ documentId }: AnnotationPanelProps) {
     return annotation.positionData.anchor.quotedText
   }, [annotation])
 
-  const selectionIndex = textareaRef.current?.selectionStart ?? selectionStart
-  const mentionMatch = useMemo(() => {
-    const beforeCaret = comment.slice(0, selectionIndex)
-    return /(?:^|\s)@([^\s@]*)$/.exec(beforeCaret)
-  }, [comment, selectionIndex])
-  const mentionCandidates = useMemo(() => {
-    const query = mentionMatch?.[1]?.toLowerCase() ?? ""
-    if (!query || !annotation || !currentUser) {
-      return []
-    }
-
-    if (!isAnnotationOwner(annotation, currentUser.id)) {
-      return []
-    }
-
-    return collaborators
-      .filter((collaborator) => collaborator.id !== currentUser.id)
-      .filter((collaborator) => {
-        const haystack =
-          `${collaborator.name ?? ""} ${collaborator.email ?? ""}`.toLowerCase()
-        return haystack.includes(query)
-      })
-      .slice(0, 5)
-  }, [annotation, collaborators, currentUser, mentionMatch])
-
   const assignableCollaborators = useMemo(
     () =>
       collaborators.filter((collaborator) => collaborator.role !== "VIEWER"),
@@ -541,33 +515,14 @@ export function AnnotationPanel({ documentId }: AnnotationPanelProps) {
   const canEdit =
     Boolean(currentUser) && isAnnotationOwner(annotation, currentUser?.id)
 
-  function insertMention(label: string) {
-    if (!mentionMatch) {
-      return
-    }
-
-    const start =
-      selectionIndex - mentionMatch[0].length + mentionMatch[0].indexOf("@")
-    const end = selectionIndex
-    const nextValue = `${comment.slice(0, start)}@${label} ${comment.slice(end)}`
-    setComment(nextValue)
-    debouncedSave(nextValue)
-    requestAnimationFrame(() => {
-      textareaRef.current?.focus()
-      const caret = start + label.length + 2
-      textareaRef.current?.setSelectionRange(caret, caret)
-      setSelectionStart(caret)
-    })
-  }
-
   return (
     <div
       ref={panelRef}
-      className="flex w-80 shrink-0 flex-col border-l border-border/60 bg-card/90 backdrop-blur-xl"
+      className="pointer-events-auto flex h-full min-h-0 w-[min(24rem,calc(100vw-1rem))] max-w-full flex-col overflow-hidden rounded-[1rem] border border-border/70 bg-card/95 shadow-[0_20px_56px_-30px_rgba(15,23,42,0.35)] backdrop-blur-xl will-change-transform md:w-[22rem]"
       role="dialog"
       aria-label="Annotation editor"
       aria-modal="false"
-      style={{ animation: "slideInRight 180ms ease-out both" }}
+      style={{ animation: "slideInRight 220ms cubic-bezier(0.22,1,0.36,1) both" }}
     >
       <div className="flex h-12 shrink-0 items-center gap-2 border-b border-border/60 px-3">
         <span className="text-sm font-medium">
@@ -583,8 +538,8 @@ export function AnnotationPanel({ documentId }: AnnotationPanelProps) {
         </button>
       </div>
 
-      <ScrollArea className="flex-1">
-        <div className="space-y-4 p-3">
+      <ScrollArea className="min-h-0 flex-1">
+        <div className="space-y-4 p-3 pb-6">
           {quotedText ? (
             <div className="rounded-md border-l-2 border-primary/60 bg-primary/5 px-3 py-2">
               <p className="line-clamp-4 text-xs text-foreground/80">
@@ -828,7 +783,7 @@ export function AnnotationPanel({ documentId }: AnnotationPanelProps) {
             ) : (
               <div className="rounded-lg border border-dashed border-border/40 bg-muted/20 p-2.5">
                 <p className="text-xs text-muted-foreground italic">
-                  No description yet. Click "Edit" to add one.
+                  No description yet. Click &quot;Edit&quot; to add one.
                 </p>
               </div>
             )}
@@ -878,8 +833,8 @@ export function AnnotationPanel({ documentId }: AnnotationPanelProps) {
 
       <style>{`
         @keyframes slideInRight {
-          from { transform: translateX(100%); opacity: 0; }
-          to { transform: translateX(0); opacity: 1; }
+          from { transform: translate3d(20px, 0, 0); opacity: 0; }
+          to { transform: translate3d(0, 0, 0); opacity: 1; }
         }
       `}</style>
     </div>

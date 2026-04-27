@@ -30,6 +30,7 @@ import { AnnotationPanel } from "@/components/annotations/annotation-panel"
 import { SaveStatus } from "@/components/annotations/save-status"
 import { LoginGateModal } from "./login-gate-modal"
 import type { AnnotationWithTags } from "@/features/annotations/types"
+import { cn } from "@/lib/utils"
 
 type PdfjsModule = typeof import("pdfjs-dist")
 
@@ -504,22 +505,31 @@ function ViewerShellInner({
           />
         )}
 
-        {/* Annotation toolbar (floating, left edge of PDF area) */}
-        <div className="relative flex flex-col items-center py-4 px-1">
-          <AnnotationToolbar />
+        <div
+          className={cn(
+            "relative flex min-w-0 flex-1 transition-[padding] duration-200 ease-out",
+            rightPanelAnnotationId ? "md:pr-[23rem]" : ""
+          )}
+        >
+          {/* Annotation toolbar (floating, left edge of PDF area) */}
+          <div className="relative flex flex-col items-center px-1 py-4">
+            <AnnotationToolbar />
+          </div>
+
+          {/* PDF viewer */}
+          <PdfViewer
+            pdfDocument={pdfDocument}
+            documentId={documentId}
+            onProgressUpdate={handleProgressUpdate}
+          />
         </div>
 
-        {/* PDF viewer */}
-        <PdfViewer
-          pdfDocument={pdfDocument}
-          documentId={documentId}
-          onProgressUpdate={handleProgressUpdate}
-        />
-
         {/* Right annotation panel */}
-        {rightPanelAnnotationId && (
-          <AnnotationPanel documentId={documentId} />
-        )}
+        {rightPanelAnnotationId ? (
+          <div className="pointer-events-none absolute inset-y-2 right-2 z-20 flex max-w-[calc(100%-1rem)] items-stretch md:inset-y-3 md:right-3">
+            <AnnotationPanel documentId={documentId} />
+          </div>
+        ) : null}
 
         {/* Search bar overlay */}
         <SearchBar documentId={documentId} />
@@ -552,4 +562,3 @@ function ViewerShellInner({
     </div>
   )
 }
-
