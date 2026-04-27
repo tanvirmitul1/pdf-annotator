@@ -14,6 +14,7 @@ function makeAnnotations(count: number, pageNumber = 1): AnnotationWithTags[] {
     documentId: "doc-1",
     pageNumber,
     type: "HIGHLIGHT",
+    status: "OPEN",
     color: index % 2 === 0 ? "#fbbf24" : "#60a5fa",
     positionData: {
       kind: "TEXT",

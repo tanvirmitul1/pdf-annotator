@@ -16,6 +16,7 @@ function makeAnnotation(
     documentId: "doc-1",
     pageNumber: 1,
     type: "HIGHLIGHT",
+    status: "OPEN",
     color: "#fbbf24",
     positionData: {
       kind: "TEXT",

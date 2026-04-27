@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import type { PDFPageProxy, RenderTask } from "pdfjs-dist"
 import { AlertCircle, RefreshCw } from "lucide-react"
 
@@ -59,11 +59,13 @@ export function PdfCanvas({
   isCurrentMatch = false,
 }: PdfCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const textLayerRef = useRef<HTMLDivElement>(null)
   const [renderError, setRenderError] = useState(false)
   const [textItems, setTextItems] = useState<TextLayerItem[]>([])
-  const [readyTextLayerGenerationKey, setReadyTextLayerGenerationKey] = useState<
+  const [pendingTextLayerGenerationKey, setPendingTextLayerGenerationKey] = useState<
     string | null
   >(null)
+  const reportedTextLayerGenerationKeyRef = useRef<string | null>(null)
   const renderTaskRef = useRef<RenderTask | null>(null)
 
   const scaledW = Math.round(naturalWidth * zoom)
@@ -131,14 +133,16 @@ export function PdfCanvas({
   useEffect(() => {
     if (!active || !page) {
       setTextItems([])
-      setReadyTextLayerGenerationKey(null)
+      setPendingTextLayerGenerationKey(null)
+      reportedTextLayerGenerationKeyRef.current = null
       return
     }
 
     let cancelled = false
     const pageProxy = page
 
-    setReadyTextLayerGenerationKey(null)
+    setPendingTextLayerGenerationKey(null)
+    reportedTextLayerGenerationKeyRef.current = null
 
     async function loadTextLayer() {
       const viewport = pageProxy.getViewport({ scale: zoom, rotation })
@@ -180,7 +184,7 @@ export function PdfCanvas({
 
       if (!cancelled) {
         setTextItems(nextItems)
-        setReadyTextLayerGenerationKey(textLayerGenerationKey)
+        setPendingTextLayerGenerationKey(textLayerGenerationKey)
       }
     }
 
@@ -191,17 +195,32 @@ export function PdfCanvas({
     }
   }, [active, onTextLayerReady, page, rotation, textLayerGenerationKey, zoom])
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (
       !page ||
       !onTextLayerReady ||
-      readyTextLayerGenerationKey !== textLayerGenerationKey
+      pendingTextLayerGenerationKey !== textLayerGenerationKey ||
+      reportedTextLayerGenerationKeyRef.current === pendingTextLayerGenerationKey
     ) {
       return
     }
 
-    onTextLayerReady(page.pageNumber, readyTextLayerGenerationKey)
-  }, [onTextLayerReady, page, readyTextLayerGenerationKey, textLayerGenerationKey])
+    const renderedSpanCount =
+      textLayerRef.current?.querySelectorAll("[data-text-span='true']").length ?? 0
+
+    if (textItems.length > 0 && renderedSpanCount < textItems.length) {
+      return
+    }
+
+    reportedTextLayerGenerationKeyRef.current = pendingTextLayerGenerationKey
+    onTextLayerReady(page.pageNumber, pendingTextLayerGenerationKey)
+  }, [
+    onTextLayerReady,
+    page,
+    pendingTextLayerGenerationKey,
+    textItems.length,
+    textLayerGenerationKey,
+  ])
 
   useEffect(() => {
     if (!active && canvasRef.current) {
@@ -248,6 +267,7 @@ export function PdfCanvas({
       <canvas ref={canvasRef} className="block" aria-label="PDF page" />
 
       <div
+        ref={textLayerRef}
         aria-hidden="true"
         data-text-layer={pageNumberForLayer}
         className="absolute inset-0 overflow-hidden select-text"

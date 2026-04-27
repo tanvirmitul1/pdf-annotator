@@ -13,7 +13,10 @@ export type AnalyticsEvent =
   | { name: "document_restored"; props: { documentId: string } }
   | { name: "document_downloaded"; props: { documentId: string; flavor: "original" | "annotated" } }
   | { name: "annotation_created"; props: { type: string; hasComment: boolean; tagCount: number } }
-  | { name: "annotation_updated"; props: { field: "comment" | "tags" | "color" } }
+  | {
+      name: "annotation_updated"
+      props: { field: "comment" | "tags" | "color" | "status" | "assignee" }
+    }
   | { name: "annotation_deleted"; props: { type: string } }
   | { name: "annotations_exported"; props: { format: "json" | "csv" | "md"; count: number } }
   | { name: "tag_created"; props: Record<string, never> }

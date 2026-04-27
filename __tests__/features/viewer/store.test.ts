@@ -8,6 +8,7 @@ const annotationSnapshot = {
   documentId: "doc-1",
   pageNumber: 1,
   type: "HIGHLIGHT" as const,
+  status: "OPEN" as const,
   color: "#fbbf24",
   positionData: {
     kind: "TEXT" as const,

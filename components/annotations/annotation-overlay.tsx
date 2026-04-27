@@ -330,107 +330,101 @@ export function AnnotationOverlay({
       return
     }
 
+    const textLayerReady = textLayerReadyKey === textLayerGenerationKey
     const textLayer =
       overlayRef.current.parentElement?.querySelector<HTMLElement>(
         `[data-text-layer="${pageNumber}"]`
       )
 
-    const nextResolved: Record<string, ResolvedAnnotationMeta> = {}
+    setResolvedMap((previous) => {
+      const nextResolved: Record<string, ResolvedAnnotationMeta> = {}
 
-    pageAnnotations.forEach((annotation) => {
-      // Non-text annotations pass through unchanged
-      if (annotation.positionData.kind !== "TEXT") {
-        nextResolved[annotation.id] = {
-          positionData: annotation.positionData,
-          orphaned: false,
-        }
-        setAnnotationOrphaned(annotation.id, false)
-        return
-      }
-
-      // If no text layer or spans not ready yet, use ORIGINAL position as fallback
-      // This ensures annotations are ALWAYS visible, even during zoom transitions
-      if (!textLayer) {
-        nextResolved[annotation.id] = {
-          positionData: annotation.positionData,
-          orphaned: false,
-        }
-        setAnnotationOrphaned(annotation.id, false)
-        return
-      }
-
-      const spanNodes = Array.from(
-        textLayer.querySelectorAll<HTMLElement>("[data-text-span='true']")
-      )
-
-      // If spans haven't rendered yet, use original position
-      if (spanNodes.length === 0) {
-        nextResolved[annotation.id] = {
-          positionData: annotation.positionData,
-          orphaned: false,
-        }
-        setAnnotationOrphaned(annotation.id, false)
-        return
-      }
-
-      // Re-anchor to current text layer positions
-      try {
-        const overlayRect = overlayRef.current!.getBoundingClientRect()
-        const segments = spanNodes.map((span) => {
-          const spanRect = span.getBoundingClientRect()
-          const relativeX = spanRect.left - overlayRect.left
-          const relativeY = spanRect.top - overlayRect.top
-          const srcPoint = screenToSrc(
-            relativeX,
-            relativeY,
-            srcW,
-            srcH,
-            zoom,
-            rotation
-          )
-
-          return {
-            text: span.dataset.textContent ?? span.textContent ?? "",
-            rect: {
-              x: srcPoint.x,
-              y: srcPoint.y,
-              width: spanRect.width / zoom,
-              height: spanRect.height / zoom,
-            },
+      pageAnnotations.forEach((annotation) => {
+        if (annotation.positionData.kind !== "TEXT") {
+          nextResolved[annotation.id] = {
+            positionData: annotation.positionData,
+            orphaned: false,
           }
-        })
+          setAnnotationOrphaned(annotation.id, false)
+          return
+        }
 
-        const reanchored = resolveTextAnchor(
-          segments,
-          annotation.positionData.anchor
+        const fallback =
+          previous[annotation.id] ?? {
+            positionData: annotation.positionData,
+            orphaned: false,
+          }
+
+        if (!textLayerReady || !textLayer) {
+          nextResolved[annotation.id] = fallback
+          setAnnotationOrphaned(annotation.id, fallback.orphaned)
+          return
+        }
+
+        const spanNodes = Array.from(
+          textLayer.querySelectorAll<HTMLElement>("[data-text-span='true']")
         )
-        nextResolved[annotation.id] = {
-          positionData: {
-            kind: "TEXT" as const,
-            pageNumber: annotation.positionData.pageNumber,
-            anchor: {
-              ...annotation.positionData.anchor,
-              rects: reanchored.rects,
+
+        if (spanNodes.length === 0) {
+          nextResolved[annotation.id] = fallback
+          setAnnotationOrphaned(annotation.id, fallback.orphaned)
+          return
+        }
+
+        try {
+          const overlayRect = overlayRef.current!.getBoundingClientRect()
+          const segments = spanNodes.map((span) => {
+            const spanRect = span.getBoundingClientRect()
+            const relativeX = spanRect.left - overlayRect.left
+            const relativeY = spanRect.top - overlayRect.top
+            const srcPoint = screenToSrc(
+              relativeX,
+              relativeY,
+              srcW,
+              srcH,
+              zoom,
+              rotation
+            )
+
+            return {
+              text: span.dataset.textContent ?? span.textContent ?? "",
+              rect: {
+                x: srcPoint.x,
+                y: srcPoint.y,
+                width: spanRect.width / zoom,
+                height: spanRect.height / zoom,
+              },
+            }
+          })
+
+          const reanchored = resolveTextAnchor(
+            segments,
+            annotation.positionData.anchor
+          )
+          nextResolved[annotation.id] = {
+            positionData: {
+              kind: "TEXT" as const,
+              pageNumber: annotation.positionData.pageNumber,
+              anchor: {
+                ...annotation.positionData.anchor,
+                rects: reanchored.rects,
+              },
             },
-          },
-          orphaned: reanchored.orphaned,
+            orphaned: reanchored.orphaned,
+          }
+          setAnnotationOrphaned(annotation.id, reanchored.orphaned)
+        } catch (error) {
+          console.warn(
+            `[AnnotationOverlay] Failed to re-anchor annotation ${annotation.id}:`,
+            error
+          )
+          nextResolved[annotation.id] = fallback
+          setAnnotationOrphaned(annotation.id, fallback.orphaned)
         }
-        setAnnotationOrphaned(annotation.id, reanchored.orphaned)
-      } catch (error) {
-        // If re-anchoring fails, use original position to ensure annotation is still visible
-        console.warn(
-          `[AnnotationOverlay] Failed to re-anchor annotation ${annotation.id}:`,
-          error
-        )
-        nextResolved[annotation.id] = {
-          positionData: annotation.positionData,
-          orphaned: false,
-        }
-        setAnnotationOrphaned(annotation.id, false)
-      }
-    })
+      })
 
-    setResolvedMap(nextResolved)
+      return nextResolved
+    })
   }, [
     pageAnnotations,
     pageNumber,

@@ -7,11 +7,11 @@ import type {
 export interface AnnotationListFilters {
   search: string
   filterType: AnnotationType | ""
-  filterStatus: AnnotationStatus | ""
+  filterStatus?: AnnotationStatus | ""
   filterColor: string
   filterTag: string
-  filterAssignee: string
-  filterOwnership: "all" | "mine" | "shared" | "assigned"
+  filterAssignee?: string
+  filterOwnership?: "all" | "mine" | "shared" | "assigned"
   hasCommentOnly: boolean
   currentUserId?: string
 }
@@ -34,11 +34,11 @@ export function filterAnnotations(
   {
     search,
     filterType,
-    filterStatus,
+    filterStatus = "",
     filterColor,
     filterTag,
-    filterAssignee,
-    filterOwnership,
+    filterAssignee = "",
+    filterOwnership = "all",
     hasCommentOnly,
     currentUserId,
   }: AnnotationListFilters
