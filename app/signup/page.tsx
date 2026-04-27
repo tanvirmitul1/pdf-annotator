@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import { AuthShell } from "@/components/common/auth-shell"
 import { SignUpForm } from "@/components/auth/sign-up-form"
 import { getCurrentUser } from "@/lib/auth/require"
+import { SignUpFormWrapper } from "./sign-up-form-wrapper"
 
 export default async function SignupPage() {
   const user = await getCurrentUser()
@@ -17,7 +18,7 @@ export default async function SignupPage() {
       title="Save your work"
       description="Create an account to keep your annotations, bookmarks, and reading progress."
       mode="signup"
-      form={<SignUpForm />}
+      form={<SignUpFormWrapper />}
     />
   )
 }

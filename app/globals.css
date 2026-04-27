@@ -137,6 +137,22 @@
   a {
     @apply focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none;
   }
+
+  /* Global cursor pointer for all interactive elements */
+  button,
+  [role="button"],
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"],
+  input[type="checkbox"],
+  input[type="radio"],
+  label:has(input),
+  select,
+  summary,
+  [tabindex]:not([tabindex="-1"]),
+  [onclick] {
+    cursor: pointer;
+  }
 }
 
 .skip-link {

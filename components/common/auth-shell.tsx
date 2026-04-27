@@ -118,16 +118,6 @@ export function AuthShell({
             <div className="rounded-xl border border-border/60 bg-card/80 p-6 shadow-sm backdrop-blur-sm">
               {form}
             </div>
-
-            <p className="text-center text-sm text-muted-foreground">
-              {mode === "login" ? "Don't have an account?" : "Already have an account?"}{" "}
-              <Link
-                href={mode === "login" ? "/signup" : "/login"}
-                className="font-medium text-foreground underline underline-offset-4 hover:text-primary transition-colors"
-              >
-                {mode === "login" ? "Sign up" : "Sign in"}
-              </Link>
-            </p>
           </div>
         </div>
       </div>
