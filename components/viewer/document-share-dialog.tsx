@@ -21,12 +21,15 @@ import {
   useUpdateMemberRoleMutation,
   useRemoveMemberMutation,
 } from "@/features/members/api"
+import { useGetMeQuery } from "@/features/auth/slice"
 import type { DocumentMemberRole } from "@prisma/client"
+import { ScrollArea } from "@/components/ui/scroll-area"
 
 interface DocumentShareDialogProps {
   documentId: string
   open: boolean
   onOpenChange: (open: boolean) => void
+  canManageMembers?: boolean
 }
 
 const ROLES: Array<DocumentMemberRole | "OWNER"> = [
@@ -43,6 +46,19 @@ const ROLE_LABELS: Record<DocumentMemberRole | "OWNER", string> = {
   EDITOR: "Can edit",
 }
 
+function getErrorMessage(error: unknown, fallback: string) {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "data" in error &&
+    typeof (error as { data?: { error?: unknown } }).data?.error === "string"
+  ) {
+    return (error as { data: { error: string } }).data.error
+  }
+
+  return fallback
+}
+
 function getInitials(
   name: string | null | undefined,
   email: string | null | undefined
@@ -55,8 +71,10 @@ export function DocumentShareDialog({
   documentId,
   open,
   onOpenChange,
+  canManageMembers = false,
 }: DocumentShareDialogProps) {
   const { data: members = [], isLoading } = useListMembersQuery({ documentId })
+  const { data: me } = useGetMeQuery()
   const [inviteMember] = useInviteMemberMutation()
   const [updateMemberRole] = useUpdateMemberRoleMutation()
   const [removeMember] = useRemoveMemberMutation()
@@ -82,8 +100,8 @@ export function DocumentShareDialog({
       }).unwrap()
       toast.success(`${email} has been invited!`)
       setEmail("")
-    } catch (error: any) {
-      toast.error(error?.data?.error || "Failed to invite user")
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to invite user"))
     }
   }
 
@@ -102,8 +120,8 @@ export function DocumentShareDialog({
       }).unwrap()
       toast.success("Role updated!")
       setShowRoleDropdown(null)
-    } catch (error: any) {
-      toast.error(error?.data?.error || "Failed to update role")
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to update role"))
     }
   }
 
@@ -111,8 +129,8 @@ export function DocumentShareDialog({
     try {
       await removeMember({ documentId, memberId }).unwrap()
       toast.success(`${memberEmail} has been removed`)
-    } catch (error: any) {
-      toast.error(error?.data?.error || "Failed to remove member")
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to remove member"))
     }
   }
 
@@ -148,38 +166,51 @@ export function DocumentShareDialog({
           {/* Invite People */}
           <div className="space-y-2">
             <label className="text-xs font-medium text-muted-foreground">
-              Invite people
-            </label>
-            <div className="flex gap-2">
-              <Input
-                placeholder="Enter email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    void handleInvite()
-                  }
-                }}
-                className="flex-1"
-              />
-              <select
-                value={selectedRole}
-                onChange={(e) =>
-                  setSelectedRole(e.target.value as DocumentMemberRole)
-                }
-                className="h-10 rounded-md border border-input bg-background px-2 text-xs"
-              >
-                {ROLES.map((role) => (
-                  <option key={role} value={role}>
-                    {ROLE_LABELS[role]}
-                  </option>
-                ))}
-              </select>
-              <Button size="sm" onClick={() => void handleInvite()}>
-                <Plus className="mr-1.5 size-3" />
-                Invite
-              </Button>
-            </div>
+            Invite people
+          </label>
+            {canManageMembers ? (
+              <div className="rounded-xl border border-border/60 bg-card/60 p-3">
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <Input
+                    placeholder="Enter teammate email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        void handleInvite()
+                      }
+                    }}
+                    className="flex-1"
+                  />
+                  <select
+                    value={selectedRole}
+                    onChange={(e) =>
+                      setSelectedRole(e.target.value as DocumentMemberRole)
+                    }
+                    className="h-10 rounded-md border border-input bg-background px-3 text-xs"
+                  >
+                    {ROLES.filter((role) => role !== "OWNER").map((role) => (
+                      <option key={role} value={role}>
+                        {ROLE_LABELS[role]}
+                      </option>
+                    ))}
+                  </select>
+                  <Button size="sm" onClick={() => void handleInvite()}>
+                    <Plus className="mr-1.5 size-3" />
+                    Add teammate
+                  </Button>
+                </div>
+                <p className="mt-2 text-[11px] text-muted-foreground">
+                  Invite an existing user by email and choose whether they can
+                  view, comment, or edit this document.
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-border/60 bg-muted/40 p-3 text-xs text-muted-foreground">
+                You can view who has access here. Only owners and editors can add
+                new teammates.
+              </div>
+            )}
           </div>
 
           {/* Members List */}
@@ -203,10 +234,11 @@ export function DocumentShareDialog({
                 ))}
               </div>
             ) : (
-              <div className="max-h-64 space-y-2 overflow-y-auto">
+              <ScrollArea className="h-64 rounded-xl border border-border/50 bg-card/45">
+                <div className="space-y-2 p-2">
                 {members.map((member) => {
                   const isOwner = member.role === "OWNER"
-                  const isCurrentUser = member.userId === "current-user-id" // TODO: Get from auth
+                  const isCurrentUser = member.userId === me?.user?.id
 
                   return (
                     <div
@@ -239,7 +271,7 @@ export function DocumentShareDialog({
                             )
                           }
                           className="flex items-center gap-1 rounded-md border border-border/60 px-2 py-1 text-xs hover:bg-accent"
-                          disabled={isOwner}
+                          disabled={isOwner || !canManageMembers}
                         >
                           {
                             ROLE_LABELS[
@@ -249,19 +281,16 @@ export function DocumentShareDialog({
                           {!isOwner && <ChevronDown className="size-3" />}
                         </button>
 
-                        {showRoleDropdown === member.id && !isOwner && (
+                        {showRoleDropdown === member.id && !isOwner && canManageMembers && (
                           <div className="absolute top-full right-0 z-50 mt-1 w-40 overflow-hidden rounded-md border bg-popover shadow-lg">
-                            {ROLES.map((role) => (
+                            {ROLES.filter((role) => role !== "OWNER").map((role) => (
                               <button
                                 key={role}
                                 type="button"
                                 onClick={() => {
-                                  if (role !== "OWNER") {
-                                    void handleRoleChange(member.id, role)
-                                  }
+                                  void handleRoleChange(member.id, role)
                                 }}
                                 className="w-full px-3 py-2 text-left text-xs hover:bg-accent"
-                                disabled={role === "OWNER"}
                               >
                                 {ROLE_LABELS[role]}
                               </button>
@@ -271,7 +300,7 @@ export function DocumentShareDialog({
                       </div>
 
                       {/* Remove Button */}
-                      {!isOwner && !isCurrentUser && (
+                      {!isOwner && !isCurrentUser && canManageMembers && (
                         <button
                           type="button"
                           onClick={() =>
@@ -295,7 +324,8 @@ export function DocumentShareDialog({
                     </div>
                   )
                 })}
-              </div>
+                </div>
+              </ScrollArea>
             )}
           </div>
         </div>

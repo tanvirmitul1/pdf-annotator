@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 import { randomUUID } from "crypto"
+import path from "path"
 
 import { Readable } from "stream"
 import { auth } from "@/auth"
@@ -71,22 +72,32 @@ async function handler(request: NextRequest) {
   // Generate document ID
   const documentId = randomUUID()
 
-  // Create document record
+  // Upload file first so we persist the exact adapter key that was stored.
+  const storage = createStorageAdapter()
+  const stream = Readable.from(file.stream() as unknown as AsyncIterable<Uint8Array>)
+  const normalizedExtension = path.extname(file.name).toLowerCase()
+  const originalFilename = normalizedExtension
+    ? `original${normalizedExtension}`
+    : "original"
+  const uploadResult = await storage.upload(
+    identity.userId,
+    documentId,
+    stream,
+    file.type,
+    originalFilename
+  )
+
+  // Create document record using the real stored key.
   const document = await prisma.document.create({
     data: {
       id: documentId,
       userId: identity.userId,
       name: file.name,
       fileSize: file.size,
-      storageKey: `${identity.userId}/${documentId}/original`,
+      storageKey: uploadResult.key,
       status: "PROCESSING",
     },
   })
-
-  // Upload file
-  const storage = createStorageAdapter()
-  const stream = Readable.from(file.stream() as unknown as AsyncIterable<Uint8Array>)
-  await storage.upload(identity.userId, documentId, stream, file.type, "original")
 
   // Increment usage
   await incrementUsage(identity.userId, "DOCUMENTS", 1)

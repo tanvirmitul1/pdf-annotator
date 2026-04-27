@@ -80,11 +80,11 @@ export function ProtectedShell({
               href={item.href}
               onClick={onNavigate}
               className={cn(
-                "group flex items-center gap-3 rounded-[1.2rem] border px-3 py-3 text-sm transition duration-150",
+                "group flex items-center gap-3 rounded-xl border px-3 py-2.5 text-sm transition duration-150",
                 "focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none",
                 isActive
-                  ? "border-primary/25 bg-primary/12 text-foreground shadow-[0_18px_40px_-28px_color-mix(in_oklab,var(--primary)_70%,transparent)]"
-                  : "border-transparent text-muted-foreground hover:border-primary/18 hover:bg-accent/55 hover:text-foreground"
+                  ? "border-primary/20 bg-primary/10 text-foreground shadow-[0_18px_40px_-32px_color-mix(in_oklab,var(--primary)_70%,transparent)]"
+                  : "border-transparent text-muted-foreground hover:border-border/70 hover:bg-accent/45 hover:text-foreground"
               )}
             >
               <item.icon
@@ -104,16 +104,16 @@ export function ProtectedShell({
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden px-3 py-3 sm:px-4 sm:py-4">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,color-mix(in_oklab,var(--primary)_14%,transparent)_0,transparent_32%),radial-gradient(circle_at_bottom_right,color-mix(in_oklab,var(--accent)_18%,transparent)_0,transparent_28%)]" />
+    <div className="relative min-h-screen overflow-hidden bg-[linear-gradient(180deg,color-mix(in_oklab,var(--background)_92%,black)_0%,color-mix(in_oklab,var(--background)_98%,transparent)_100%)] px-3 py-3 sm:px-4 sm:py-4">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,color-mix(in_oklab,var(--primary)_10%,transparent)_0,transparent_24%),radial-gradient(circle_at_85%_20%,color-mix(in_oklab,white_5%,transparent)_0,transparent_22%),radial-gradient(circle_at_bottom_right,color-mix(in_oklab,var(--accent)_12%,transparent)_0,transparent_24%)]" />
 
-      <div className="relative mx-auto flex min-h-[calc(100vh-1.5rem)] max-w-[1600px] gap-4">
-        <aside className="glass-panel surface-border sticky top-4 hidden h-[calc(100vh-2rem)] w-[290px] flex-col rounded-[2rem] p-4 lg:flex">
-          <div className="border-b border-border/60 pb-5">
+      <div className="relative mx-auto flex min-h-[calc(100vh-1.5rem)] max-w-[1680px] gap-4">
+        <aside className="sticky top-4 hidden h-[calc(100vh-2rem)] w-[272px] flex-col rounded-[1.4rem] border border-border/60 bg-card/75 p-4 shadow-[0_28px_80px_-50px_rgba(15,23,42,0.55)] backdrop-blur-xl lg:flex">
+          <div className="border-b border-border/60 pb-4">
             <LogoMark />
           </div>
 
-          <div className="mt-5 flex items-center gap-3 rounded-[1.4rem] border border-border/60 bg-card/65 p-3">
+          <div className="mt-5 flex items-center gap-3 rounded-xl border border-border/60 bg-background/50 p-3">
             <Avatar size="lg">
               <AvatarImage src={image ?? undefined} alt={name} />
               <AvatarFallback>{initials}</AvatarFallback>
@@ -124,13 +124,18 @@ export function ProtectedShell({
             </div>
           </div>
 
-          <div className="mt-5">{renderNavigation()}</div>
+          <div className="mt-5">
+            <p className="mb-2 px-1 text-[11px] font-medium tracking-[0.24em] text-muted-foreground uppercase">
+              Workspace
+            </p>
+            {renderNavigation()}
+          </div>
 
-          <div className="mt-auto space-y-3 rounded-[1.4rem] border border-border/60 bg-card/65 p-4">
+          <div className="mt-auto space-y-3 rounded-xl border border-border/60 bg-background/45 p-4">
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="text-xs tracking-[0.22em] text-muted-foreground uppercase">
-                  Current plan
+                  Workspace
                 </p>
                 <p className="mt-1 font-heading text-lg font-semibold text-foreground capitalize">
                   {planId}
@@ -140,18 +145,18 @@ export function ProtectedShell({
                 variant="outline"
                 className="rounded-full border-primary/20 bg-primary/10 px-3 py-1 text-primary"
               >
-                Ready
+                Active
               </Badge>
             </div>
             <p className="text-xs leading-6 text-muted-foreground">
-              Elegant scaffolding for documents, collections, settings, and
-              future annotation depth.
+              Keep documents, collections, annotations, and collaboration in one
+              calm workspace.
             </p>
           </div>
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col gap-4">
-          <header className="glass-panel surface-border sticky top-3 z-30 rounded-[1.8rem] px-3 py-3 sm:px-4">
+          <header className="sticky top-3 z-30 rounded-[1.2rem] border border-border/60 bg-card/80 px-3 py-3 shadow-[0_18px_48px_-36px_rgba(15,23,42,0.45)] backdrop-blur-xl sm:px-4">
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex items-center gap-2 lg:hidden">
                 <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
@@ -160,14 +165,14 @@ export function ProtectedShell({
                       variant="outline"
                       size="icon-lg"
                       aria-label="Open navigation"
-                      className="rounded-2xl border-border/70 bg-card/70 hover:border-primary/35 hover:bg-accent/70"
+                      className="rounded-xl border-border/70 bg-card/70 hover:border-primary/35 hover:bg-accent/70"
                     >
                       <Menu className="size-4" />
                     </Button>
                   </SheetTrigger>
                   <SheetContent
                     side="left"
-                    className="surface-card border-border/60 p-0"
+                    className="border-border/60 bg-card/95 p-0 backdrop-blur-xl"
                   >
                     <div className="flex h-full flex-col p-4">
                       <div className="border-b border-border/60 pb-4">
@@ -184,8 +189,8 @@ export function ProtectedShell({
 
               <div className="relative min-w-[220px] flex-1">
                 <Search className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-muted-foreground" />
-                <div className="flex h-12 items-center rounded-[1.2rem] border border-border/70 bg-card/70 pr-4 pl-11 text-sm text-muted-foreground">
-                  Search your library, tags, and notes
+                <div className="flex h-11 items-center rounded-xl border border-border/70 bg-background/55 pr-4 pl-11 text-sm text-muted-foreground">
+                  Search documents, collections, and annotations
                   <span className="ml-auto rounded-full border border-border/70 px-2 py-0.5 text-[0.68rem] tracking-[0.2em] uppercase">
                     Soon
                   </span>
@@ -198,7 +203,7 @@ export function ProtectedShell({
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="outline"
-                    className="h-auto rounded-[1.3rem] border-border/70 bg-card/70 px-2 py-2 hover:border-primary/35 hover:bg-accent/70"
+                    className="h-auto rounded-xl border-border/70 bg-background/55 px-2 py-2 hover:border-primary/35 hover:bg-accent/70"
                   >
                     <Avatar size="sm">
                       <AvatarImage src={image ?? undefined} alt={name} />
@@ -217,7 +222,7 @@ export function ProtectedShell({
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   align="end"
-                  className="w-60 rounded-2xl border border-border/70 bg-popover/95 p-2 backdrop-blur-xl"
+                  className="w-60 rounded-xl border border-border/70 bg-popover/95 p-2 backdrop-blur-xl"
                 >
                   <DropdownMenuLabel>Account</DropdownMenuLabel>
                   <DropdownMenuItem asChild className="rounded-xl">
@@ -253,7 +258,7 @@ export function ProtectedShell({
 
           <main
             id="main-content"
-            className="animate-in duration-500 fade-in-0 slide-in-from-bottom-3"
+            className="animate-in duration-500 fade-in-0 slide-in-from-bottom-3 pb-3"
           >
             {children}
           </main>

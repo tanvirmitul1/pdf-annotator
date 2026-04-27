@@ -186,7 +186,9 @@ export class S3Adapter implements StorageAdapter {
       Prefix: prefix,
     })
 
-    const response: any = await this.s3.send(listCommand)
+    const response = await this.s3.send(listCommand) as {
+      Contents?: Array<{ Key?: string }>
+    }
     
     if (response.Contents) {
       // Delete each object
@@ -224,9 +226,22 @@ export class S3Adapter implements StorageAdapter {
 
 type CloudinaryInstance = {
   config: (config: { cloud_name: string; api_key: string; api_secret: string }) => void
+  api: {
+    resource: (
+      publicId: string,
+      options: Record<string, unknown>
+    ) => Promise<{ secure_url?: string; url?: string }>
+  }
   uploader: {
     upload_stream: (options: Record<string, unknown>, callback: (error: Error | null, result: { bytes: number }) => void) => NodeJS.WritableStream
     destroy: (publicId: string, options: Record<string, unknown>) => Promise<void>
+  }
+  utils: {
+    private_download_url: (
+      publicId: string,
+      format: string,
+      options?: Record<string, unknown>
+    ) => string
   }
   url: (publicId: string, options: Record<string, unknown>) => string
 }
@@ -292,7 +307,12 @@ export class CloudinaryAdapter implements StorageAdapter {
 
   async get(key: string): Promise<Readable> {
     const https = await import("https")
-    const url = this.getPublicUrl(key)
+    const cloudinary = await this.getCloudinary()
+    const publicId = `pdf-annotator/${key}`
+    const url = cloudinary.utils.private_download_url(publicId, "", {
+      resource_type: "raw",
+      type: "upload",
+    })
     
     return new Promise((resolve, reject) => {
       https.get(url, (response) => {
@@ -349,7 +369,11 @@ export class CloudinaryAdapter implements StorageAdapter {
 
   getPublicUrl(key: string): string {
     // Construct Cloudinary URL directly — no SDK call needed for URL generation
-    return `https://res.cloudinary.com/${this.cloudName}/raw/upload/pdf-annotator/${key}`
+    const encodedKey = key
+      .split("/")
+      .map((segment) => encodeURIComponent(segment))
+      .join("/")
+    return `https://res.cloudinary.com/${this.cloudName}/raw/upload/pdf-annotator/${encodedKey}`
   }
 }
 

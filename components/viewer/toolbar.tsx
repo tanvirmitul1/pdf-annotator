@@ -39,7 +39,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { DocumentCollaborationDialog } from "./document-collaboration-dialog"
 import { NotificationBell } from "@/components/notifications/notification-bell"
 import { DocumentShareDialog } from "./document-share-dialog"
 
@@ -406,6 +405,7 @@ export function Toolbar({
           documentId={documentId}
           open={showShareDialog}
           onOpenChange={setShowShareDialog}
+          canManageMembers={canManageMembers}
         />
 
         <NotificationBell />

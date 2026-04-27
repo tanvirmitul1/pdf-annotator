@@ -76,7 +76,7 @@ export function DocumentUpload({ onUploadSuccess }: DocumentUploadProps) {
     <div
       {...getRootProps()}
       className={cn(
-        "group relative overflow-hidden rounded-[2rem] border-2 border-dashed px-8 py-12 transition-all duration-300",
+        "group relative overflow-hidden rounded-[1.25rem] border border-dashed px-6 py-8 transition-all duration-300",
         "focus-within:ring-2 focus-within:ring-primary/50 focus-within:outline-none",
         isDragActive
           ? "border-primary/60 bg-gradient-to-br from-primary/15 to-accent/10 shadow-[0_8px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_rgba(120,50,200,0.2)]"
@@ -101,6 +101,7 @@ export function DocumentUpload({ onUploadSuccess }: DocumentUploadProps) {
           <div
             className={cn(
               "flex size-16 items-center justify-center rounded-[1.2rem] transition-all duration-300",
+              "shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]",
               "bg-gradient-to-br from-primary/15 to-primary/8 text-primary",
               isDragActive && "scale-110 from-primary/25 to-primary/15"
             )}
@@ -110,6 +111,7 @@ export function DocumentUpload({ onUploadSuccess }: DocumentUploadProps) {
           <div
             className={cn(
               "flex size-16 items-center justify-center rounded-[1.2rem] transition-all duration-300",
+              "shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]",
               "bg-gradient-to-br from-accent/15 to-accent/8 text-accent-foreground",
               isDragActive && "scale-110 from-accent/25 to-accent/15"
             )}
@@ -133,7 +135,7 @@ export function DocumentUpload({ onUploadSuccess }: DocumentUploadProps) {
           size="lg"
           disabled={isLoading}
           className={cn(
-            "rounded-full px-6 transition-all duration-300",
+            "rounded-xl px-6 transition-all duration-300",
             isLoading
               ? "cursor-not-allowed bg-primary/60"
               : "bg-gradient-to-r from-primary to-primary/90 hover:shadow-[0_8px_24px_rgba(120,50,200,0.3)] dark:hover:shadow-[0_8px_24px_rgba(120,50,200,0.4)]"

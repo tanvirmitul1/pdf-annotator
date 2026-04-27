@@ -83,7 +83,7 @@ type ProgressFn = (progress: number) => Promise<unknown>
 
 async function processPdf(document: PdfDocumentRecord, storage: StorageAdapter, setProgress: ProgressFn) {
   const t0 = Date.now()
-  const originalStream = await storage.get(`${document.userId}/${document.id}/original`)
+  const originalStream = await storage.get(document.storageKey)
   const buffer = await streamToBuffer(originalStream)
   console.log(`[${document.id}] Downloaded original in ${Date.now() - t0}ms`)
   await setProgress(10)
@@ -209,7 +209,7 @@ async function generatePdfThumbnail(
 }
 
 async function processImage(document: PdfDocumentRecord, storage: StorageAdapter, setProgress: ProgressFn) {
-  const originalStream = await storage.get(`${document.userId}/${document.id}/original`)
+  const originalStream = await storage.get(document.storageKey)
   const buffer = await streamToBuffer(originalStream)
   await setProgress(20)
 
