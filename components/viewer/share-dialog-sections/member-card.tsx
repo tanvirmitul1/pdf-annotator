@@ -1,6 +1,13 @@
 "use client"
 
-import { Loader2, Trash2, Crown, Eye, MessageSquare, PencilLine } from "lucide-react"
+import {
+  Loader2,
+  Trash2,
+  Crown,
+  Eye,
+  MessageSquare,
+  PencilLine,
+} from "lucide-react"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
@@ -96,8 +103,8 @@ export function MemberCard({
   const RoleIcon = getRoleIcon(isOwner ? "OWNER" : role)
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center gap-3 rounded-lg border border-border/50 bg-card/30 p-3">
-      <div className="flex items-center gap-3 flex-1 min-w-0">
+    <div className="flex flex-col gap-3 rounded-lg border border-border/50 bg-card/30 p-3 sm:flex-row sm:items-center">
+      <div className="flex min-w-0 flex-1 items-center gap-3">
         <Avatar className="size-9 shrink-0">
           <AvatarImage src={image || undefined} />
           <AvatarFallback className="text-xs">
@@ -115,9 +122,7 @@ export function MemberCard({
             )}
           </p>
           {email && (
-            <p className="truncate text-xs text-muted-foreground">
-              {email}
-            </p>
+            <p className="truncate text-xs text-muted-foreground">{email}</p>
           )}
         </div>
       </div>
@@ -126,7 +131,7 @@ export function MemberCard({
         <Badge
           variant="outline"
           className={cn(
-            "shrink-0 gap-1.5 rounded-full border px-2.5 py-0.5 w-fit",
+            "w-fit shrink-0 gap-1.5 rounded-full border px-2.5 py-0.5",
             getRoleTone("OWNER")
           )}
         >
@@ -134,17 +139,17 @@ export function MemberCard({
           <span className="text-xs font-medium">Owner</span>
         </Badge>
       ) : canManage ? (
-        <div className="flex items-center gap-2 w-full sm:w-auto">
+        <div className="flex w-full items-center gap-2 sm:w-auto">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-8 gap-1.5 px-2.5 flex-1 sm:flex-none justify-start sm:justify-center"
+                className="h-8 flex-1 justify-start gap-1.5 px-2.5 sm:flex-none sm:justify-center"
                 disabled={isUpdatingRole}
               >
                 <RoleIcon className="size-3.5 shrink-0" />
-                <span className="text-xs truncate">
+                <span className="truncate text-xs">
                   {ROLE_LABELS[role as DocumentMemberRole]}
                 </span>
               </Button>
@@ -190,7 +195,7 @@ export function MemberCard({
         <Badge
           variant="outline"
           className={cn(
-            "shrink-0 gap-1.5 rounded-full border px-2.5 py-0.5 w-fit",
+            "w-fit shrink-0 gap-1.5 rounded-full border px-2.5 py-0.5",
             getRoleTone(role as DocumentMemberRole)
           )}
         >

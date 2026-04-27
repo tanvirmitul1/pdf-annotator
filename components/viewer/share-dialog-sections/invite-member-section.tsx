@@ -59,9 +59,7 @@ export function InviteMemberSection({
         </div>
         <div>
           <p className="text-sm font-medium">Add teammate</p>
-          <p className="text-xs text-muted-foreground">
-            Enter email to invite
-          </p>
+          <p className="text-xs text-muted-foreground">Enter email to invite</p>
         </div>
       </div>
 

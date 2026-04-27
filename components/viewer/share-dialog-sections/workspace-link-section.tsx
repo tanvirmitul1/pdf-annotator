@@ -37,7 +37,7 @@ export function WorkspaceLinkSection({
       </div>
 
       <div className="mt-3 rounded-lg border border-border/60 bg-background px-3 py-2">
-        <p className="break-all text-xs text-muted-foreground">
+        <p className="text-xs break-all text-muted-foreground">
           {workspaceUrl}
         </p>
       </div>
