@@ -492,6 +492,7 @@ function ViewerShellInner({
         downloadUrl={downloadUrl}
         saveStatusSlot={<SaveStatus className="ml-2" />}
         collaborators={data?.collaborators ?? []}
+        canInviteMembers={Boolean(data?.permissions.canInviteMembers)}
         canManageMembers={Boolean(data?.permissions.canManageMembers)}
       />
 

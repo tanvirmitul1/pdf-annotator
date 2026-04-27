@@ -58,15 +58,18 @@ async function getHandler(
     pageCount: document.pageCount ?? 0,
   })
 
+  // Calculate permissions - ensure owner always gets full permissions
+  const isDocumentOwner = document.userId === identity.userId
+  const role = isDocumentOwner ? "OWNER" : document.role
+  
   return NextResponse.json({
     data: {
       document,
       collaborators,
       permissions: {
-        role: document.role,
-        canInviteMembers:
-          document.role === "OWNER" || document.role === "EDITOR",
-        canManageMembers: document.role === "OWNER",
+        role,
+        canInviteMembers: role === "OWNER" || role === "EDITOR",
+        canManageMembers: role === "OWNER",
         canAnnotate: true,
       },
       outline: outline?.entries ?? null,

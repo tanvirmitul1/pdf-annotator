@@ -31,6 +31,7 @@ export function CollaboratorsBar({ documentId }: CollaboratorsBarProps) {
   const [showShareDialog, setShowShareDialog] = useState(false)
 
   const collaborators = viewerData?.collaborators ?? []
+  const permissions = viewerData?.permissions
   const maxDisplay = 4
   const visibleCollaborators = collaborators.slice(0, maxDisplay)
   const remainingCount = collaborators.length - maxDisplay
@@ -86,6 +87,8 @@ export function CollaboratorsBar({ documentId }: CollaboratorsBarProps) {
         documentId={documentId}
         open={showShareDialog}
         onOpenChange={setShowShareDialog}
+        canInviteMembers={permissions?.canInviteMembers ?? false}
+        canManageMembers={permissions?.canManageMembers ?? false}
       />
     </>
   )
