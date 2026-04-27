@@ -22,7 +22,7 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signup", callbackU
       </DialogTitle>
       <DialogContent
         showCloseButton={false}
-        className="p-0 ring-0 shadow-2xl max-w-[420px] w-full overflow-hidden rounded-[2rem]"
+        className="p-0 ring-0 shadow-2xl max-w-[420px] w-full overflow-hidden rounded-xl"
       >
         {activeTab === "signin" ? (
           <SignInForm

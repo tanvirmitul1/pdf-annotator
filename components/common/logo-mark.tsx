@@ -12,9 +12,9 @@ export interface LogoMarkProps {
 export function LogoMark({ compact = false, className }: LogoMarkProps) {
   return (
     <div className={cn("flex items-center gap-3", className)}>
-      <div className="relative flex size-11 items-center justify-center overflow-hidden rounded-[1.4rem] border border-white/20 bg-primary text-primary-foreground shadow-[0_18px_45px_-22px_color-mix(in_oklab,var(--primary)_70%,transparent)]">
+      <div className="relative flex size-9 items-center justify-center overflow-hidden rounded-lg border border-white/20 bg-primary text-primary-foreground shadow-sm">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.34),transparent_45%),linear-gradient(135deg,color-mix(in_oklab,var(--primary)_85%,white)_0%,color-mix(in_oklab,var(--accent)_68%,var(--primary))_100%)]" />
-        <BookOpenText className="relative z-10 size-5" />
+        <BookOpenText className="relative z-10 size-4" />
       </div>
 
       {!compact ? (

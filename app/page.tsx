@@ -17,49 +17,49 @@ export default async function HomePage() {
   return (
     <main
       id="main-content"
-      className="relative min-h-screen overflow-hidden px-4 py-6 sm:px-6 lg:px-8"
+      className="relative flex min-h-screen flex-col overflow-hidden"
     >
-      {/* Glossy gradient background */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,color-mix(in_oklab,var(--primary)_12%,transparent)_0,transparent_40%),radial-gradient(circle_at_bottom_right,color-mix(in_oklab,var(--accent)_15%,transparent)_0,transparent_45%)]" />
+      {/* Subtle gradient background */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,color-mix(in_oklab,var(--primary)_10%,transparent)_0,transparent_50%),radial-gradient(ellipse_at_bottom_right,color-mix(in_oklab,var(--accent)_10%,transparent)_0,transparent_45%)]" />
 
-      <div className="relative mx-auto max-w-3xl">
-        {/* Top bar */}
-        <div className="mb-16 flex items-center justify-between">
-          <LogoMark />
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <Button
-              asChild
-              variant="ghost"
-              size="sm"
-              className="text-muted-foreground hover:text-foreground"
-            >
-              <Link href="/login">Log in</Link>
-            </Button>
-            <Button
-              asChild
-              size="sm"
-              className="rounded-full bg-primary/90 hover:bg-primary"
-            >
-              <Link href="/signup">Sign up</Link>
-            </Button>
-          </div>
+      {/* Top nav */}
+      <header className="relative z-10 flex items-center justify-between px-6 py-4 sm:px-8">
+        <LogoMark compact />
+        <div className="flex items-center gap-1.5">
+          <ThemeToggle />
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <Link href="/login">Log in</Link>
+          </Button>
+          <Button asChild size="sm">
+            <Link href="/signup">Get started</Link>
+          </Button>
         </div>
+      </header>
 
-        {/* Central upload section */}
-        <div className="space-y-6">
-          <div className="text-center">
+      {/* Central content */}
+      <div className="relative mx-auto flex w-full max-w-2xl flex-1 flex-col items-center justify-center px-6 pb-16 pt-8 sm:px-8">
+        <div className="w-full space-y-8 text-center">
+          <div className="space-y-3">
             <h1 className="font-heading text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
               Upload and annotate
             </h1>
-            <p className="mt-4 text-base leading-7 text-muted-foreground">
-              Drop a PDF or image to start.
+            <p className="text-base text-muted-foreground sm:text-lg">
+              Drop a PDF or image — your annotations are ready in seconds.
             </p>
           </div>
 
           <div className="animate-in duration-500 fade-in-0 slide-in-from-bottom-4">
             <GuestUpload />
           </div>
+
+          <p className="text-xs text-muted-foreground/60">
+            No account required to preview. <Link href="/signup" className="underline underline-offset-4 hover:text-muted-foreground transition-colors">Create a free account</Link> to save your work.
+          </p>
         </div>
       </div>
     </main>

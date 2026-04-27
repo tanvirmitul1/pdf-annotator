@@ -12,8 +12,8 @@ export default function TagsPage() {
         </p>
       </div>
 
-      <div className="rounded-[1.6rem] border border-dashed border-border/70 bg-card/55 py-20 text-center">
-        <div className="empty-illustration mx-auto mb-4 flex size-16 items-center justify-center rounded-[1.4rem] bg-accent/10">
+      <div className="rounded-lg border border-dashed border-border/70 bg-card/55 py-20 text-center">
+        <div className="empty-illustration mx-auto mb-4 flex size-16 items-center justify-center rounded-lg bg-accent/10">
           <Tag className="size-8 text-accent-foreground/50" />
         </div>
         <p className="font-heading text-lg font-semibold text-foreground">No tags yet</p>

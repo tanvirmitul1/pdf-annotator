@@ -76,11 +76,11 @@ export function DocumentUpload({ onUploadSuccess }: DocumentUploadProps) {
     <div
       {...getRootProps()}
       className={cn(
-        "group relative overflow-hidden rounded-[1.25rem] border border-dashed px-6 py-8 transition-all duration-300",
+        "group relative overflow-hidden rounded-lg border border-dashed px-6 py-10 transition-all duration-200",
         "focus-within:ring-2 focus-within:ring-primary/50 focus-within:outline-none",
         isDragActive
-          ? "border-primary/60 bg-gradient-to-br from-primary/15 to-accent/10 shadow-[0_8px_32px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_32px_rgba(120,50,200,0.2)]"
-          : "border-primary/25 bg-gradient-to-br from-card/60 to-card/40 hover:border-primary/40 hover:from-primary/8 hover:to-accent/8 hover:shadow-[0_4px_24px_rgba(0,0,0,0.08)] dark:hover:shadow-[0_4px_24px_rgba(120,50,200,0.15)]"
+          ? "border-primary/60 bg-primary/5"
+          : "border-border/60 bg-muted/20 hover:border-primary/40 hover:bg-primary/3"
       )}
     >
       <input {...getInputProps()} />
@@ -97,59 +97,52 @@ export function DocumentUpload({ onUploadSuccess }: DocumentUploadProps) {
       ) : null}
 
       <div className="relative flex flex-col items-center gap-6 text-center">
-        <div className="flex items-center justify-center gap-4">
+        <div className="flex items-center justify-center gap-3">
           <div
             className={cn(
-              "flex size-16 items-center justify-center rounded-[1.2rem] transition-all duration-300",
-              "shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]",
-              "bg-gradient-to-br from-primary/15 to-primary/8 text-primary",
-              isDragActive && "scale-110 from-primary/25 to-primary/15"
+              "flex size-12 items-center justify-center rounded-lg transition-all duration-200",
+              "bg-primary/10 text-primary",
+              isDragActive && "scale-105 bg-primary/20"
             )}
           >
-            <FileText className="size-8" aria-hidden="true" />
+            <FileText className="size-6" aria-hidden="true" />
           </div>
           <div
             className={cn(
-              "flex size-16 items-center justify-center rounded-[1.2rem] transition-all duration-300",
-              "shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]",
-              "bg-gradient-to-br from-accent/15 to-accent/8 text-accent-foreground",
-              isDragActive && "scale-110 from-accent/25 to-accent/15"
+              "flex size-12 items-center justify-center rounded-lg transition-all duration-200",
+              "bg-muted/60 text-muted-foreground",
+              isDragActive && "scale-105"
             )}
           >
-            <FileImage className="size-8" aria-hidden="true" />
+            <FileImage className="size-6" aria-hidden="true" />
           </div>
         </div>
 
-        <div className="space-y-3">
-          <p className="font-heading text-xl font-semibold tracking-tight text-foreground sm:text-2xl">
-            {isLoading ? "Opening workspace" : isDragActive ? "Drop to upload" : "Drop PDF or image"}
+        <div className="space-y-2">
+          <p className="font-heading text-lg font-semibold text-foreground">
+            {isLoading ? "Uploading…" : isDragActive ? "Drop to upload" : "Drop PDF or image"}
           </p>
-          <p className="text-sm leading-6 text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             {isLoading
-              ? pendingFileName ?? "Uploading file"
+              ? pendingFileName ?? "Preparing your workspace"
               : "Drag here or click to browse"}
           </p>
         </div>
 
         <Button
-          size="lg"
+          size="sm"
           disabled={isLoading}
-          className={cn(
-            "rounded-xl px-6 transition-all duration-300",
-            isLoading
-              ? "cursor-not-allowed bg-primary/60"
-              : "bg-gradient-to-r from-primary to-primary/90 hover:shadow-[0_8px_24px_rgba(120,50,200,0.3)] dark:hover:shadow-[0_8px_24px_rgba(120,50,200,0.4)]"
-          )}
+          className="px-5"
         >
           {isLoading ? (
-            <Loader2 className="size-4 animate-spin" />
+            <Loader2 className="size-3.5 animate-spin" />
           ) : (
-            <Upload className="size-4" />
+            <Upload className="size-3.5" />
           )}
-          {isLoading ? "Preparing" : "Browse files"}
+          {isLoading ? "Uploading" : "Browse files"}
         </Button>
 
-        <p className="text-[11px] uppercase tracking-[0.16em] text-muted-foreground/70">
+        <p className="text-[10px] uppercase tracking-widest text-muted-foreground/50">
           PDF, PNG, JPG, WebP • up to 50MB
         </p>
       </div>

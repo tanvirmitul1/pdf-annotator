@@ -33,7 +33,7 @@ export function ViewerSkeleton() {
         </div>
 
         <div className="flex flex-1 flex-col items-center gap-4 overflow-hidden bg-[linear-gradient(180deg,color-mix(in_oklab,var(--background)_96%,white)_0%,color-mix(in_oklab,var(--muted)_65%,transparent)_100%)] p-6">
-          <div className="h-[800px] w-[600px] max-w-full animate-pulse rounded-[1.4rem] bg-muted shadow-lg" />
+          <div className="h-[800px] w-[600px] max-w-full animate-pulse rounded-lg bg-muted shadow-lg" />
         </div>
       </div>
     </div>

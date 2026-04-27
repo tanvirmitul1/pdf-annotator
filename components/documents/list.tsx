@@ -16,7 +16,6 @@ import {
 } from "lucide-react"
 import { toast } from "sonner"
 
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -27,7 +26,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { Progress } from "@/components/ui/progress"
 import {
   Tooltip,
   TooltipContent,
@@ -90,9 +88,9 @@ function DownloadButton({ id }: { id: string }) {
   return (
     <Tip label="Download">
       <Button
-        variant="outline"
+        variant="ghost"
         size="icon"
-        className="size-9 rounded-[1rem] border-border/70 bg-card/75 hover:border-primary/35 hover:bg-accent/60 active:scale-95"
+        className="size-8 rounded-md text-muted-foreground hover:text-foreground"
         onClick={handleClick}
         aria-label="Download document"
       >
@@ -141,7 +139,7 @@ function RenameInline({
       <Input
         value={value}
         onChange={(event) => setValue(event.target.value)}
-        className="h-9 rounded-[0.9rem] border-border/70 bg-card/80 text-sm"
+        className="h-8 rounded-md border-border/60 bg-background text-sm"
         autoFocus
         onKeyDown={(event) => event.key === "Escape" && onDone()}
       />
@@ -149,20 +147,20 @@ function RenameInline({
         type="submit"
         variant="ghost"
         size="icon"
-        className="size-8 rounded-[0.9rem]"
+        className="size-7 rounded-md"
         aria-label="Save"
       >
-        <Check className="size-3.5" />
+        <Check className="size-3" />
       </Button>
       <Button
         type="button"
         variant="ghost"
         size="icon"
-        className="size-8 rounded-[0.9rem]"
+        className="size-7 rounded-md"
         onClick={onDone}
         aria-label="Cancel"
       >
-        <X className="size-3.5" />
+        <X className="size-3" />
       </Button>
     </form>
   )
@@ -259,11 +257,11 @@ export function DocumentList({ showDeleted = false }: DocumentListProps) {
 
   if (isLoading) {
     return (
-      <div className="space-y-3">
+      <div className="space-y-2">
         {Array.from({ length: 4 }).map((_, index) => (
           <div
             key={index}
-            className="h-24 animate-pulse rounded-[1.4rem] bg-muted/70"
+            className="h-20 animate-pulse rounded-lg bg-muted/60"
           />
         ))}
       </div>
@@ -272,9 +270,10 @@ export function DocumentList({ showDeleted = false }: DocumentListProps) {
 
   if (documents.length === 0) {
     return (
-      <div className="rounded-[1.6rem] border border-dashed border-border/70 bg-card/55 py-16 text-center text-muted-foreground">
-        <FileText className="mx-auto mb-3 size-10 opacity-40" />
-        <p>{showDeleted ? "No deleted documents" : "No documents yet"}</p>
+      <div className="rounded-lg border border-dashed border-border/60 bg-muted/20 py-16 text-center text-muted-foreground">
+        <FileText className="mx-auto mb-3 size-8 opacity-30" />
+        <p className="text-sm">{showDeleted ? "No deleted documents" : "No documents yet"}</p>
+        <p className="mt-1 text-xs text-muted-foreground/70">Upload a PDF or image to get started</p>
       </div>
     )
   }
@@ -282,21 +281,21 @@ export function DocumentList({ showDeleted = false }: DocumentListProps) {
   return (
     <>
       <div className="space-y-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="flex flex-col gap-2.5 sm:flex-row sm:flex-wrap sm:items-center">
           <Input
             placeholder="Search documents..."
             value={search}
             onChange={(event) => setSearch(event.target.value)}
-            className="h-11 w-full rounded-[1rem] border-border/70 bg-card/80 px-4 text-sm sm:max-w-sm"
+            className="h-9 w-full rounded-md border-border/60 bg-muted/40 px-3 text-sm sm:max-w-xs"
           />
 
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-            <span className="text-xs text-muted-foreground">Sort by:</span>
-            <div className="grid grid-cols-3 gap-1 rounded-[1rem] border border-border/70 bg-card/80 p-1 sm:flex">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">Sort:</span>
+            <div className="flex gap-0.5 rounded-md border border-border/60 bg-muted/30 p-0.5">
               <Button
                 variant={sortBy === "createdAt" ? "default" : "ghost"}
                 size="sm"
-                className="h-9 rounded-[0.7rem] px-3 text-xs sm:h-8"
+                className="h-7 rounded-sm px-2.5 text-xs"
                 onClick={() => setSortBy("createdAt")}
               >
                 Recent
@@ -304,7 +303,7 @@ export function DocumentList({ showDeleted = false }: DocumentListProps) {
               <Button
                 variant={sortBy === "lastOpenedAt" ? "default" : "ghost"}
                 size="sm"
-                className="h-9 rounded-[0.7rem] px-3 text-xs sm:h-8"
+                className="h-7 rounded-sm px-2.5 text-xs"
                 onClick={() => setSortBy("lastOpenedAt")}
               >
                 Last Opened
@@ -312,7 +311,7 @@ export function DocumentList({ showDeleted = false }: DocumentListProps) {
               <Button
                 variant={sortBy === "name" ? "default" : "ghost"}
                 size="sm"
-                className="h-9 rounded-[0.7rem] px-3 text-xs sm:h-8"
+                className="h-7 rounded-sm px-2.5 text-xs"
                 onClick={() => setSortBy("name")}
               >
                 Name
@@ -321,25 +320,24 @@ export function DocumentList({ showDeleted = false }: DocumentListProps) {
           </div>
         </div>
 
-        <div className="grid gap-4">
+        <div className="divide-y divide-border/40 overflow-hidden rounded-lg border border-border/50 bg-card/60">
           {documents.map((doc) => (
             <div
               key={doc.id}
               className={cn(
-                "group flex flex-col gap-4 rounded-[1.4rem] border border-border/70 bg-card/70 p-4 transition duration-150 sm:flex-row sm:items-center",
-                !showDeleted &&
-                  "hover:-translate-y-0.5 hover:border-primary/35 hover:shadow-[0_24px_60px_-42px_rgba(15,23,42,0.55)]"
+                "group flex flex-col gap-3 bg-card/40 px-4 py-3.5 transition-colors duration-150 sm:flex-row sm:items-center",
+                !showDeleted && "hover:bg-muted/40"
               )}
             >
               <Link
                 href={`/app/documents/${doc.id}`}
                 className={cn(
-                  "flex w-full min-w-0 flex-1 items-start gap-4 rounded-[1rem] focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none sm:items-center",
+                  "flex w-full min-w-0 flex-1 items-center gap-3.5 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none rounded-sm",
                   showDeleted && "pointer-events-none"
                 )}
                 tabIndex={showDeleted ? -1 : 0}
               >
-                <div className="relative flex size-14 shrink-0 items-center justify-center overflow-hidden rounded-[1rem] bg-muted">
+                <div className="relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted/80 border border-border/40">
                   {doc.thumbnailKey ? (
                     <Image
                       src={`/api/storage/${doc.thumbnailKey}`}
@@ -361,49 +359,47 @@ export function DocumentList({ showDeleted = false }: DocumentListProps) {
                       onDone={() => setRenamingId(null)}
                     />
                   ) : (
-                    <p className="truncate font-heading text-lg font-semibold tracking-tight text-foreground">
+                    <p className="truncate text-sm font-semibold text-foreground">
                       {doc.name}
                     </p>
                   )}
-                  <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground">
-                    {doc.lastOpenedAt
-                      ? `Opened ${formatDistanceToNow(new Date(doc.lastOpenedAt), { addSuffix: true })}`
-                      : `Added ${formatDistanceToNow(new Date(doc.createdAt), { addSuffix: true })}`}
-                  </p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    <Badge
-                      variant="outline"
-                      className="rounded-full border-border/70 bg-card/80 px-2.5 text-xs"
-                    >
+                  <div className="mt-1 flex items-center gap-2 flex-wrap">
+                    <span className="text-xs text-muted-foreground">
+                      {doc.lastOpenedAt
+                        ? `Opened ${formatDistanceToNow(new Date(doc.lastOpenedAt), { addSuffix: true })}`
+                        : `Added ${formatDistanceToNow(new Date(doc.createdAt), { addSuffix: true })}`}
+                    </span>
+                    <span className="text-muted-foreground/40 text-xs">·</span>
+                    <span className="text-xs text-muted-foreground/70">
                       {(doc.fileSize / 1024 / 1024).toFixed(1)} MB
-                    </Badge>
+                    </span>
                     {doc.status === "PROCESSING" ? (
-                      <div className="flex items-center gap-2 rounded-full border border-primary/15 bg-primary/8 px-3 py-1">
-                        <Progress
-                          value={doc.processingProgress ?? 0}
-                          className="h-2 w-24"
-                        />
-                        <span className="text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1.5">
+                        <div className="h-1 w-16 overflow-hidden rounded-full bg-muted">
+                          <div
+                            className="h-full rounded-full bg-primary transition-all duration-500"
+                            style={{ width: `${doc.processingProgress ?? 0}%` }}
+                          />
+                        </div>
+                        <span className="text-xs tabular-nums text-muted-foreground">
                           {doc.processingProgress ?? 0}%
                         </span>
                       </div>
                     ) : null}
                     {doc.status === "FAILED" ? (
-                      <div className="flex items-center gap-2 rounded-full border border-destructive/20 bg-destructive/10 px-3 py-1">
-                        <span className="text-xs font-medium text-destructive">
-                          Processing failed
-                        </span>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-medium text-destructive">Failed</span>
                         <Button
                           variant="ghost"
                           size="sm"
-                          className="h-6 rounded-full px-2 text-xs"
+                          className="h-5 rounded px-1.5 text-xs text-muted-foreground hover:text-foreground"
                           onClick={(event) => {
                             event.preventDefault()
                             void handleReprocess(doc.id)
                           }}
                           aria-label="Retry processing"
                         >
-                          <RefreshCw className="size-3" />
+                          <RefreshCw className="size-2.5 mr-1" />
                           Retry
                         </Button>
                       </div>
@@ -412,19 +408,19 @@ export function DocumentList({ showDeleted = false }: DocumentListProps) {
                 </div>
               </Link>
 
-              <div className="flex w-full shrink-0 items-center justify-end gap-2 opacity-100 transition-opacity sm:w-auto sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100">
+              <div className="flex shrink-0 items-center gap-1 opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100">
                 {!showDeleted ? <DownloadButton id={doc.id} /> : null}
 
                 {!showDeleted && renamingId !== doc.id ? (
                   <Tip label="Rename">
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       size="icon"
-                      className="size-9 rounded-[1rem] border-border/70 bg-card/75 hover:border-primary/35 hover:bg-accent/60 active:scale-95"
+                      className="size-8 rounded-md text-muted-foreground hover:text-foreground"
                       onClick={() => setRenamingId(doc.id)}
                       aria-label="Rename document"
                     >
-                      <Edit2 className="size-4" />
+                      <Edit2 className="size-3.5" />
                     </Button>
                   </Tip>
                 ) : null}
@@ -432,25 +428,25 @@ export function DocumentList({ showDeleted = false }: DocumentListProps) {
                 {showDeleted ? (
                   <Tip label="Restore">
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       size="icon"
-                      className="size-9 rounded-[1rem] border-border/70 bg-card/75 hover:border-primary/35 hover:bg-accent/60 active:scale-95"
+                      className="size-8 rounded-md text-muted-foreground hover:text-foreground"
                       onClick={() => void handleRestore(doc.id, doc.name)}
                       aria-label="Restore document"
                     >
-                      <RotateCcw className="size-4" />
+                      <RotateCcw className="size-3.5" />
                     </Button>
                   </Tip>
                 ) : (
                   <Tip label="Delete">
                     <Button
-                      variant="outline"
+                      variant="ghost"
                       size="icon"
-                      className="size-9 rounded-[1rem] border-border/70 bg-card/75 transition-colors hover:border-destructive/40 hover:text-destructive active:scale-95"
+                      className="size-8 rounded-md text-muted-foreground hover:text-destructive"
                       onClick={() => setDeleteTarget({ id: doc.id, name: doc.name })}
                       aria-label="Delete document"
                     >
-                      <Trash2 className="size-4" />
+                      <Trash2 className="size-3.5" />
                     </Button>
                   </Tip>
                 )}
@@ -468,7 +464,7 @@ export function DocumentList({ showDeleted = false }: DocumentListProps) {
           }
         }}
       >
-        <DialogContent className="max-w-[calc(100%-1.5rem)] rounded-[1.5rem] border border-border/70 bg-card/95 p-5 shadow-[0_32px_80px_-48px_rgba(15,23,42,0.7)] backdrop-blur-xl sm:max-w-md sm:p-6">
+        <DialogContent className="max-w-[calc(100%-1.5rem)] rounded-xl border border-border/60 bg-card/95 p-5 backdrop-blur-xl sm:max-w-sm sm:p-6">
           <DialogHeader className="gap-2">
             <DialogTitle className="text-base font-semibold">
               Delete this document?
@@ -488,7 +484,7 @@ export function DocumentList({ showDeleted = false }: DocumentListProps) {
             <Button
               type="button"
               variant="outline"
-              className="w-full rounded-[0.9rem] sm:w-auto"
+              className="w-full sm:w-auto"
               onClick={() => setDeleteTarget(null)}
               disabled={isDeleting}
             >
@@ -497,7 +493,7 @@ export function DocumentList({ showDeleted = false }: DocumentListProps) {
             <Button
               type="button"
               variant="destructive"
-              className="w-full rounded-[0.9rem] sm:w-auto"
+              className="w-full sm:w-auto"
               onClick={() => void handleDelete()}
               disabled={isDeleting}
             >

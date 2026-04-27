@@ -196,7 +196,7 @@ export function SignInForm({ callbackUrl: propCallbackUrl, onSwitchToSignUp }: S
           <Button
             type="submit"
             disabled={isSubmitting}
-            className="w-full h-12 rounded-full font-semibold text-base shadow-sm transition-all duration-200 mt-1"
+            className="w-full h-11 rounded-lg font-semibold text-sm shadow-sm transition-all duration-200 mt-1"
           >
             {isSubmitting ? (
               <LoaderCircle className="size-4 animate-spin" />

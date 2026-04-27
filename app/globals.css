@@ -62,7 +62,7 @@
   --ring: oklch(0.64 0.12 264);
   --surface: color-mix(in oklab, white 74%, var(--primary) 8%);
   --surface-secondary: color-mix(in oklab, white 84%, var(--accent) 6%);
-  --radius: 1rem;
+  --radius: 0.45rem;
   --sidebar: oklch(0.98 0.015 255);
   --sidebar-foreground: oklch(0.22 0.03 258);
   --sidebar-primary: oklch(0.58 0.17 265);
@@ -146,7 +146,7 @@
 .glass-panel {
   background: color-mix(in oklab, var(--card) 86%, transparent);
   backdrop-filter: blur(24px);
-  box-shadow: 0 24px 70px -45px rgba(15, 23, 42, 0.5);
+  box-shadow: 0 8px 30px -12px rgba(15, 23, 42, 0.15);
 }
 
 .surface-border {
@@ -209,6 +209,13 @@
   animation: shimmer 2s ease-in-out infinite;
 }
 
+/* Loading bar shimmer */
+@keyframes shimmer-bar {
+  0% { transform: translateX(-100%); }
+  50% { transform: translateX(150%); }
+  100% { transform: translateX(400%); }
+}
+
 /* Empty state illustration */
 .empty-illustration {
   background: radial-gradient(
@@ -228,7 +235,7 @@
     right: 0;
     height: 52%;
     pointer-events: none;
-    border-radius: 0 0 2rem 2rem;
+    border-radius: 0 0 0.75rem 0.75rem;
   }
 
   .auth-card-gradient--signin {
@@ -256,7 +263,7 @@
     justify-content: center;
     width: 3.75rem;
     height: 2.75rem;
-    border-radius: 9999px;
+    border-radius: 0.625rem;
     background: var(--secondary);
     border: 1px solid var(--border);
     color: var(--secondary-foreground);
@@ -279,8 +286,8 @@
   /* Pill-shaped text inputs with icon prefix support */
   .auth-pill-input {
     width: 100%;
-    height: 3rem;
-    border-radius: 9999px;
+    height: 2.75rem;
+    border-radius: 0.625rem;
     background: var(--muted);
     border: 1px solid var(--border);
     color: var(--foreground);

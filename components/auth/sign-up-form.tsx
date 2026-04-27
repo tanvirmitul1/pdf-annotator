@@ -331,7 +331,7 @@ export function SignUpForm({
               !values.email.trim() ||
               !values.password
             }
-            className="mt-2 h-12 w-full rounded-full text-base font-semibold shadow-sm transition-all duration-200"
+            className="mt-2 h-11 w-full rounded-lg text-sm font-semibold shadow-sm transition-all duration-200"
           >
             {isSubmitting ? (
               <LoaderCircle className="size-4 animate-spin" />

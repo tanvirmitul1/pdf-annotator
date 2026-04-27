@@ -285,7 +285,7 @@ export function PdfViewer({
 
                 {/* Page card */}
                 <div
-                  className="relative rounded-[1.4rem] bg-white/70 p-2 shadow-[0_30px_80px_-48px_rgba(15,23,42,0.65)] dark:bg-black/12"
+                  className="relative rounded-lg bg-white/70 p-2 shadow-[0_30px_80px_-48px_rgba(15,23,42,0.65)] dark:bg-black/12"
                   style={{ maxWidth: maxPageWidth }}
                 >
                   <div className="relative" style={{ width: scaledW, height: scaledH }}>

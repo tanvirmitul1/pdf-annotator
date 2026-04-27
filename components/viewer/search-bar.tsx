@@ -70,7 +70,7 @@ export function SearchBar({ documentId }: SearchBarProps) {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.15 }}
-          className="absolute top-16 right-4 z-50 flex items-center gap-1 rounded-[1.2rem] border border-border/70 bg-card/88 px-2 py-2 shadow-[0_28px_70px_-45px_rgba(15,23,42,0.6)] backdrop-blur-xl"
+          className="absolute top-16 right-4 z-50 flex items-center gap-1 rounded-lg border border-border/70 bg-card/88 px-2 py-2 shadow-[0_28px_70px_-45px_rgba(15,23,42,0.6)] backdrop-blur-xl"
           role="search"
           aria-label="Search in document"
         >

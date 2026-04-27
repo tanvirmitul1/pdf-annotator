@@ -518,7 +518,7 @@ export function AnnotationPanel({ documentId }: AnnotationPanelProps) {
   return (
     <div
       ref={panelRef}
-      className="pointer-events-auto flex h-full min-h-0 w-[min(24rem,calc(100vw-1rem))] max-w-full flex-col overflow-hidden rounded-[1rem] border border-border/70 bg-card/95 shadow-[0_20px_56px_-30px_rgba(15,23,42,0.35)] backdrop-blur-xl will-change-transform md:w-[22rem]"
+      className="pointer-events-auto flex h-full min-h-0 w-[min(24rem,calc(100vw-1rem))] max-w-full flex-col overflow-hidden rounded-lg border border-border/70 bg-card/95 shadow-[0_20px_56px_-30px_rgba(15,23,42,0.35)] backdrop-blur-xl will-change-transform md:w-[22rem]"
       role="dialog"
       aria-label="Annotation editor"
       aria-modal="false"

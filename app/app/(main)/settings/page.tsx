@@ -26,7 +26,7 @@ export default async function SettingsPage() {
       </div>
 
       {/* Profile */}
-      <section className="glass-panel surface-border rounded-[2rem] p-6 space-y-4">
+      <section className="glass-panel surface-border rounded-xl p-6 space-y-4">
         <p className="text-xs font-semibold tracking-[0.2em] text-muted-foreground uppercase">
           Profile
         </p>
@@ -46,7 +46,7 @@ export default async function SettingsPage() {
       </section>
 
       {/* Appearance */}
-      <section className="glass-panel surface-border rounded-[2rem] p-6 space-y-4">
+      <section className="glass-panel surface-border rounded-xl p-6 space-y-4">
         <p className="text-xs font-semibold tracking-[0.2em] text-muted-foreground uppercase">
           Appearance
         </p>
@@ -60,7 +60,7 @@ export default async function SettingsPage() {
       </section>
 
       {/* Plan */}
-      <section className="glass-panel surface-border rounded-[2rem] p-6 space-y-4">
+      <section className="glass-panel surface-border rounded-xl p-6 space-y-4">
         <p className="text-xs font-semibold tracking-[0.2em] text-muted-foreground uppercase">
           Plan &amp; Usage
         </p>
@@ -85,7 +85,7 @@ export default async function SettingsPage() {
       </section>
 
       {/* Danger zone */}
-      <section className="glass-panel surface-border rounded-[2rem] p-6 space-y-4 border-destructive/20">
+      <section className="glass-panel surface-border rounded-xl p-6 space-y-4 border-destructive/20">
         <p className="text-xs font-semibold tracking-[0.2em] text-destructive uppercase">
           Danger Zone
         </p>

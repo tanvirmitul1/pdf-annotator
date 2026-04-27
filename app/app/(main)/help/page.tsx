@@ -57,7 +57,7 @@ export default function HelpPage() {
       </div>
 
       {/* Shortcuts */}
-      <section className="glass-panel surface-border rounded-[2rem] p-6 space-y-4">
+      <section className="glass-panel surface-border rounded-xl p-6 space-y-4">
         <p className="text-xs font-semibold tracking-[0.2em] text-muted-foreground uppercase">
           Keyboard Shortcuts
         </p>
@@ -65,7 +65,7 @@ export default function HelpPage() {
           {shortcuts.map(({ keys, description }) => (
             <div
               key={description}
-              className="flex items-center justify-between gap-4 rounded-[1rem] border border-border/50 bg-card/60 px-4 py-2.5"
+              className="flex items-center justify-between gap-4 rounded-lg border border-border/50 bg-card/60 px-4 py-2.5"
             >
               <span className="text-sm text-foreground">{description}</span>
               <div className="flex shrink-0 items-center gap-1">
@@ -79,7 +79,7 @@ export default function HelpPage() {
       </section>
 
       {/* FAQ */}
-      <section className="glass-panel surface-border rounded-[2rem] p-6 space-y-4">
+      <section className="glass-panel surface-border rounded-xl p-6 space-y-4">
         <p className="text-xs font-semibold tracking-[0.2em] text-muted-foreground uppercase">
           FAQ
         </p>

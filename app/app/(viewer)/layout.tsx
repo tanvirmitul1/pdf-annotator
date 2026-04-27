@@ -9,7 +9,7 @@ export default async function ViewerLayout({
 }) {
   await requireAppUser()
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-background p-3">
+    <div className="flex h-screen flex-col overflow-hidden bg-background p-2 sm:p-3">
       {children}
     </div>
   )

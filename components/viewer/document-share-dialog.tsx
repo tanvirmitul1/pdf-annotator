@@ -136,7 +136,7 @@ export function DocumentShareDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-md rounded-xl">
         <DialogHeader>
           <DialogTitle className="text-lg">Share this document</DialogTitle>
           <DialogDescription>

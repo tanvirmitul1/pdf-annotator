@@ -46,7 +46,7 @@ export function ImageViewer({
 
   if (status !== "READY" || !imageUrl) {
     return (
-      <div className="flex h-full items-center justify-center rounded-[2rem] border border-border/60 bg-card/55 px-6">
+      <div className="flex h-full items-center justify-center rounded-xl border border-border/60 bg-card/55 px-6">
         <div className="flex max-w-sm flex-col items-center gap-4 text-center">
           <div className="flex size-14 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-primary">
             <Loader2 className="size-5 animate-spin" />
@@ -65,11 +65,11 @@ export function ImageViewer({
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-[2rem] border border-border/60 bg-card/55 shadow-[0_28px_80px_-55px_rgba(15,23,42,0.65)]">
+    <div className="flex h-full flex-col overflow-hidden rounded-xl border border-border/60 bg-card/55 shadow-[0_28px_80px_-55px_rgba(15,23,42,0.65)]">
       {/* Toolbar */}
       <div className="flex h-14 shrink-0 items-center justify-between border-b border-border/70 bg-card/75 px-4 backdrop-blur-xl">
         <h1 className="truncate font-heading text-base font-semibold">{documentName}</h1>
-        
+
         <div className="flex items-center gap-2">
           <Button
             variant="outline"

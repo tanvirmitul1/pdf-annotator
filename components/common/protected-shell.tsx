@@ -13,7 +13,6 @@ import {
   Settings,
   Tag,
   Trash2,
-  UserCircle2,
 } from "lucide-react"
 import { signOut } from "next-auth/react"
 
@@ -26,11 +25,10 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 
 const navigation = [
@@ -38,6 +36,10 @@ const navigation = [
   { href: "/app/collections", label: "Collections", icon: FolderKanban },
   { href: "/app/tags", label: "Tags", icon: Tag },
   { href: "/app/trash", label: "Trash", icon: Trash2 },
+]
+
+const bottomNav = [
+  { href: "/app/settings", label: "Settings", icon: Settings },
   { href: "/app/help", label: "Help", icon: CircleHelp },
 ]
 
@@ -68,34 +70,26 @@ export function ProtectedShell({
     return value.join("") || "PA"
   }, [name])
 
-  function renderNavigation(onNavigate?: () => void) {
+  function renderNavItems(onNavigate?: () => void) {
     return (
-      <nav className="space-y-1.5" aria-label="Primary">
+      <nav className="space-y-0.5" aria-label="Primary">
         {navigation.map((item) => {
           const isActive = pathname === item.href
-
           return (
             <Link
               key={item.href}
               href={item.href}
               onClick={onNavigate}
               className={cn(
-                "group flex items-center gap-3 rounded-xl border px-3 py-2.5 text-sm transition duration-150",
+                "group flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors duration-150",
                 "focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none",
                 isActive
-                  ? "border-primary/20 bg-primary/10 text-foreground shadow-[0_18px_40px_-32px_color-mix(in_oklab,var(--primary)_70%,transparent)]"
-                  : "border-transparent text-muted-foreground hover:border-border/70 hover:bg-accent/45 hover:text-foreground"
+                  ? "bg-primary/10 text-primary font-medium"
+                  : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
               )}
             >
-              <item.icon
-                className={cn(
-                  "size-4 transition",
-                  isActive
-                    ? "text-primary"
-                    : "text-muted-foreground group-hover:text-primary"
-                )}
-              />
-              <span className="font-medium">{item.label}</span>
+              <item.icon className={cn("size-4 shrink-0", isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
+              {item.label}
             </Link>
           )
         })}
@@ -103,166 +97,224 @@ export function ProtectedShell({
     )
   }
 
-  return (
-    <div className="relative min-h-screen overflow-hidden bg-[linear-gradient(180deg,color-mix(in_oklab,var(--background)_92%,black)_0%,color-mix(in_oklab,var(--background)_98%,transparent)_100%)] px-3 py-3 sm:px-4 sm:py-4">
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,color-mix(in_oklab,var(--primary)_10%,transparent)_0,transparent_24%),radial-gradient(circle_at_85%_20%,color-mix(in_oklab,white_5%,transparent)_0,transparent_22%),radial-gradient(circle_at_bottom_right,color-mix(in_oklab,var(--accent)_12%,transparent)_0,transparent_24%)]" />
-
-      <div className="relative mx-auto flex min-h-[calc(100vh-1.5rem)] max-w-[1680px] gap-4">
-        <aside className="sticky top-4 hidden h-[calc(100vh-2rem)] w-[272px] flex-col rounded-[1.4rem] border border-border/60 bg-card/75 p-4 shadow-[0_28px_80px_-50px_rgba(15,23,42,0.55)] backdrop-blur-xl lg:flex">
-          <div className="border-b border-border/60 pb-4">
-            <LogoMark />
-          </div>
-
-          <div className="mt-5 flex items-center gap-3 rounded-xl border border-border/60 bg-background/50 p-3">
-            <Avatar size="lg">
+  const userDropdown = (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="size-9 rounded-full ring-2 ring-border/60 hover:ring-primary/40 transition-all"
+          aria-label="User menu"
+        >
+          <Avatar className="size-8">
+            <AvatarImage src={image ?? undefined} alt={name} />
+            <AvatarFallback className="text-xs font-semibold">{initials}</AvatarFallback>
+          </Avatar>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent
+        align="end"
+        sideOffset={8}
+        className="w-64 rounded-xl border border-border/70 bg-popover/95 p-0 shadow-lg backdrop-blur-xl"
+      >
+        {/* User info header */}
+        <div className="px-4 py-4">
+          <div className="flex items-center gap-3">
+            <Avatar className="size-10 shrink-0">
               <AvatarImage src={image ?? undefined} alt={name} />
-              <AvatarFallback>{initials}</AvatarFallback>
+              <AvatarFallback className="text-sm font-semibold">{initials}</AvatarFallback>
             </Avatar>
-            <div className="min-w-0">
-              <p className="truncate font-medium text-foreground">{name}</p>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-foreground">{name}</p>
               <p className="truncate text-xs text-muted-foreground">{email}</p>
-            </div>
-          </div>
-
-          <div className="mt-5">
-            <p className="mb-2 px-1 text-[11px] font-medium tracking-[0.24em] text-muted-foreground uppercase">
-              Workspace
-            </p>
-            {renderNavigation()}
-          </div>
-
-          <div className="mt-auto space-y-3 rounded-xl border border-border/60 bg-background/45 p-4">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs tracking-[0.22em] text-muted-foreground uppercase">
-                  Workspace
-                </p>
-                <p className="mt-1 font-heading text-lg font-semibold text-foreground capitalize">
-                  {planId}
-                </p>
-              </div>
               <Badge
                 variant="outline"
-                className="rounded-full border-primary/20 bg-primary/10 px-3 py-1 text-primary"
+                className="mt-1.5 h-5 rounded-full border-primary/25 bg-primary/8 px-2 text-[10px] font-medium text-primary capitalize"
               >
-                Active
+                {planId} plan
               </Badge>
             </div>
-            <p className="text-xs leading-6 text-muted-foreground">
-              Keep documents, collections, annotations, and collaboration in one
-              calm workspace.
-            </p>
           </div>
-        </aside>
-
-        <div className="flex min-w-0 flex-1 flex-col gap-4">
-          <header className="sticky top-3 z-30 rounded-[1.2rem] border border-border/60 bg-card/80 px-3 py-3 shadow-[0_18px_48px_-36px_rgba(15,23,42,0.45)] backdrop-blur-xl sm:px-4">
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2 lg:hidden">
-                <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-                  <SheetTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="icon-lg"
-                      aria-label="Open navigation"
-                      className="rounded-xl border-border/70 bg-card/70 hover:border-primary/35 hover:bg-accent/70"
-                    >
-                      <Menu className="size-4" />
-                    </Button>
-                  </SheetTrigger>
-                  <SheetContent
-                    side="left"
-                    className="border-border/60 bg-card/95 p-0 backdrop-blur-xl"
-                  >
-                    <div className="flex h-full flex-col p-4">
-                      <div className="border-b border-border/60 pb-4">
-                        <LogoMark />
-                      </div>
-                      <div className="mt-5">
-                        {renderNavigation(() => setMobileOpen(false))}
-                      </div>
-                    </div>
-                  </SheetContent>
-                </Sheet>
-                <LogoMark compact />
-              </div>
-
-              <div className="relative min-w-[220px] flex-1">
-                <Search className="pointer-events-none absolute top-1/2 left-4 size-4 -translate-y-1/2 text-muted-foreground" />
-                <div className="flex h-11 items-center rounded-xl border border-border/70 bg-background/55 pr-4 pl-11 text-sm text-muted-foreground">
-                  Search documents, collections, and annotations
-                  <span className="ml-auto rounded-full border border-border/70 px-2 py-0.5 text-[0.68rem] tracking-[0.2em] uppercase">
-                    Soon
-                  </span>
-                </div>
-              </div>
-
-              <ThemeToggle />
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="h-auto rounded-xl border-border/70 bg-background/55 px-2 py-2 hover:border-primary/35 hover:bg-accent/70"
-                  >
-                    <Avatar size="sm">
-                      <AvatarImage src={image ?? undefined} alt={name} />
-                      <AvatarFallback>{initials}</AvatarFallback>
-                    </Avatar>
-                    <span className="hidden text-left sm:block">
-                      <span className="block text-sm font-medium text-foreground">
-                        {name}
-                      </span>
-                      <span className="block max-w-[160px] truncate text-xs text-muted-foreground">
-                        {email}
-                      </span>
-                    </span>
-                    <UserCircle2 className="size-4 text-muted-foreground sm:hidden" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent
-                  align="end"
-                  className="w-60 rounded-xl border border-border/70 bg-popover/95 p-2 backdrop-blur-xl"
-                >
-                  <DropdownMenuLabel>Account</DropdownMenuLabel>
-                  <DropdownMenuItem asChild className="rounded-xl">
-                    <Link href="/app/settings">
-                      <Settings className="size-4" />
-                      Profile
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild className="rounded-xl">
-                    <Link href="/app/settings">
-                      <Settings className="size-4" />
-                      Settings
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild className="rounded-xl">
-                    <Link href="/app/help">
-                      <CircleHelp className="size-4" />
-                      Help
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    className="rounded-xl"
-                    onSelect={() => void signOut({ callbackUrl: "/" })}
-                  >
-                    <LogOut className="size-4" />
-                    Sign out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </header>
-
-          <main
-            id="main-content"
-            className="animate-in duration-500 fade-in-0 slide-in-from-bottom-3 pb-3"
-          >
-            {children}
-          </main>
         </div>
+
+        <Separator />
+
+        <div className="p-1.5">
+          <DropdownMenuItem asChild className="rounded-lg px-3 py-2.5 text-sm">
+            <Link href="/app/settings">
+              <Settings className="size-4 text-muted-foreground" />
+              Settings
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild className="rounded-lg px-3 py-2.5 text-sm">
+            <Link href="/app/help">
+              <CircleHelp className="size-4 text-muted-foreground" />
+              Help & Support
+            </Link>
+          </DropdownMenuItem>
+        </div>
+
+        <Separator />
+
+        <div className="p-1.5">
+          <DropdownMenuItem
+            className="rounded-lg px-3 py-2.5 text-sm text-destructive focus:text-destructive focus:bg-destructive/8"
+            onSelect={() => void signOut({ callbackUrl: "/" })}
+          >
+            <LogOut className="size-4" />
+            Sign out
+          </DropdownMenuItem>
+        </div>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+
+  return (
+    <div className="relative flex min-h-screen bg-background">
+      {/* Ambient gradients */}
+      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top_left,color-mix(in_oklab,var(--primary)_8%,transparent)_0,transparent_30%),radial-gradient(circle_at_bottom_right,color-mix(in_oklab,var(--accent)_8%,transparent)_0,transparent_28%)]" />
+
+      {/* Desktop sidebar */}
+      <aside className="relative hidden h-screen w-[220px] shrink-0 flex-col border-r border-border/60 bg-card/50 backdrop-blur-sm lg:flex xl:w-[240px]">
+        <div className="flex h-full flex-col px-3 py-4">
+          {/* Logo */}
+          <div className="mb-6 px-2">
+            <LogoMark compact />
+            <p className="mt-1 text-[11px] font-medium text-foreground/80 tracking-tight">PDF Annotator</p>
+          </div>
+
+          {/* Main navigation */}
+          <div className="flex-1 space-y-5">
+            <div>
+              <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
+                Workspace
+              </p>
+              {renderNavItems()}
+            </div>
+
+            <Separator />
+
+            <div>
+              <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
+                Account
+              </p>
+              <nav className="space-y-0.5">
+                {bottomNav.map((item) => {
+                  const isActive = pathname === item.href
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={cn(
+                        "group flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors",
+                        isActive
+                          ? "bg-primary/10 text-primary font-medium"
+                          : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                      )}
+                    >
+                      <item.icon className={cn("size-4 shrink-0", isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
+                      {item.label}
+                    </Link>
+                  )
+                })}
+              </nav>
+            </div>
+          </div>
+
+          {/* Bottom user section */}
+          <Separator className="mb-3" />
+          <div className="flex items-center gap-2 px-2">
+            <Avatar className="size-8 shrink-0">
+              <AvatarImage src={image ?? undefined} alt={name} />
+              <AvatarFallback className="text-xs font-semibold">{initials}</AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-xs font-semibold text-foreground">{name}</p>
+              <p className="truncate text-[10px] text-muted-foreground capitalize">{planId} plan</p>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-7 shrink-0 text-muted-foreground hover:text-destructive"
+              onClick={() => void signOut({ callbackUrl: "/" })}
+              aria-label="Sign out"
+            >
+              <LogOut className="size-3.5" />
+            </Button>
+          </div>
+        </div>
+      </aside>
+
+      {/* Main area */}
+      <div className="flex min-w-0 flex-1 flex-col">
+        {/* Top header */}
+        <header className="sticky top-0 z-30 flex h-14 shrink-0 items-center gap-3 border-b border-border/60 bg-card/80 px-4 backdrop-blur-xl sm:px-5">
+          {/* Mobile menu trigger */}
+          <div className="flex items-center gap-2 lg:hidden">
+            <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+              <SheetTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-9 rounded-md"
+                  aria-label="Open navigation"
+                >
+                  <Menu className="size-4" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent
+                side="left"
+                className="w-[220px] border-border/60 bg-card/95 p-0 backdrop-blur-xl"
+              >
+                <div className="flex h-full flex-col px-3 py-4">
+                  <div className="mb-6 px-2">
+                    <LogoMark compact />
+                    <p className="mt-1 text-[11px] font-medium text-foreground/80">PDF Annotator</p>
+                  </div>
+                  <div className="flex-1">
+                    {renderNavItems(() => setMobileOpen(false))}
+                  </div>
+                  <Separator className="my-3" />
+                  <div className="flex items-center gap-2 px-2">
+                    <Avatar className="size-8 shrink-0">
+                      <AvatarImage src={image ?? undefined} alt={name} />
+                      <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs font-semibold text-foreground">{name}</p>
+                      <p className="truncate text-[10px] text-muted-foreground">{email}</p>
+                    </div>
+                  </div>
+                </div>
+              </SheetContent>
+            </Sheet>
+          </div>
+
+          {/* Search */}
+          <div className="relative flex-1 max-w-md">
+            <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+            <div className="flex h-9 items-center rounded-md border border-border/70 bg-muted/40 pl-9 pr-3 text-sm text-muted-foreground cursor-default select-none">
+              <span>Search documents...</span>
+            </div>
+          </div>
+
+          <div className="ml-auto flex items-center gap-1.5">
+            <ThemeToggle />
+            {userDropdown}
+          </div>
+        </header>
+
+        {/* Page content */}
+        <main
+          id="main-content"
+          className="relative flex-1 overflow-y-auto"
+        >
+          <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 lg:px-8">
+            <div className="animate-in duration-300 fade-in-0 slide-in-from-bottom-2">
+              {children}
+            </div>
+          </div>
+        </main>
       </div>
     </div>
   )

@@ -31,7 +31,7 @@ export function LegalPage({
 
       <div className="relative mx-auto max-w-7xl">
         <div className="grid gap-8 lg:grid-cols-[320px_minmax(0,1fr)]">
-          <aside className="glass-panel surface-border h-fit rounded-[2rem] p-6 lg:sticky lg:top-6">
+          <aside className="glass-panel surface-border h-fit rounded-xl p-6 lg:sticky lg:top-6">
             <LogoMark />
             <Badge
               variant="outline"
@@ -51,7 +51,7 @@ export function LegalPage({
                 <a
                   key={section.title}
                   href={`#section-${index + 1}`}
-                  className="flex rounded-2xl border border-transparent px-3 py-2 text-sm text-muted-foreground transition hover:border-primary/20 hover:bg-accent/50 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
+                  className="flex rounded-lg border border-transparent px-3 py-2 text-sm text-muted-foreground transition hover:border-primary/20 hover:bg-accent/50 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:outline-none"
                 >
                   {section.title}
                 </a>
@@ -72,13 +72,13 @@ export function LegalPage({
             </div>
           </aside>
 
-          <section className="glass-panel surface-border rounded-[2rem] p-4 sm:p-6 lg:p-8">
-            <div className="space-y-4 rounded-[1.75rem] border border-border/60 bg-card/65 p-5 sm:p-7">
+          <section className="glass-panel surface-border rounded-xl p-4 sm:p-6 lg:p-8">
+            <div className="space-y-4 rounded-xl border border-border/60 bg-card/65 p-5 sm:p-7">
               {sections.map((section, index) => (
                 <article
                   key={section.title}
                   id={`section-${index + 1}`}
-                  className="surface-secondary rounded-[1.6rem] border border-border/55 p-5 sm:p-6"
+                  className="surface-secondary rounded-lg border border-border/55 p-5 sm:p-6"
                 >
                   <p className="text-[0.72rem] font-semibold tracking-[0.24em] text-primary uppercase">
                     Section {index + 1}
