@@ -56,6 +56,7 @@ interface ToolbarProps {
     image: string | null
     role: DocumentMemberRole | "OWNER"
   }>
+  canInviteMembers?: boolean
   canManageMembers?: boolean
 }
 
@@ -92,6 +93,7 @@ export function Toolbar({
   downloadUrl,
   saveStatusSlot,
   collaborators = [],
+  canInviteMembers = false,
   canManageMembers = false,
 }: ToolbarProps) {
   const zoom = useViewer((s) => s.zoom)
@@ -408,6 +410,7 @@ export function Toolbar({
           documentId={documentId}
           open={showShareDialog}
           onOpenChange={setShowShareDialog}
+          canInviteMembers={canInviteMembers}
           canManageMembers={canManageMembers}
         />
 

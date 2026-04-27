@@ -3,9 +3,9 @@ import { extname } from "path"
 import { Readable } from "stream"
 
 import { requireRequestIdentity } from "@/lib/auth/request-identity"
-import { prisma } from "@/lib/db/prisma"
 import { createStorageAdapter } from "@/lib/storage"
 import { withErrorHandling } from "@/lib/api/handler"
+import { getAccessibleDocument } from "@/lib/db/repositories/document-access"
 
 const MIME_TYPES: Record<string, string> = {
     ".pdf": "application/pdf",
@@ -42,10 +42,7 @@ async function getHandler(
     const [, documentId, ...rest] = path
     const identity = await requireRequestIdentity(req)
 
-    const document = await prisma.document.findFirst({
-        where: { id: documentId, userId: identity.userId, deletedAt: null },
-        select: { name: true, storageKey: true, thumbnailKey: true },
-    })
+    const document = await getAccessibleDocument(identity.userId, documentId)
 
     if (!document) {
         return NextResponse.json({ error: "Not found" }, { status: 404 })

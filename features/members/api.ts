@@ -61,6 +61,7 @@ export const membersApi = api.injectEndpoints({
       }),
       transformResponse: (res: { data: DocumentMember }) => res.data,
       invalidatesTags: (_r, _e, { documentId }) => [
+        { type: "Document", id: documentId },
         { type: "DocumentMember", id: `LIST-${documentId}` },
       ],
     }),
@@ -74,6 +75,7 @@ export const membersApi = api.injectEndpoints({
       }),
       transformResponse: (res: { data: DocumentMember }) => res.data,
       invalidatesTags: (_r, _e, { documentId }) => [
+        { type: "Document", id: documentId },
         { type: "DocumentMember", id: `LIST-${documentId}` },
       ],
     }),
@@ -85,6 +87,7 @@ export const membersApi = api.injectEndpoints({
         method: "DELETE",
       }),
       invalidatesTags: (_r, _e, { documentId }) => [
+        { type: "Document", id: documentId },
         { type: "DocumentMember", id: `LIST-${documentId}` },
       ],
     }),

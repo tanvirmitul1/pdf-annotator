@@ -27,6 +27,7 @@ export interface ViewerData {
   }>
   permissions: {
     role: DocumentMemberRole | "OWNER"
+    canInviteMembers: boolean
     canManageMembers: boolean
     canAnnotate: boolean
   }

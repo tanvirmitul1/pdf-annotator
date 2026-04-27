@@ -1,7 +1,11 @@
 "use client"
 
 import { useState } from "react"
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog"
+import {
+  Dialog,
+  DialogContent,
+  DialogTitle,
+} from "@/components/ui/responsive-dialog"
 import { SignUpForm } from "@/components/auth/sign-up-form"
 import { SignInForm } from "@/components/auth/sign-in-form"
 
@@ -12,7 +16,12 @@ interface AuthModalProps {
   callbackUrl?: string
 }
 
-export function AuthModal({ open, onOpenChange, defaultTab = "signup", callbackUrl }: AuthModalProps) {
+export function AuthModal({
+  open,
+  onOpenChange,
+  defaultTab = "signup",
+  callbackUrl,
+}: AuthModalProps) {
   const [activeTab, setActiveTab] = useState(defaultTab)
 
   return (
@@ -22,7 +31,8 @@ export function AuthModal({ open, onOpenChange, defaultTab = "signup", callbackU
       </DialogTitle>
       <DialogContent
         showCloseButton={false}
-        className="p-0 ring-0 shadow-2xl max-w-[420px] w-full overflow-hidden rounded-xl"
+        className="w-full overflow-hidden rounded-xl p-0 shadow-2xl ring-0"
+        size="md"
       >
         {activeTab === "signin" ? (
           <SignInForm

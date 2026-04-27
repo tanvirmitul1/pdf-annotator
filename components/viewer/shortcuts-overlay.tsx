@@ -7,7 +7,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
+} from "@/components/ui/responsive-dialog"
 
 export function ShortcutsOverlay() {
   const shortcutsOpen = useViewer((s) => s.shortcutsOpen)
@@ -26,11 +26,11 @@ export function ShortcutsOverlay() {
 
   return (
     <Dialog open={shortcutsOpen} onOpenChange={(o) => !o && closeShortcuts()}>
-      <DialogContent className="max-w-md">
+      <DialogContent size="md">
         <DialogHeader>
           <DialogTitle>Keyboard shortcuts</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 py-2">
+        <div className="space-y-3 py-2 sm:space-y-4">
           {Object.entries(grouped).map(([category, items]) => (
             <div key={category}>
               <h3 className="mb-2 text-xs font-semibold tracking-wider text-muted-foreground uppercase">

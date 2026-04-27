@@ -1,49 +1,42 @@
 "use client"
 
-import { useState } from "react"
-import { Copy, X, Plus, Trash2, ChevronDown } from "lucide-react"
+import { useMemo, useState } from "react"
 import { toast } from "sonner"
 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
+import { useGetMeQuery } from "@/features/auth/slice"
+import {
+  useInviteMemberMutation,
+  useListMembersQuery,
+  useRemoveMemberMutation,
+  useUpdateMemberRoleMutation,
+} from "@/features/members/api"
+import {
+  useGetShareLinkQuery,
+  useCreateShareLinkMutation,
+  useRevokeShareLinkMutation,
+} from "@/features/share-links/api"
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog"
-import {
-  useListMembersQuery,
-  useInviteMemberMutation,
-  useUpdateMemberRoleMutation,
-  useRemoveMemberMutation,
-} from "@/features/members/api"
-import { useGetMeQuery } from "@/features/auth/slice"
-import type { DocumentMemberRole } from "@prisma/client"
+} from "@/components/ui/responsive-dialog"
+import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Separator } from "@/components/ui/separator"
+import { ShareLinkSection } from "./share-dialog-sections/share-link-section"
+import { WorkspaceLinkSection } from "./share-dialog-sections/workspace-link-section"
+import { InviteMemberSection } from "./share-dialog-sections/invite-member-section"
+import { MemberList } from "./share-dialog-sections/member-list"
+import type { DocumentMemberRole } from "@prisma/client"
 
 interface DocumentShareDialogProps {
   documentId: string
   open: boolean
   onOpenChange: (open: boolean) => void
+  canInviteMembers?: boolean
   canManageMembers?: boolean
-}
-
-const ROLES: Array<DocumentMemberRole | "OWNER"> = [
-  "OWNER",
-  "VIEWER",
-  "COMMENTER",
-  "EDITOR",
-]
-
-const ROLE_LABELS: Record<DocumentMemberRole | "OWNER", string> = {
-  OWNER: "Owner",
-  VIEWER: "Can view",
-  COMMENTER: "Can comment",
-  EDITOR: "Can edit",
 }
 
 function getErrorMessage(error: unknown, fallback: string) {
@@ -59,284 +52,186 @@ function getErrorMessage(error: unknown, fallback: string) {
   return fallback
 }
 
-function getInitials(
-  name: string | null | undefined,
-  email: string | null | undefined
-) {
-  const src = (name || email || "?").trim()
-  return src.slice(0, 2).toUpperCase()
-}
-
 export function DocumentShareDialog({
   documentId,
   open,
   onOpenChange,
+  canInviteMembers = false,
   canManageMembers = false,
 }: DocumentShareDialogProps) {
-  const { data: members = [], isLoading } = useListMembersQuery({ documentId })
+  const { data: members = [], isLoading } = useListMembersQuery(
+    { documentId },
+    { skip: !open }
+  )
   const { data: me } = useGetMeQuery()
-  const [inviteMember] = useInviteMemberMutation()
-  const [updateMemberRole] = useUpdateMemberRoleMutation()
+  const { data: shareLinkData } = useGetShareLinkQuery(
+    { documentId },
+    { skip: !open || !canManageMembers }
+  )
+  const [inviteMember, { isLoading: isInviting }] = useInviteMemberMutation()
+  const [updateMemberRole, { isLoading: isUpdatingRole }] =
+    useUpdateMemberRoleMutation()
   const [removeMember] = useRemoveMemberMutation()
+  const [createShareLink, { isLoading: isCreatingLink }] =
+    useCreateShareLinkMutation()
+  const [revokeShareLink, { isLoading: isRevokingLink }] =
+    useRevokeShareLinkMutation()
 
-  const [email, setEmail] = useState("")
-  const [selectedRole, setSelectedRole] = useState<DocumentMemberRole>("VIEWER")
-  const [showRoleDropdown, setShowRoleDropdown] = useState<string | null>(null)
+  const [removingId, setRemovingId] = useState<string | null>(null)
 
-  const handleCopyLink = async () => {
-    const url = `${window.location.origin}/documents/${documentId}`
-    await navigator.clipboard.writeText(url)
-    toast.success("Link copied to clipboard!")
-  }
+  const workspaceUrl =
+    typeof window === "undefined"
+      ? `/app/documents/${documentId}`
+      : `${window.location.origin}/app/documents/${documentId}`
 
-  const handleInvite = async () => {
-    if (!email.trim()) return
+  const shareLink = shareLinkData?.shareLink
+  const publicUrl =
+    shareLink && typeof window !== "undefined"
+      ? `${window.location.origin}/share/${shareLink.token}`
+      : null
 
-    try {
-      await inviteMember({
-        documentId,
-        email: email.trim(),
-        role: selectedRole,
-      }).unwrap()
-      toast.success(`${email} has been invited!`)
-      setEmail("")
-    } catch (error) {
-      toast.error(getErrorMessage(error, "Failed to invite user"))
+  const sortedMembers = useMemo(() => {
+    const currentUserId = me?.user?.id
+    return [...members].sort((left, right) => {
+      if (left.role === "OWNER" && right.role !== "OWNER") return -1
+      if (right.role === "OWNER" && left.role !== "OWNER") return 1
+      if (left.userId === currentUserId && right.userId !== currentUserId)
+        return -1
+      if (right.userId === currentUserId && left.userId !== currentUserId)
+        return 1
+      return (left.user.name || left.user.email || "").localeCompare(
+        right.user.name || right.user.email || ""
+      )
+    })
+  }, [members, me?.user?.id])
+
+  async function handleTogglePublicLink(enabled: boolean) {
+    if (enabled) {
+      try {
+        await createShareLink({ documentId }).unwrap()
+        toast.success("Public link created")
+      } catch (error) {
+        toast.error(getErrorMessage(error, "Failed to create public link"))
+      }
+    } else if (shareLink) {
+      try {
+        await revokeShareLink({
+          documentId,
+          linkId: shareLink.id,
+        }).unwrap()
+        toast.success("Public link disabled")
+      } catch (error) {
+        toast.error(getErrorMessage(error, "Failed to disable public link"))
+      }
     }
   }
 
-  const handleRoleChange = async (
-    memberId: string,
-    role: DocumentMemberRole | "OWNER"
-  ) => {
-    // Can't change owner role
-    if (role === "OWNER") return
+  async function handleInvite(email: string, role: DocumentMemberRole) {
+    try {
+      await inviteMember({
+        documentId,
+        email,
+        role,
+      }).unwrap()
+      toast.success(`Added ${email} to the document`)
+    } catch (error) {
+      toast.error(getErrorMessage(error, "Failed to add teammate"))
+    }
+  }
 
+  async function handleRoleChange(memberId: string, role: DocumentMemberRole) {
     try {
       await updateMemberRole({
         documentId,
         memberId,
-        role: role as DocumentMemberRole,
+        role,
       }).unwrap()
-      toast.success("Role updated!")
-      setShowRoleDropdown(null)
+      toast.success("Access updated")
     } catch (error) {
-      toast.error(getErrorMessage(error, "Failed to update role"))
+      toast.error(getErrorMessage(error, "Failed to update access"))
     }
   }
 
-  const handleRemove = async (memberId: string, memberEmail: string) => {
+  async function handleRemove(memberId: string) {
+    setRemovingId(memberId)
     try {
       await removeMember({ documentId, memberId }).unwrap()
-      toast.success(`${memberEmail} has been removed`)
+      toast.success("Removed teammate")
     } catch (error) {
-      toast.error(getErrorMessage(error, "Failed to remove member"))
+      toast.error(getErrorMessage(error, "Failed to remove teammate"))
+    } finally {
+      setRemovingId(null)
     }
   }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md rounded-xl">
-        <DialogHeader>
-          <DialogTitle className="text-lg">Share this document</DialogTitle>
-          <DialogDescription>
-            Invite people to collaborate on this document
-          </DialogDescription>
+      <DialogContent
+        size="2xl"
+        position="center"
+        className="flex max-h-[90vh] flex-col gap-0 overflow-hidden rounded-2xl border border-border/70 bg-popover/95 p-0 shadow-2xl backdrop-blur-xl sm:max-h-[85vh]"
+      >
+        <DialogHeader className="shrink-0 gap-2 border-b border-border/60 px-4 py-4 sm:px-6 sm:py-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+            <div className="min-w-0 flex-1">
+              <DialogTitle className="text-base font-semibold sm:text-lg">
+                Share document
+              </DialogTitle>
+              <DialogDescription className="mt-1 text-xs sm:text-sm">
+                Invite teammates or create a public link anyone can access.
+              </DialogDescription>
+            </div>
+            <Badge
+              variant="outline"
+              className="w-fit shrink-0 rounded-full border-primary/20 bg-primary/10 px-2 py-0.5 text-xs text-primary sm:px-3 sm:py-1"
+            >
+              {sortedMembers.length} member
+              {sortedMembers.length !== 1 ? "s" : ""}
+            </Badge>
+          </div>
         </DialogHeader>
 
-        <div className="space-y-4">
-          {/* Share Link */}
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-muted-foreground">
-              Share link
-            </label>
-            <div className="flex gap-2">
-              <Input
-                value={`${window.location.origin}/documents/${documentId}`}
-                readOnly
-                className="flex-1 text-xs"
-              />
-              <Button size="sm" onClick={handleCopyLink}>
-                <Copy className="mr-1.5 size-3" />
-                Copy
-              </Button>
-            </div>
-          </div>
-
-          {/* Invite People */}
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-muted-foreground">
-            Invite people
-          </label>
-            {canManageMembers ? (
-              <div className="rounded-xl border border-border/60 bg-card/60 p-3">
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <Input
-                    placeholder="Enter teammate email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        void handleInvite()
-                      }
-                    }}
-                    className="flex-1"
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+          <ScrollArea className="flex-1 overflow-hidden">
+            <div className="space-y-3 overflow-x-hidden p-4 sm:space-y-4 sm:p-6">
+              {canManageMembers && (
+                <div className="space-y-3">
+                  <ShareLinkSection
+                    publicUrl={publicUrl}
+                    isLoading={isCreatingLink || isRevokingLink}
+                    onTogglePublicLink={handleTogglePublicLink}
                   />
-                  <select
-                    value={selectedRole}
-                    onChange={(e) =>
-                      setSelectedRole(e.target.value as DocumentMemberRole)
-                    }
-                    className="h-10 rounded-md border border-input bg-background px-3 text-xs"
-                  >
-                    {ROLES.filter((role) => role !== "OWNER").map((role) => (
-                      <option key={role} value={role}>
-                        {ROLE_LABELS[role]}
-                      </option>
-                    ))}
-                  </select>
-                  <Button size="sm" onClick={() => void handleInvite()}>
-                    <Plus className="mr-1.5 size-3" />
-                    Add teammate
-                  </Button>
+                  <WorkspaceLinkSection workspaceUrl={workspaceUrl} />
                 </div>
-                <p className="mt-2 text-[11px] text-muted-foreground">
-                  Invite an existing user by email and choose whether they can
-                  view, comment, or edit this document.
-                </p>
+              )}
+
+              {canInviteMembers && (
+                <InviteMemberSection
+                  onInvite={handleInvite}
+                  isLoading={isInviting}
+                />
+              )}
+
+              <Separator />
+
+              <div>
+                <h3 className="mb-2 text-xs font-medium sm:mb-3 sm:text-sm">
+                  Team members
+                </h3>
+                <MemberList
+                  members={sortedMembers}
+                  isLoading={isLoading}
+                  currentUserId={me?.user?.id}
+                  canManage={canManageMembers}
+                  isUpdatingRole={isUpdatingRole}
+                  removingId={removingId}
+                  onRoleChange={handleRoleChange}
+                  onRemove={handleRemove}
+                />
               </div>
-            ) : (
-              <div className="rounded-xl border border-border/60 bg-muted/40 p-3 text-xs text-muted-foreground">
-                You can view who has access here. Only owners and editors can add
-                new teammates.
-              </div>
-            )}
-          </div>
-
-          {/* Members List */}
-          <div className="space-y-2">
-            <label className="text-xs font-medium text-muted-foreground">
-              People with access
-            </label>
-            {isLoading ? (
-              <div className="space-y-2">
-                {[1, 2, 3].map((i) => (
-                  <div
-                    key={i}
-                    className="flex animate-pulse items-center gap-2"
-                  >
-                    <div className="size-8 rounded-full bg-muted" />
-                    <div className="flex-1 space-y-1">
-                      <div className="h-3 w-24 rounded bg-muted" />
-                      <div className="h-2 w-16 rounded bg-muted" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <ScrollArea className="h-64 rounded-xl border border-border/50 bg-card/45">
-                <div className="space-y-2 p-2">
-                {members.map((member) => {
-                  const isOwner = member.role === "OWNER"
-                  const isCurrentUser = member.userId === me?.user?.id
-
-                  return (
-                    <div
-                      key={member.id}
-                      className="flex items-center gap-3 rounded-lg border border-border/40 p-2.5"
-                    >
-                      <Avatar className="size-8 shrink-0">
-                        <AvatarImage src={member.user.image ?? undefined} />
-                        <AvatarFallback className="text-[10px]">
-                          {getInitials(member.user.name, member.user.email)}
-                        </AvatarFallback>
-                      </Avatar>
-
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium">
-                          {member.user.name || member.user.email}
-                        </p>
-                        <p className="truncate text-[11px] text-muted-foreground">
-                          {member.user.email}
-                        </p>
-                      </div>
-
-                      {/* Role Dropdown */}
-                      <div className="relative">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setShowRoleDropdown(
-                              showRoleDropdown === member.id ? null : member.id
-                            )
-                          }
-                          className="flex items-center gap-1 rounded-md border border-border/60 px-2 py-1 text-xs hover:bg-accent"
-                          disabled={isOwner || !canManageMembers}
-                        >
-                          {
-                            ROLE_LABELS[
-                              member.role as DocumentMemberRole | "OWNER"
-                            ]
-                          }
-                          {!isOwner && <ChevronDown className="size-3" />}
-                        </button>
-
-                        {showRoleDropdown === member.id && !isOwner && canManageMembers && (
-                          <div className="absolute top-full right-0 z-50 mt-1 w-40 overflow-hidden rounded-md border bg-popover shadow-lg">
-                            {ROLES.filter((role) => role !== "OWNER").map((role) => (
-                              <button
-                                key={role}
-                                type="button"
-                                onClick={() => {
-                                  void handleRoleChange(member.id, role)
-                                }}
-                                className="w-full px-3 py-2 text-left text-xs hover:bg-accent"
-                              >
-                                {ROLE_LABELS[role]}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Remove Button */}
-                      {!isOwner && !isCurrentUser && canManageMembers && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            void handleRemove(
-                              member.id,
-                              member.user.email || ""
-                            )
-                          }
-                          className="rounded p-1 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                        >
-                          <Trash2 className="size-3.5" />
-                        </button>
-                      )}
-
-                      {/* Owner Badge */}
-                      {isOwner && (
-                        <Badge variant="secondary" className="text-[10px]">
-                          Owner
-                        </Badge>
-                      )}
-                    </div>
-                  )
-                })}
-                </div>
-              </ScrollArea>
-            )}
-          </div>
+            </div>
+          </ScrollArea>
         </div>
-
-        <button
-          type="button"
-          onClick={() => onOpenChange(false)}
-          className="absolute top-4 right-4 rounded-sm opacity-70 transition-opacity hover:opacity-100"
-        >
-          <X className="size-4" />
-        </button>
       </DialogContent>
     </Dialog>
   )

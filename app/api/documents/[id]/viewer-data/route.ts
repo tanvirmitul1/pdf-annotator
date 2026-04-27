@@ -64,6 +64,8 @@ async function getHandler(
       collaborators,
       permissions: {
         role: document.role,
+        canInviteMembers:
+          document.role === "OWNER" || document.role === "EDITOR",
         canManageMembers: document.role === "OWNER",
         canAnnotate: true,
       },

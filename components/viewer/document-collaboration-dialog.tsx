@@ -18,7 +18,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
+} from "@/components/ui/responsive-dialog"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -41,11 +41,15 @@ export function DocumentCollaborationDialog({
   const [open, setOpen] = useState(false)
   const [email, setEmail] = useState("")
   const [role, setRole] = useState<DocumentMemberRole>("COMMENTER")
-  const { data: members = [], isFetching } = useListDocumentMembersQuery(documentId, {
-    skip: !open,
-  })
+  const { data: members = [], isFetching } = useListDocumentMembersQuery(
+    documentId,
+    {
+      skip: !open,
+    }
+  )
   const [addMember, { isLoading: isAdding }] = useAddDocumentMemberMutation()
-  const [removeMember, { isLoading: isRemoving }] = useRemoveDocumentMemberMutation()
+  const [removeMember, { isLoading: isRemoving }] =
+    useRemoveDocumentMemberMutation()
 
   const editableMembers = useMemo(
     () => members.filter((member) => member.role !== "OWNER"),
@@ -83,15 +87,16 @@ export function DocumentCollaborationDialog({
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
-      <DialogContent className="max-w-lg">
+      <DialogContent size="lg">
         <DialogHeader>
           <DialogTitle>Collaborate On This Document</DialogTitle>
           <DialogDescription>
-            Add teammates by email so they can open this PDF and see shared annotations.
+            Add teammates by email so they can open this PDF and see shared
+            annotations.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           <div className="rounded-xl border border-border/60 bg-muted/30 p-3">
             <div className="mb-2 flex items-center gap-2 text-sm font-medium">
               <Users className="size-4 text-primary" />
@@ -105,7 +110,9 @@ export function DocumentCollaborationDialog({
                   Loading collaborators...
                 </div>
               ) : members.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No collaborators yet.</p>
+                <p className="text-sm text-muted-foreground">
+                  No collaborators yet.
+                </p>
               ) : (
                 members.map((member) => (
                   <div
@@ -113,8 +120,13 @@ export function DocumentCollaborationDialog({
                     className="flex items-center gap-3 rounded-lg border border-border/50 bg-background/80 px-3 py-2"
                   >
                     <Avatar size="sm">
-                      <AvatarImage src={member.image ?? undefined} alt={member.name ?? "Collaborator"} />
-                      <AvatarFallback>{initials(member.name, member.email)}</AvatarFallback>
+                      <AvatarImage
+                        src={member.image ?? undefined}
+                        alt={member.name ?? "Collaborator"}
+                      />
+                      <AvatarFallback>
+                        {initials(member.name, member.email)}
+                      </AvatarFallback>
                     </Avatar>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium">
@@ -124,7 +136,9 @@ export function DocumentCollaborationDialog({
                         {member.email || "No email"}
                       </p>
                     </div>
-                    <Badge variant={member.role === "OWNER" ? "default" : "outline"}>
+                    <Badge
+                      variant={member.role === "OWNER" ? "default" : "outline"}
+                    >
                       {member.role}
                     </Badge>
                     {canManageMembers && member.role !== "OWNER" ? (
@@ -164,7 +178,9 @@ export function DocumentCollaborationDialog({
                 <div className="flex items-center gap-2">
                   <select
                     value={role}
-                    onChange={(event) => setRole(event.target.value as DocumentMemberRole)}
+                    onChange={(event) =>
+                      setRole(event.target.value as DocumentMemberRole)
+                    }
                     className="h-9 rounded-md border border-input bg-background px-2 text-sm"
                     aria-label="Collaborator role"
                   >
@@ -178,7 +194,9 @@ export function DocumentCollaborationDialog({
                     disabled={isAdding || !email.trim()}
                     onClick={() => void handleAddMember()}
                   >
-                    {isAdding ? <Loader2 className="size-4 animate-spin" /> : null}
+                    {isAdding ? (
+                      <Loader2 className="size-4 animate-spin" />
+                    ) : null}
                     Add collaborator
                   </Button>
                 </div>
@@ -191,7 +209,8 @@ export function DocumentCollaborationDialog({
 
             {!canManageMembers && editableMembers.length > 0 ? (
               <p className="mt-2 text-xs text-muted-foreground">
-                You can mention these collaborators inside comments and see their annotations.
+                You can mention these collaborators inside comments and see
+                their annotations.
               </p>
             ) : null}
           </div>

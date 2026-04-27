@@ -24,7 +24,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@/components/ui/dialog"
+} from "@/components/ui/responsive-dialog"
 import { Input } from "@/components/ui/input"
 import {
   Tooltip,
@@ -168,9 +168,14 @@ function RenameInline({
 
 export function DocumentList({ showDeleted = false }: DocumentListProps) {
   const [search, setSearch] = useState("")
-  const [sortBy, setSortBy] = useState<"name" | "createdAt" | "lastOpenedAt">("createdAt")
+  const [sortBy, setSortBy] = useState<"name" | "createdAt" | "lastOpenedAt">(
+    "createdAt"
+  )
   const [renamingId, setRenamingId] = useState<string | null>(null)
-  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<{
+    id: string
+    name: string
+  } | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   const [hasProcessing, setHasProcessing] = useState(false)
 
@@ -272,8 +277,12 @@ export function DocumentList({ showDeleted = false }: DocumentListProps) {
     return (
       <div className="rounded-lg border border-dashed border-border/60 bg-muted/20 py-16 text-center text-muted-foreground">
         <FileText className="mx-auto mb-3 size-8 opacity-30" />
-        <p className="text-sm">{showDeleted ? "No deleted documents" : "No documents yet"}</p>
-        <p className="mt-1 text-xs text-muted-foreground/70">Upload a PDF or image to get started</p>
+        <p className="text-sm">
+          {showDeleted ? "No deleted documents" : "No documents yet"}
+        </p>
+        <p className="mt-1 text-xs text-muted-foreground/70">
+          Upload a PDF or image to get started
+        </p>
       </div>
     )
   }
@@ -332,12 +341,12 @@ export function DocumentList({ showDeleted = false }: DocumentListProps) {
               <Link
                 href={`/app/documents/${doc.id}`}
                 className={cn(
-                  "flex w-full min-w-0 flex-1 items-center gap-3.5 focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none rounded-sm",
+                  "flex w-full min-w-0 flex-1 items-center gap-3.5 rounded-sm focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none",
                   showDeleted && "pointer-events-none"
                 )}
                 tabIndex={showDeleted ? -1 : 0}
               >
-                <div className="relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted/80 border border-border/40">
+                <div className="relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-md border border-border/40 bg-muted/80">
                   {doc.thumbnailKey ? (
                     <Image
                       src={`/api/storage/${doc.thumbnailKey}`}
@@ -363,13 +372,13 @@ export function DocumentList({ showDeleted = false }: DocumentListProps) {
                       {doc.name}
                     </p>
                   )}
-                  <div className="mt-1 flex items-center gap-2 flex-wrap">
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
                     <span className="text-xs text-muted-foreground">
                       {doc.lastOpenedAt
                         ? `Opened ${formatDistanceToNow(new Date(doc.lastOpenedAt), { addSuffix: true })}`
                         : `Added ${formatDistanceToNow(new Date(doc.createdAt), { addSuffix: true })}`}
                     </span>
-                    <span className="text-muted-foreground/40 text-xs">·</span>
+                    <span className="text-xs text-muted-foreground/40">·</span>
                     <span className="text-xs text-muted-foreground/70">
                       {(doc.fileSize / 1024 / 1024).toFixed(1)} MB
                     </span>
@@ -381,14 +390,16 @@ export function DocumentList({ showDeleted = false }: DocumentListProps) {
                             style={{ width: `${doc.processingProgress ?? 0}%` }}
                           />
                         </div>
-                        <span className="text-xs tabular-nums text-muted-foreground">
+                        <span className="text-xs text-muted-foreground tabular-nums">
                           {doc.processingProgress ?? 0}%
                         </span>
                       </div>
                     ) : null}
                     {doc.status === "FAILED" ? (
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs font-medium text-destructive">Failed</span>
+                        <span className="text-xs font-medium text-destructive">
+                          Failed
+                        </span>
                         <Button
                           variant="ghost"
                           size="sm"
@@ -399,7 +410,7 @@ export function DocumentList({ showDeleted = false }: DocumentListProps) {
                           }}
                           aria-label="Retry processing"
                         >
-                          <RefreshCw className="size-2.5 mr-1" />
+                          <RefreshCw className="mr-1 size-2.5" />
                           Retry
                         </Button>
                       </div>
@@ -443,7 +454,9 @@ export function DocumentList({ showDeleted = false }: DocumentListProps) {
                       variant="ghost"
                       size="icon"
                       className="size-8 rounded-md text-muted-foreground hover:text-destructive"
-                      onClick={() => setDeleteTarget({ id: doc.id, name: doc.name })}
+                      onClick={() =>
+                        setDeleteTarget({ id: doc.id, name: doc.name })
+                      }
                       aria-label="Delete document"
                     >
                       <Trash2 className="size-3.5" />
@@ -464,7 +477,10 @@ export function DocumentList({ showDeleted = false }: DocumentListProps) {
           }
         }}
       >
-        <DialogContent className="max-w-[calc(100%-1.5rem)] rounded-xl border border-border/60 bg-card/95 p-5 backdrop-blur-xl sm:max-w-sm sm:p-6">
+        <DialogContent
+          className="rounded-xl border border-border/60 bg-card/95 p-4 backdrop-blur-xl sm:p-6"
+          size="sm"
+        >
           <DialogHeader className="gap-2">
             <DialogTitle className="text-base font-semibold">
               Delete this document?
@@ -472,8 +488,11 @@ export function DocumentList({ showDeleted = false }: DocumentListProps) {
             <DialogDescription className="text-sm leading-6">
               {deleteTarget ? (
                 <>
-                  <span className="font-medium text-foreground">{deleteTarget.name}</span>{" "}
-                  will be moved to trash. You can restore it later from the trash page.
+                  <span className="font-medium text-foreground">
+                    {deleteTarget.name}
+                  </span>{" "}
+                  will be moved to trash. You can restore it later from the
+                  trash page.
                 </>
               ) : (
                 "This document will be moved to trash."
