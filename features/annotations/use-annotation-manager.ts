@@ -7,7 +7,7 @@ import type { CreateAnnotationArg } from "./api"
 import type { AnnotationWithTags } from "./types"
 import { addLocalAnnotation, markSynced, markFailed } from "./local-slice"
 
-const FLUSH_DELAY_MS = 2_000
+const FLUSH_DELAY_MS = 5_000
 const MAX_BATCH_SIZE = 50
 
 interface PendingAnnotation {
