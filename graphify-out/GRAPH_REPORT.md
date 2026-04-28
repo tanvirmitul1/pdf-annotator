@@ -1,204 +1,183 @@
-# Graph Report - .  (2026-04-28)
+# Graph Report - C:\projects\pdf-annotator  (2026-04-28)
 
 ## Corpus Check
-- 26 files · ~30,000 words
+- 215 files · ~85,159 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 904 nodes · 957 edges · 189 communities detected
-- Extraction: 80% EXTRACTED · 19% INFERRED · 0% AMBIGUOUS · INFERRED: 186 edges (avg confidence: 0.81)
+- 854 nodes · 941 edges · 168 communities detected
+- Extraction: 78% EXTRACTED · 22% INFERRED · 0% AMBIGUOUS · INFERRED: 205 edges (avg confidence: 0.81)
 - Token cost: 0 input · 0 output
 
 ## Community Hubs (Navigation)
-- [[_COMMUNITY_Analytics & Authorization Docs|Analytics & Authorization Docs]]
-- [[_COMMUNITY_API Route Handlers (Mixed)|API Route Handlers (Mixed)]]
-- [[_COMMUNITY_Prisma Schema Design Decisions|Prisma Schema Design Decisions]]
-- [[_COMMUNITY_Project Overview & Auth System|Project Overview & Auth System]]
-- [[_COMMUNITY_SaaS Feature Catalog|SaaS Feature Catalog]]
-- [[_COMMUNITY_RTK Query Slices & Cache Tags|RTK Query Slices & Cache Tags]]
-- [[_COMMUNITY_PM2 Production Deployment|PM2 Production Deployment]]
-- [[_COMMUNITY_Error Type Hierarchy|Error Type Hierarchy]]
-- [[_COMMUNITY_Comments & Misc API Routes|Comments & Misc API Routes]]
-- [[_COMMUNITY_Authorization & Cache Layer|Authorization & Cache Layer]]
-- [[_COMMUNITY_Architecture Rules & Contracts|Architecture Rules & Contracts]]
-- [[_COMMUNITY_Document & Annotation API Routes|Document & Annotation API Routes]]
-- [[_COMMUNITY_Utility & Form Helpers|Utility & Form Helpers]]
-- [[_COMMUNITY_Core UI Components|Core UI Components]]
-- [[_COMMUNITY_Comment & Mention Handlers|Comment & Mention Handlers]]
-- [[_COMMUNITY_State Management Architecture|State Management Architecture]]
-- [[_COMMUNITY_Viewer State & Hooks|Viewer State & Hooks]]
-- [[_COMMUNITY_Page Layout Structure|Page Layout Structure]]
-- [[_COMMUNITY_DB Repository Pattern|DB Repository Pattern]]
-- [[_COMMUNITY_UI Event Handlers & Notifications|UI Event Handlers & Notifications]]
-- [[_COMMUNITY_Auth & Analytics Registration|Auth & Analytics Registration]]
-- [[_COMMUNITY_Annotation Service Layer|Annotation Service Layer]]
-- [[_COMMUNITY_Share & Collaboration UI|Share & Collaboration UI]]
-- [[_COMMUNITY_UI Refactoring & Design System|UI Refactoring & Design System]]
-- [[_COMMUNITY_Viewer Toolbar Controls|Viewer Toolbar Controls]]
-- [[_COMMUNITY_Annotation Geometry|Annotation Geometry]]
-- [[_COMMUNITY_Document List Actions|Document List Actions]]
-- [[_COMMUNITY_Annotation List Utilities|Annotation List Utilities]]
-- [[_COMMUNITY_Annotation List Display|Annotation List Display]]
-- [[_COMMUNITY_Bookmark Panel|Bookmark Panel]]
-- [[_COMMUNITY_Date & Time Utils|Date & Time Utils]]
-- [[_COMMUNITY_Sign In Form|Sign In Form]]
-- [[_COMMUNITY_Card UI Component|Card UI Component]]
-- [[_COMMUNITY_Dropdown Menu Component|Dropdown Menu Component]]
-- [[_COMMUNITY_Collaboration Dialog|Collaboration Dialog]]
-- [[_COMMUNITY_PDF Canvas Renderer|PDF Canvas Renderer]]
-- [[_COMMUNITY_PDF Viewer Shell|PDF Viewer Shell]]
-- [[_COMMUNITY_Member Card Component|Member Card Component]]
-- [[_COMMUNITY_Text Re-anchoring|Text Re-anchoring]]
-- [[_COMMUNITY_Performance Budgets|Performance Budgets]]
-- [[_COMMUNITY_Share Dialog Logic|Share Dialog Logic]]
-- [[_COMMUNITY_Storage Adapter Layer|Storage Adapter Layer]]
-- [[_COMMUNITY_Annotation Interaction Engine|Annotation Interaction Engine]]
-- [[_COMMUNITY_tag-input.tsx|tag-input.tsx]]
-- [[_COMMUNITY_scroll-area.tsx|scroll-area.tsx]]
-- [[_COMMUNITY_tooltip.tsx|tooltip.tsx]]
-- [[_COMMUNITY_initPostHogClient()|initPostHogClient()]]
-- [[_COMMUNITY_toErrorResponse()|toErrorResponse()]]
-- [[_COMMUNITY_annotationsFor()|annotationsFor()]]
-- [[_COMMUNITY_types.ts|types.ts]]
-- [[_COMMUNITY_createNoopStorage()|createNoopStorage()]]
-- [[_COMMUNITY_providers.tsx|providers.tsx]]
-- [[_COMMUNITY_page.tsx|page.tsx]]
-- [[_COMMUNITY_page.tsx|page.tsx]]
-- [[_COMMUNITY_page.tsx|page.tsx]]
-- [[_COMMUNITY_page.tsx|page.tsx]]
-- [[_COMMUNITY_error.tsx|error.tsx]]
-- [[_COMMUNITY_loading.tsx|loading.tsx]]
-- [[_COMMUNITY_document-activity-panel.tsx|document-activity-panel.tsx]]
-- [[_COMMUNITY_AuthModal()|AuthModal()]]
-- [[_COMMUNITY_logo-mark.tsx|logo-mark.tsx]]
-- [[_COMMUNITY_theme-toggle.tsx|theme-toggle.tsx]]
-- [[_COMMUNITY_guest-upload.tsx|guest-upload.tsx]]
-- [[_COMMUNITY_cn()|cn()]]
-- [[_COMMUNITY_Badge()|Badge()]]
-- [[_COMMUNITY_cn()|cn()]]
-- [[_COMMUNITY_dialog.tsx|dialog.tsx]]
-- [[_COMMUNITY_label.tsx|label.tsx]]
-- [[_COMMUNITY_popover.tsx|popover.tsx]]
-- [[_COMMUNITY_responsive-dialog.tsx|responsive-dialog.tsx]]
-- [[_COMMUNITY_separator.tsx|separator.tsx]]
-- [[_COMMUNITY_tabs.tsx|tabs.tsx]]
-- [[_COMMUNITY_getInitials()|getInitials()]]
-- [[_COMMUNITY_image-viewer.tsx|image-viewer.tsx]]
-- [[_COMMUNITY_login-gate-modal.tsx|login-gate-modal.tsx]]
-- [[_COMMUNITY_offline-banner.tsx|offline-banner.tsx]]
-- [[_COMMUNITY_outline-panel.tsx|outline-panel.tsx]]
-- [[_COMMUNITY_pdf-viewer.tsx|pdf-viewer.tsx]]
-- [[_COMMUNITY_shortcuts-overlay.tsx|shortcuts-overlay.tsx]]
-- [[_COMMUNITY_sidebar.tsx|sidebar.tsx]]
-- [[_COMMUNITY_viewer-shell-loader.tsx|viewer-shell-loader.tsx]]
-- [[_COMMUNITY_invite-member-section.tsx|invite-member-section.tsx]]
-- [[_COMMUNITY_share-link-section.tsx|share-link-section.tsx]]
-- [[_COMMUNITY_workspace-link-section.tsx|workspace-link-section.tsx]]
-- [[_COMMUNITY_utils.ts|utils.ts]]
-- [[_COMMUNITY_shouldLoadAnalytics()|shouldLoadAnalytics()]]
-- [[_COMMUNITY_documentsFor()|documentsFor()]]
-- [[_COMMUNITY_zod-resolver.ts|zod-resolver.ts]]
-- [[_COMMUNITY_register()|register()]]
-- [[_COMMUNITY_setSecurityHeaders()|setSecurityHeaders()]]
-- [[_COMMUNITY_use-debounced-mutation.ts|use-debounced-mutation.ts]]
-- [[_COMMUNITY_use-merge-guest-documents.ts|use-merge-guest-documents.ts]]
-- [[_COMMUNITY_seed.ts|seed.ts]]
-- [[_COMMUNITY_main()|main()]]
-- [[_COMMUNITY_makeReq()|makeReq()]]
-- [[_COMMUNITY_makeReq()|makeReq()]]
-- [[_COMMUNITY_makeReq()|makeReq()]]
-- [[_COMMUNITY_makeReq()|makeReq()]]
-- [[_COMMUNITY_read()|read()]]
-- [[_COMMUNITY_createTestStore()|createTestStore()]]
-- [[_COMMUNITY_makeAnnotation()|makeAnnotation()]]
-- [[_COMMUNITY_RTK Query Base API (storeapi.ts)|RTK Query Base API (store/api.ts)]]
-- [[_COMMUNITY_Design WebhookEvent.eventId unique for idemp|Design: WebhookEvent.eventId unique for idemp]]
-- [[_COMMUNITY_route.ts|route.ts]]
-- [[_COMMUNITY_route.ts|route.ts]]
-- [[_COMMUNITY_route.ts|route.ts]]
-- [[_COMMUNITY_route.ts|route.ts]]
-- [[_COMMUNITY_route.ts|route.ts]]
-- [[_COMMUNITY_route.ts|route.ts]]
-- [[_COMMUNITY_route.ts|route.ts]]
-- [[_COMMUNITY_page.tsx|page.tsx]]
-- [[_COMMUNITY_page.tsx|page.tsx]]
-- [[_COMMUNITY_sign-in-form-wrapper.tsx|sign-in-form-wrapper.tsx]]
-- [[_COMMUNITY_page.tsx|page.tsx]]
-- [[_COMMUNITY_sign-up-form-wrapper.tsx|sign-up-form-wrapper.tsx]]
-- [[_COMMUNITY_page.tsx|page.tsx]]
-- [[_COMMUNITY_annotation-hover-card.tsx|annotation-hover-card.tsx]]
-- [[_COMMUNITY_color-picker.tsx|color-picker.tsx]]
-- [[_COMMUNITY_inline-toolbar.tsx|inline-toolbar.tsx]]
-- [[_COMMUNITY_save-status.tsx|save-status.tsx]]
-- [[_COMMUNITY_auth-shell.tsx|auth-shell.tsx]]
-- [[_COMMUNITY_legal-page.tsx|legal-page.tsx]]
-- [[_COMMUNITY_protected-shell.tsx|protected-shell.tsx]]
-- [[_COMMUNITY_upload.tsx|upload.tsx]]
-- [[_COMMUNITY_input.tsx|input.tsx]]
-- [[_COMMUNITY_progress.tsx|progress.tsx]]
-- [[_COMMUNITY_sheet.tsx|sheet.tsx]]
-- [[_COMMUNITY_switch.tsx|switch.tsx]]
-- [[_COMMUNITY_textarea.tsx|textarea.tsx]]
-- [[_COMMUNITY_search-bar.tsx|search-bar.tsx]]
-- [[_COMMUNITY_viewer-skeleton.tsx|viewer-skeleton.tsx]]
-- [[_COMMUNITY_index.ts|index.ts]]
-- [[_COMMUNITY_member-list.tsx|member-list.tsx]]
-- [[_COMMUNITY_env.ts|env.ts]]
-- [[_COMMUNITY_events.ts|events.ts]]
-- [[_COMMUNITY_prisma.ts|prisma.ts]]
-- [[_COMMUNITY_worker.ts|worker.ts]]
-- [[_COMMUNITY_auth.ts|auth.ts]]
-- [[_COMMUNITY_eslint.config.mjs|eslint.config.mjs]]
-- [[_COMMUNITY_instrumentation-client.ts|instrumentation-client.ts]]
-- [[_COMMUNITY_next-env.d.ts|next-env.d.ts]]
-- [[_COMMUNITY_next.config.mjs|next.config.mjs]]
-- [[_COMMUNITY_postcss.config.mjs|postcss.config.mjs]]
-- [[_COMMUNITY_prisma.config.ts|prisma.config.ts]]
-- [[_COMMUNITY_vitest.config.ts|vitest.config.ts]]
-- [[_COMMUNITY_api.ts|api.ts]]
-- [[_COMMUNITY_schema.ts|schema.ts]]
-- [[_COMMUNITY_slice.ts|slice.ts]]
-- [[_COMMUNITY_api.ts|api.ts]]
-- [[_COMMUNITY_schema.ts|schema.ts]]
-- [[_COMMUNITY_api.ts|api.ts]]
-- [[_COMMUNITY_api.ts|api.ts]]
-- [[_COMMUNITY_api.ts|api.ts]]
-- [[_COMMUNITY_schema.ts|schema.ts]]
-- [[_COMMUNITY_api.ts|api.ts]]
-- [[_COMMUNITY_slice.ts|slice.ts]]
-- [[_COMMUNITY_api.ts|api.ts]]
-- [[_COMMUNITY_api.ts|api.ts]]
-- [[_COMMUNITY_api.ts|api.ts]]
-- [[_COMMUNITY_slice.ts|slice.ts]]
-- [[_COMMUNITY_slice.ts|slice.ts]]
-- [[_COMMUNITY_api.ts|api.ts]]
-- [[_COMMUNITY_api.ts|api.ts]]
-- [[_COMMUNITY_hooks.ts|hooks.ts]]
-- [[_COMMUNITY_setup.ts|setup.ts]]
-- [[_COMMUNITY_next-auth.d.ts|next-auth.d.ts]]
-- [[_COMMUNITY_pdfjs-dist.d.ts|pdfjs-dist.d.ts]]
-- [[_COMMUNITY_cross-user.test.ts|cross-user.test.ts]]
-- [[_COMMUNITY_geometry.test.ts|geometry.test.ts]]
-- [[_COMMUNITY_reanchor.test.ts|reanchor.test.ts]]
-- [[_COMMUNITY_transforms.test.ts|transforms.test.ts]]
-- [[_COMMUNITY_store.test.ts|store.test.ts]]
-- [[_COMMUNITY_Eraser Tool Behavior|Eraser Tool Behavior]]
-- [[_COMMUNITY_Annotation Conflict Handling (Last-Write-Wins|Annotation Conflict Handling (Last-Write-Wins]]
-- [[_COMMUNITY_Folder Structure|Folder Structure]]
-- [[_COMMUNITY_Component Architecture Rules|Component Architecture Rules]]
-- [[_COMMUNITY_Interaction Design Contract|Interaction Design Contract]]
-- [[_COMMUNITY_Keyboard Shortcuts Registry|Keyboard Shortcuts Registry]]
-- [[_COMMUNITY_LoadingErrorEmpty State Requirement|Loading/Error/Empty State Requirement]]
-- [[_COMMUNITY_Copy Voice Guidelines|Copy Voice Guidelines]]
-- [[_COMMUNITY_Worker Deployment (Separate Process)|Worker Deployment (Separate Process)]]
-- [[_COMMUNITY_React Profiler Workflow|React Profiler Workflow]]
-- [[_COMMUNITY_LightDark Mode & Keyboard Accessibility Rule|Light/Dark Mode & Keyboard Accessibility Rule]]
-- [[_COMMUNITY_Background Jobs for Work Above 200ms|Background Jobs for Work Above 200ms]]
-- [[_COMMUNITY_SLO Definitions (P1P2 Response Times)|SLO Definitions (P1/P2 Response Times)]]
-- [[_COMMUNITY_Full Commands Reference|Full Commands Reference]]
-- [[_COMMUNITY_Security PR Review Checklist|Security PR Review Checklist]]
-- [[_COMMUNITY_Verification Token|Verification Token]]
-- [[_COMMUNITY_Theme Redux Slice|Theme Redux Slice]]
+- [[_COMMUNITY_Community 0|Community 0]]
+- [[_COMMUNITY_Community 1|Community 1]]
+- [[_COMMUNITY_Community 2|Community 2]]
+- [[_COMMUNITY_Community 3|Community 3]]
+- [[_COMMUNITY_Community 4|Community 4]]
+- [[_COMMUNITY_Community 5|Community 5]]
+- [[_COMMUNITY_Community 6|Community 6]]
+- [[_COMMUNITY_Community 7|Community 7]]
+- [[_COMMUNITY_Community 8|Community 8]]
+- [[_COMMUNITY_Community 9|Community 9]]
+- [[_COMMUNITY_Community 10|Community 10]]
+- [[_COMMUNITY_Community 11|Community 11]]
+- [[_COMMUNITY_Community 12|Community 12]]
+- [[_COMMUNITY_Community 13|Community 13]]
+- [[_COMMUNITY_Community 14|Community 14]]
+- [[_COMMUNITY_Community 15|Community 15]]
+- [[_COMMUNITY_Community 16|Community 16]]
+- [[_COMMUNITY_Community 17|Community 17]]
+- [[_COMMUNITY_Community 18|Community 18]]
+- [[_COMMUNITY_Community 19|Community 19]]
+- [[_COMMUNITY_Community 20|Community 20]]
+- [[_COMMUNITY_Community 21|Community 21]]
+- [[_COMMUNITY_Community 22|Community 22]]
+- [[_COMMUNITY_Community 23|Community 23]]
+- [[_COMMUNITY_Community 24|Community 24]]
+- [[_COMMUNITY_Community 25|Community 25]]
+- [[_COMMUNITY_Community 26|Community 26]]
+- [[_COMMUNITY_Community 27|Community 27]]
+- [[_COMMUNITY_Community 28|Community 28]]
+- [[_COMMUNITY_Community 29|Community 29]]
+- [[_COMMUNITY_Community 30|Community 30]]
+- [[_COMMUNITY_Community 31|Community 31]]
+- [[_COMMUNITY_Community 32|Community 32]]
+- [[_COMMUNITY_Community 33|Community 33]]
+- [[_COMMUNITY_Community 34|Community 34]]
+- [[_COMMUNITY_Community 35|Community 35]]
+- [[_COMMUNITY_Community 36|Community 36]]
+- [[_COMMUNITY_Community 37|Community 37]]
+- [[_COMMUNITY_Community 38|Community 38]]
+- [[_COMMUNITY_Community 39|Community 39]]
+- [[_COMMUNITY_Community 40|Community 40]]
+- [[_COMMUNITY_Community 41|Community 41]]
+- [[_COMMUNITY_Community 42|Community 42]]
+- [[_COMMUNITY_Community 43|Community 43]]
+- [[_COMMUNITY_Community 44|Community 44]]
+- [[_COMMUNITY_Community 45|Community 45]]
+- [[_COMMUNITY_Community 46|Community 46]]
+- [[_COMMUNITY_Community 47|Community 47]]
+- [[_COMMUNITY_Community 48|Community 48]]
+- [[_COMMUNITY_Community 49|Community 49]]
+- [[_COMMUNITY_Community 50|Community 50]]
+- [[_COMMUNITY_Community 51|Community 51]]
+- [[_COMMUNITY_Community 52|Community 52]]
+- [[_COMMUNITY_Community 53|Community 53]]
+- [[_COMMUNITY_Community 54|Community 54]]
+- [[_COMMUNITY_Community 55|Community 55]]
+- [[_COMMUNITY_Community 56|Community 56]]
+- [[_COMMUNITY_Community 57|Community 57]]
+- [[_COMMUNITY_Community 58|Community 58]]
+- [[_COMMUNITY_Community 59|Community 59]]
+- [[_COMMUNITY_Community 60|Community 60]]
+- [[_COMMUNITY_Community 61|Community 61]]
+- [[_COMMUNITY_Community 62|Community 62]]
+- [[_COMMUNITY_Community 63|Community 63]]
+- [[_COMMUNITY_Community 64|Community 64]]
+- [[_COMMUNITY_Community 65|Community 65]]
+- [[_COMMUNITY_Community 66|Community 66]]
+- [[_COMMUNITY_Community 67|Community 67]]
+- [[_COMMUNITY_Community 68|Community 68]]
+- [[_COMMUNITY_Community 69|Community 69]]
+- [[_COMMUNITY_Community 70|Community 70]]
+- [[_COMMUNITY_Community 71|Community 71]]
+- [[_COMMUNITY_Community 72|Community 72]]
+- [[_COMMUNITY_Community 73|Community 73]]
+- [[_COMMUNITY_Community 74|Community 74]]
+- [[_COMMUNITY_Community 75|Community 75]]
+- [[_COMMUNITY_Community 76|Community 76]]
+- [[_COMMUNITY_Community 77|Community 77]]
+- [[_COMMUNITY_Community 78|Community 78]]
+- [[_COMMUNITY_Community 79|Community 79]]
+- [[_COMMUNITY_Community 80|Community 80]]
+- [[_COMMUNITY_Community 81|Community 81]]
+- [[_COMMUNITY_Community 82|Community 82]]
+- [[_COMMUNITY_Community 83|Community 83]]
+- [[_COMMUNITY_Community 84|Community 84]]
+- [[_COMMUNITY_Community 85|Community 85]]
+- [[_COMMUNITY_Community 86|Community 86]]
+- [[_COMMUNITY_Community 87|Community 87]]
+- [[_COMMUNITY_Community 88|Community 88]]
+- [[_COMMUNITY_Community 89|Community 89]]
+- [[_COMMUNITY_Community 90|Community 90]]
+- [[_COMMUNITY_Community 91|Community 91]]
+- [[_COMMUNITY_Community 92|Community 92]]
+- [[_COMMUNITY_Community 93|Community 93]]
+- [[_COMMUNITY_Community 94|Community 94]]
+- [[_COMMUNITY_Community 95|Community 95]]
+- [[_COMMUNITY_Community 96|Community 96]]
+- [[_COMMUNITY_Community 97|Community 97]]
+- [[_COMMUNITY_Community 98|Community 98]]
+- [[_COMMUNITY_Community 99|Community 99]]
+- [[_COMMUNITY_Community 100|Community 100]]
+- [[_COMMUNITY_Community 101|Community 101]]
+- [[_COMMUNITY_Community 102|Community 102]]
+- [[_COMMUNITY_Community 103|Community 103]]
+- [[_COMMUNITY_Community 104|Community 104]]
+- [[_COMMUNITY_Community 105|Community 105]]
+- [[_COMMUNITY_Community 106|Community 106]]
+- [[_COMMUNITY_Community 107|Community 107]]
+- [[_COMMUNITY_Community 108|Community 108]]
+- [[_COMMUNITY_Community 109|Community 109]]
+- [[_COMMUNITY_Community 110|Community 110]]
+- [[_COMMUNITY_Community 111|Community 111]]
+- [[_COMMUNITY_Community 112|Community 112]]
+- [[_COMMUNITY_Community 113|Community 113]]
+- [[_COMMUNITY_Community 114|Community 114]]
+- [[_COMMUNITY_Community 115|Community 115]]
+- [[_COMMUNITY_Community 116|Community 116]]
+- [[_COMMUNITY_Community 117|Community 117]]
+- [[_COMMUNITY_Community 118|Community 118]]
+- [[_COMMUNITY_Community 119|Community 119]]
+- [[_COMMUNITY_Community 120|Community 120]]
+- [[_COMMUNITY_Community 121|Community 121]]
+- [[_COMMUNITY_Community 122|Community 122]]
+- [[_COMMUNITY_Community 123|Community 123]]
+- [[_COMMUNITY_Community 124|Community 124]]
+- [[_COMMUNITY_Community 125|Community 125]]
+- [[_COMMUNITY_Community 126|Community 126]]
+- [[_COMMUNITY_Community 127|Community 127]]
+- [[_COMMUNITY_Community 128|Community 128]]
+- [[_COMMUNITY_Community 129|Community 129]]
+- [[_COMMUNITY_Community 130|Community 130]]
+- [[_COMMUNITY_Community 131|Community 131]]
+- [[_COMMUNITY_Community 132|Community 132]]
+- [[_COMMUNITY_Community 133|Community 133]]
+- [[_COMMUNITY_Community 134|Community 134]]
+- [[_COMMUNITY_Community 135|Community 135]]
+- [[_COMMUNITY_Community 136|Community 136]]
+- [[_COMMUNITY_Community 137|Community 137]]
+- [[_COMMUNITY_Community 138|Community 138]]
+- [[_COMMUNITY_Community 139|Community 139]]
+- [[_COMMUNITY_Community 140|Community 140]]
+- [[_COMMUNITY_Community 141|Community 141]]
+- [[_COMMUNITY_Community 142|Community 142]]
+- [[_COMMUNITY_Community 143|Community 143]]
+- [[_COMMUNITY_Community 144|Community 144]]
+- [[_COMMUNITY_Community 145|Community 145]]
+- [[_COMMUNITY_Community 146|Community 146]]
+- [[_COMMUNITY_Community 147|Community 147]]
+- [[_COMMUNITY_Community 148|Community 148]]
+- [[_COMMUNITY_Community 149|Community 149]]
+- [[_COMMUNITY_Community 150|Community 150]]
+- [[_COMMUNITY_Community 151|Community 151]]
+- [[_COMMUNITY_Community 152|Community 152]]
+- [[_COMMUNITY_Community 153|Community 153]]
+- [[_COMMUNITY_Community 154|Community 154]]
+- [[_COMMUNITY_Community 155|Community 155]]
+- [[_COMMUNITY_Community 156|Community 156]]
+- [[_COMMUNITY_Community 157|Community 157]]
+- [[_COMMUNITY_Community 158|Community 158]]
+- [[_COMMUNITY_Community 159|Community 159]]
+- [[_COMMUNITY_Community 160|Community 160]]
+- [[_COMMUNITY_Community 161|Community 161]]
+- [[_COMMUNITY_Community 162|Community 162]]
+- [[_COMMUNITY_Community 163|Community 163]]
+- [[_COMMUNITY_Community 164|Community 164]]
+- [[_COMMUNITY_Community 165|Community 165]]
+- [[_COMMUNITY_Community 166|Community 166]]
+- [[_COMMUNITY_Community 167|Community 167]]
 
 ## God Nodes (most connected - your core abstractions)
 1. `handler()` - 30 edges
@@ -206,17 +185,17 @@
 3. `getHandler()` - 18 edges
 4. `deleteHandler()` - 16 edges
 5. `Application Tech Stack` - 15 edges
-6. `update()` - 13 edges
+6. `update()` - 14 edges
 7. `Document` - 13 edges
-8. `Responsive Dialog Component` - 12 edges
-9. `patchHandler()` - 11 edges
-10. `PDF Annotator Project Overview` - 11 edges
+8. `patchHandler()` - 11 edges
+9. `PDF Annotator Project Overview` - 11 edges
+10. `postHandler()` - 10 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `Google/Default Avatar SVG` --conceptually_related_to--> `PDF Annotator Project Overview`  [INFERRED]
-  public/google-avatar.svg → README.md
-- `Repository Pattern` --conceptually_related_to--> `Responsive Dialog Component`  [AMBIGUOUS]
-  lib/db/repositories/README.md → components/ui/RESPONSIVE-DIALOG.md
+- `PDF Annotator Project Overview` --conceptually_related_to--> `Google/Default Avatar SVG`  [INFERRED]
+  README.md → public/google-avatar.svg
+- `handleContextColorChange()` --calls--> `updateAnnotation()`  [INFERRED]
+  components\annotations\annotation-overlay.tsx → features\annotations\service.ts
 - `RootLayout()` --calls--> `getCurrentUser()`  [INFERRED]
   app\layout.tsx → lib\auth\require.ts
 - `HomePage()` --calls--> `getCurrentUser()`  [INFERRED]
@@ -237,1044 +216,932 @@
 
 ## Communities
 
-### Community 0 - "Analytics & Authorization Docs"
-Cohesion: 0.02
-Nodes (110): Activation Funnel, Analytics Consent and Privacy Rules, Analytics Event Taxonomy, No PII in Analytics Props, PostHog Analytics, Typed Track Function, Annotation Authorization Rules, Annotation Autosave Rules (+102 more)
+### Community 0 - "Community 0"
+Cohesion: 0.04
+Nodes (49): update(), getAccessibleDocument(), listDocumentCollaborators(), extractTextBatched(), generatePdfThumbnail(), processDocumentPostProcess(), processImage(), processPdf() (+41 more)
 
-### Community 1 - "API Route Handlers (Mixed)"
-Cohesion: 0.05
-Nodes (45): update(), getAccessibleDocument(), listDocumentCollaborators(), extractTextBatched(), generatePdfThumbnail(), processDocumentPostProcess(), processImage(), processPdf() (+37 more)
+### Community 1 - "Community 1"
+Cohesion: 0.04
+Nodes (67): Annotation Authorization Rules, Annotation Autosave Rules, Source Space Coordinate System, Annotation Creation Flow (Highlight Example), Annotation Engine, Annotation Position Data (JSONB), Annotation Rendering Pipeline, Text Re-anchoring (+59 more)
 
-### Community 2 - "Prisma Schema Design Decisions"
+### Community 2 - "Community 2"
 Cohesion: 0.04
 Nodes (57): Design: Annotation assignee uses SetNull on delete (non-blocking assignment), Design: AuditLog has no updatedAt — append-only audit trail, Design: Cascade delete from User to all owned entities, Design: AnnotationComment self-relation (CommentReplies) for threaded comments, Design: Composite unique (userId, metric) on Usage for quota tracking, Design: DocumentText stores tsvector for PostgreSQL full-text search, Design: Plan.limits as JSON for flexible per-plan quota configuration, Design: ShareLink supports both expiry (expiresAt) and explicit revoke (revokedAt) (+49 more)
 
-### Community 3 - "Project Overview & Auth System"
+### Community 3 - "Community 3"
+Cohesion: 0.06
+Nodes (43): Activation Funnel, Analytics Consent and Privacy Rules, Analytics Event Taxonomy, No PII in Analytics Props, PostHog Analytics, Typed Track Function, Annotation Export Formats (JSON/CSV/MD), Flattened PDF Export (pdf-lib) (+35 more)
+
+### Community 4 - "Community 4"
 Cohesion: 0.05
 Nodes (41): Google/Default Avatar SVG, Audit Logging, Auth.js v5, Free Plan Provisioning, Google OAuth Setup, Next.js 15 App Router, PDF Annotator Project Overview, PostHog Analytics (+33 more)
 
-### Community 4 - "SaaS Feature Catalog"
-Cohesion: 0.11
-Nodes (18): beginManipulation(), canEditAnnotation(), clearHoverState(), commitManipulation(), commitTextAnnotation(), createAndTrack(), eraseAtPoint(), getEffectivePositionData() (+10 more)
+### Community 5 - "Community 5"
+Cohesion: 0.09
+Nodes (27): beginManipulation(), canEditAnnotation(), clearHoverState(), commitManipulation(), commitTextAnnotation(), createAndTrack(), eraseAtPoint(), getEffectivePositionData() (+19 more)
 
-### Community 5 - "RTK Query Slices & Cache Tags"
+### Community 6 - "Community 6"
 Cohesion: 0.09
 Nodes (29): Annotations API Slice, Annotations Zod Schema, Annotation Types & Utilities, Auth Redux Slice + API, Bookmarks API Slice, Bookmarks Zod Schema, RTK Cache Tag: Annotation, RTK Cache Tag: Bookmark (+21 more)
 
-### Community 6 - "PM2 Production Deployment"
-Cohesion: 0.1
-Nodes (3): CloudinaryAdapter, LocalDiskAdapter, S3Adapter
+### Community 7 - "Community 7"
+Cohesion: 0.13
+Nodes (19): getFocusableElements(), handleAddTag(), handleAssigneeChange(), handleColorChange(), handleDelete(), handleRemoveTag(), handleStatusChange(), isAnnotationOwner() (+11 more)
 
-### Community 7 - "Error Type Hierarchy"
+### Community 8 - "Community 8"
 Cohesion: 0.11
 Nodes (21): pdf-annotator-app PM2 Process, PM2 Production Deployment Guide, PM2 Ecosystem Config File, Memory Optimization for 1GB RAM, Nginx Reverse Proxy Configuration, SSL Certificate via Certbot, pdf-annotator-worker PM2 Process, Remove Docker Guide (+13 more)
 
-### Community 8 - "Comments & Misc API Routes"
+### Community 9 - "Community 9"
 Cohesion: 0.11
 Nodes (9): AppError, ConflictError, FeatureGatedError, ForbiddenError, NotFoundError, QuotaExceededError, RateLimitedError, UnauthenticatedError (+1 more)
 
-### Community 9 - "Authorization & Cache Layer"
-Cohesion: 0.18
-Nodes (13): assertCanPerform(), clearMemoryCache(), deleteCachedValue(), getCachedValue(), setCachedValue(), decrementUsage(), getPlan(), getUsage() (+5 more)
-
-### Community 10 - "Architecture Rules & Contracts"
+### Community 10 - "Community 10"
 Cohesion: 0.15
 Nodes (8): commentsFor(), toClient(), notificationsFor(), getQueueHealth(), DELETE(), GET(), PATCH(), POST()
 
-### Community 11 - "Document & Annotation API Routes"
+### Community 11 - "Community 11"
+Cohesion: 0.18
+Nodes (13): assertCanPerform(), clearMemoryCache(), deleteCachedValue(), getCachedValue(), setCachedValue(), decrementUsage(), getPlan(), getUsage() (+5 more)
+
+### Community 12 - "Community 12"
+Cohesion: 0.16
+Nodes (16): Repository Pattern, Cross-User Miss Returns Null (404 Safety), Rationale: Route Handlers Banned from Direct Prisma Access, Rationale: Ownership-Baked Queries Prevent Cross-User Data Leaks, Repository Pattern README, Route Handlers, Select Only Required Fields, userId Ownership Filter (+8 more)
+
+### Community 13 - "Community 13"
 Cohesion: 0.12
 Nodes (16): Annotation Source-Space Coordinates Rule, assertCanPerform Entitlement Check, Mutating API Handler Order Rule, User Ownership Scoping Rule, Repository Layer Rule, Mandatory Testing Requirements, Typed AppError Classes, API Handler Test Template (+8 more)
 
-### Community 12 - "Utility & Form Helpers"
-Cohesion: 0.2
-Nodes (9): getFocusableElements(), handleAddTag(), handleAssigneeChange(), handleColorChange(), handleDelete(), handleRemoveTag(), handleStatusChange(), isAnnotationOwner() (+1 more)
-
-### Community 13 - "Core UI Components"
-Cohesion: 0.16
-Nodes (14): Auth Modal, Button Component, Responsive Dialog Component, Desktop Responsive Behavior (>= 640px), DialogContent, Document List, Document Share Dialog, Mobile Responsive Behavior (< 640px) (+6 more)
-
-### Community 14 - "Comment & Mention Handlers"
+### Community 14 - "Community 14"
 Cohesion: 0.18
 Nodes (4): extractMentions(), handleKeyDown(), handleSignup(), onSubmit()
 
-### Community 15 - "State Management Architecture"
+### Community 15 - "Community 15"
 Cohesion: 0.19
 Nodes (13): Three State Layer Architecture, Debounced Mutation Hook (useDebouncedMutation), Forbidden State Patterns, Optimistic Updates Pattern, Rationale: Zustand over Redux for Viewer State, Redux Persist (theme only), Redux Toolkit Slices (Global Client State), Standard Redux Slices (auth, theme, toasts, modals, commandPalette) (+5 more)
 
-### Community 16 - "Viewer State & Hooks"
-Cohesion: 0.17
-Nodes (5): useViewer(), ViewerProvider(), createViewerStore(), useAnnotationShortcuts(), useShortcuts()
-
-### Community 17 - "Page Layout Structure"
+### Community 16 - "Community 16"
 Cohesion: 0.2
 Nodes (5): AppLayout(), ViewerLayout(), AppDashboardPage(), SettingsPage(), requireAppUser()
 
-### Community 18 - "DB Repository Pattern"
-Cohesion: 0.27
-Nodes (10): Repository Pattern, Cross-User Miss Returns Null (404 Safety), documentsFor Repository Helper, Prisma Client (@/lib/db/prisma), Rationale: Route Handlers Banned from Direct Prisma Access, Rationale: Ownership-Baked Queries Prevent Cross-User Data Leaks, Repository Pattern README, Route Handlers (+2 more)
-
-### Community 19 - "UI Event Handlers & Notifications"
+### Community 17 - "Community 17"
 Cohesion: 0.22
 Nodes (2): if(), NotificationIcon()
 
-### Community 20 - "Auth & Analytics Registration"
+### Community 18 - "Community 18"
 Cohesion: 0.28
 Nodes (5): track(), provisionOAuthUser(), registerCredentialsUser(), queueWelcomeEmailStub(), usersRepository()
 
-### Community 21 - "Annotation Service Layer"
-Cohesion: 0.36
-Nodes (7): getErrorMessage(), handleInvite(), handleRemove(), handleRoleChange(), handleTogglePublicLink(), createShareLink(), revokeShareLink()
+### Community 19 - "Community 19"
+Cohesion: 0.22
+Nodes (1): LocalDiskAdapter
 
-### Community 22 - "Share & Collaboration UI"
-Cohesion: 0.28
-Nodes (3): assertValidAssignee(), createAnnotation(), updateAnnotation()
-
-### Community 23 - "UI Refactoring & Design System"
+### Community 20 - "Community 20"
 Cohesion: 0.22
 Nodes (9): AuthShell Component, Dashboard Page Enhancement, Document List & Cards Redesign, Glass-Panel Design System, Micro-animations & Transitions, Placeholder Pages to Real Empty States, ProtectedShell Component, UI/UX Overhaul Plan (+1 more)
 
-### Community 24 - "Viewer Toolbar Controls"
+### Community 21 - "Community 21"
 Cohesion: 0.22
 Nodes (9): InviteMemberSection Component, MemberCard Component, MemberList Component, Responsive Design Improvements, DocumentShareDialog Refactoring, share-dialog-sections Directory, ShareLinkSection Component, Single Responsibility Principle Applied (+1 more)
 
-### Community 25 - "Annotation Geometry"
+### Community 22 - "Community 22"
 Cohesion: 0.25
 Nodes (0): 
 
-### Community 26 - "Document List Actions"
-Cohesion: 0.43
-Nodes (4): clamp(), clampPoint(), resizePositionData(), translatePositionData()
+### Community 23 - "Community 23"
+Cohesion: 0.33
+Nodes (2): useAnnotationShortcuts(), useShortcuts()
 
-### Community 27 - "Annotation List Utilities"
-Cohesion: 0.29
-Nodes (0): 
-
-### Community 28 - "Annotation List Display"
+### Community 24 - "Community 24"
 Cohesion: 0.47
 Nodes (4): buildAnnotationListRows(), filterAnnotations(), makeAnnotations(), measureListPreparation()
 
-### Community 29 - "Bookmark Panel"
+### Community 25 - "Community 25"
 Cohesion: 0.4
 Nodes (0): 
 
-### Community 30 - "Date & Time Utils"
+### Community 26 - "Community 26"
 Cohesion: 0.4
 Nodes (0): 
 
-### Community 31 - "Sign In Form"
+### Community 27 - "Community 27"
 Cohesion: 0.4
 Nodes (0): 
 
-### Community 32 - "Card UI Component"
+### Community 28 - "Community 28"
 Cohesion: 0.67
 Nodes (2): handleSignIn(), onSubmit()
 
-### Community 33 - "Dropdown Menu Component"
+### Community 29 - "Community 29"
 Cohesion: 0.5
 Nodes (0): 
 
-### Community 34 - "Collaboration Dialog"
+### Community 30 - "Community 30"
 Cohesion: 0.5
 Nodes (0): 
 
-### Community 35 - "PDF Canvas Renderer"
+### Community 31 - "Community 31"
 Cohesion: 0.5
 Nodes (0): 
 
-### Community 36 - "PDF Viewer Shell"
+### Community 32 - "Community 32"
 Cohesion: 0.5
 Nodes (0): 
 
-### Community 37 - "Member Card Component"
+### Community 33 - "Community 33"
 Cohesion: 0.67
 Nodes (2): getPdfjsModule(), loadPdf()
 
-### Community 38 - "Text Re-anchoring"
+### Community 34 - "Community 34"
 Cohesion: 0.5
 Nodes (0): 
 
-### Community 39 - "Performance Budgets"
+### Community 35 - "Community 35"
 Cohesion: 0.83
 Nodes (3): buildNormalizedSegments(), normalizeForMatch(), resolveTextAnchor()
 
-### Community 40 - "Share Dialog Logic"
+### Community 36 - "Community 36"
 Cohesion: 0.67
 Nodes (4): Annotation Rendering Performance Budget, Frontend Performance Rules, Performance Budgets, Phase 4 Annotation List Perf Measurements
 
-### Community 41 - "Storage Adapter Layer"
+### Community 37 - "Community 37"
 Cohesion: 0.67
 Nodes (0): 
 
-### Community 42 - "Annotation Interaction Engine"
+### Community 38 - "Community 38"
 Cohesion: 0.67
 Nodes (0): 
 
-### Community 43 - "tag-input.tsx"
+### Community 39 - "Community 39"
 Cohesion: 1.0
 Nodes (2): commit(), handleKeyDown()
 
-### Community 44 - "scroll-area.tsx"
+### Community 40 - "Community 40"
 Cohesion: 0.67
 Nodes (0): 
 
-### Community 45 - "tooltip.tsx"
+### Community 41 - "Community 41"
 Cohesion: 0.67
 Nodes (0): 
 
-### Community 46 - "initPostHogClient()"
+### Community 42 - "Community 42"
 Cohesion: 0.67
 Nodes (0): 
 
-### Community 47 - "toErrorResponse()"
+### Community 43 - "Community 43"
 Cohesion: 0.67
 Nodes (0): 
 
-### Community 48 - "annotationsFor()"
-Cohesion: 0.67
-Nodes (0): 
-
-### Community 49 - "types.ts"
-Cohesion: 0.67
-Nodes (0): 
-
-### Community 50 - "createNoopStorage()"
-Cohesion: 0.67
-Nodes (0): 
-
-### Community 51 - "providers.tsx"
+### Community 44 - "Community 44"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 52 - "page.tsx"
+### Community 45 - "Community 45"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 53 - "page.tsx"
+### Community 46 - "Community 46"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 54 - "page.tsx"
+### Community 47 - "Community 47"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 55 - "page.tsx"
+### Community 48 - "Community 48"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 56 - "error.tsx"
+### Community 49 - "Community 49"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 57 - "loading.tsx"
+### Community 50 - "Community 50"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 58 - "document-activity-panel.tsx"
+### Community 51 - "Community 51"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 59 - "AuthModal()"
+### Community 52 - "Community 52"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 60 - "logo-mark.tsx"
+### Community 53 - "Community 53"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 61 - "theme-toggle.tsx"
+### Community 54 - "Community 54"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 62 - "guest-upload.tsx"
+### Community 55 - "Community 55"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 63 - "cn()"
+### Community 56 - "Community 56"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 64 - "Badge()"
+### Community 57 - "Community 57"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 65 - "cn()"
+### Community 58 - "Community 58"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 66 - "dialog.tsx"
+### Community 59 - "Community 59"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 67 - "label.tsx"
+### Community 60 - "Community 60"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 68 - "popover.tsx"
+### Community 61 - "Community 61"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 69 - "responsive-dialog.tsx"
+### Community 62 - "Community 62"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 70 - "separator.tsx"
+### Community 63 - "Community 63"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 71 - "tabs.tsx"
+### Community 64 - "Community 64"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 72 - "getInitials()"
+### Community 65 - "Community 65"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 73 - "image-viewer.tsx"
+### Community 66 - "Community 66"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 74 - "login-gate-modal.tsx"
+### Community 67 - "Community 67"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 75 - "offline-banner.tsx"
+### Community 68 - "Community 68"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 76 - "outline-panel.tsx"
+### Community 69 - "Community 69"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 77 - "pdf-viewer.tsx"
+### Community 70 - "Community 70"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 78 - "shortcuts-overlay.tsx"
+### Community 71 - "Community 71"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 79 - "sidebar.tsx"
+### Community 72 - "Community 72"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 80 - "viewer-shell-loader.tsx"
+### Community 73 - "Community 73"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 81 - "invite-member-section.tsx"
+### Community 74 - "Community 74"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 82 - "share-link-section.tsx"
+### Community 75 - "Community 75"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 83 - "workspace-link-section.tsx"
+### Community 76 - "Community 76"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 84 - "utils.ts"
+### Community 77 - "Community 77"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 85 - "shouldLoadAnalytics()"
+### Community 78 - "Community 78"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 86 - "documentsFor()"
+### Community 79 - "Community 79"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 87 - "zod-resolver.ts"
+### Community 80 - "Community 80"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 88 - "register()"
+### Community 81 - "Community 81"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 89 - "setSecurityHeaders()"
+### Community 82 - "Community 82"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 90 - "use-debounced-mutation.ts"
+### Community 83 - "Community 83"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 91 - "use-merge-guest-documents.ts"
+### Community 84 - "Community 84"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 92 - "seed.ts"
+### Community 85 - "Community 85"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 93 - "main()"
+### Community 86 - "Community 86"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 94 - "makeReq()"
+### Community 87 - "Community 87"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 95 - "makeReq()"
+### Community 88 - "Community 88"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 96 - "makeReq()"
+### Community 89 - "Community 89"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 97 - "makeReq()"
+### Community 90 - "Community 90"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 98 - "read()"
-Cohesion: 1.0
-Nodes (0): 
-
-### Community 99 - "createTestStore()"
-Cohesion: 1.0
-Nodes (0): 
-
-### Community 100 - "makeAnnotation()"
-Cohesion: 1.0
-Nodes (0): 
-
-### Community 101 - "RTK Query Base API (store/api.ts)"
+### Community 91 - "Community 91"
 Cohesion: 1.0
 Nodes (2): RTK Query Base API (store/api.ts), RTK Query Tag Taxonomy
 
-### Community 102 - "Design: WebhookEvent.eventId unique for idemp"
+### Community 92 - "Community 92"
 Cohesion: 1.0
 Nodes (2): Design: WebhookEvent.eventId unique for idempotent webhook processing, Webhook Event
 
-### Community 103 - "route.ts"
+### Community 93 - "Community 93"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 104 - "route.ts"
+### Community 94 - "Community 94"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 105 - "route.ts"
+### Community 95 - "Community 95"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 106 - "route.ts"
+### Community 96 - "Community 96"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 107 - "route.ts"
+### Community 97 - "Community 97"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 108 - "route.ts"
+### Community 98 - "Community 98"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 109 - "route.ts"
+### Community 99 - "Community 99"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 110 - "page.tsx"
+### Community 100 - "Community 100"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 111 - "page.tsx"
+### Community 101 - "Community 101"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 112 - "sign-in-form-wrapper.tsx"
+### Community 102 - "Community 102"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 113 - "page.tsx"
+### Community 103 - "Community 103"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 114 - "sign-up-form-wrapper.tsx"
+### Community 104 - "Community 104"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 115 - "page.tsx"
+### Community 105 - "Community 105"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 116 - "annotation-hover-card.tsx"
+### Community 106 - "Community 106"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 117 - "color-picker.tsx"
+### Community 107 - "Community 107"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 118 - "inline-toolbar.tsx"
+### Community 108 - "Community 108"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 119 - "save-status.tsx"
+### Community 109 - "Community 109"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 120 - "auth-shell.tsx"
+### Community 110 - "Community 110"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 121 - "legal-page.tsx"
+### Community 111 - "Community 111"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 122 - "protected-shell.tsx"
+### Community 112 - "Community 112"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 123 - "upload.tsx"
+### Community 113 - "Community 113"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 124 - "input.tsx"
+### Community 114 - "Community 114"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 125 - "progress.tsx"
+### Community 115 - "Community 115"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 126 - "sheet.tsx"
+### Community 116 - "Community 116"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 127 - "switch.tsx"
+### Community 117 - "Community 117"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 128 - "textarea.tsx"
+### Community 118 - "Community 118"
 Cohesion: 1.0
-Nodes (0): 
-
-### Community 129 - "search-bar.tsx"
-Cohesion: 1.0
-Nodes (0): 
-
-### Community 130 - "viewer-skeleton.tsx"
-Cohesion: 1.0
-Nodes (0): 
-
-### Community 131 - "index.ts"
-Cohesion: 1.0
-Nodes (0): 
-
-### Community 132 - "member-list.tsx"
-Cohesion: 1.0
-Nodes (0): 
-
-### Community 133 - "env.ts"
-Cohesion: 1.0
-Nodes (0): 
-
-### Community 134 - "events.ts"
-Cohesion: 1.0
-Nodes (0): 
-
-### Community 135 - "prisma.ts"
-Cohesion: 1.0
-Nodes (0): 
-
-### Community 136 - "worker.ts"
-Cohesion: 1.0
-Nodes (0): 
-
-### Community 137 - "auth.ts"
-Cohesion: 1.0
-Nodes (0): 
-
-### Community 138 - "eslint.config.mjs"
-Cohesion: 1.0
-Nodes (0): 
+Nodes (1): Auth Modal
 
-### Community 139 - "instrumentation-client.ts"
+### Community 119 - "Community 119"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 140 - "next-env.d.ts"
+### Community 120 - "Community 120"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 141 - "next.config.mjs"
+### Community 121 - "Community 121"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 142 - "postcss.config.mjs"
+### Community 122 - "Community 122"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (1): Document List
 
-### Community 143 - "prisma.config.ts"
+### Community 123 - "Community 123"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 144 - "vitest.config.ts"
+### Community 124 - "Community 124"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (1): Button Component
 
-### Community 145 - "api.ts"
+### Community 125 - "Community 125"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 146 - "schema.ts"
+### Community 126 - "Community 126"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 147 - "slice.ts"
+### Community 127 - "Community 127"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (1): ScrollArea Component
 
-### Community 148 - "api.ts"
+### Community 128 - "Community 128"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 149 - "schema.ts"
+### Community 129 - "Community 129"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 150 - "api.ts"
+### Community 130 - "Community 130"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 151 - "api.ts"
+### Community 131 - "Community 131"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (1): Document Share Dialog
 
-### Community 152 - "api.ts"
+### Community 132 - "Community 132"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 153 - "schema.ts"
+### Community 133 - "Community 133"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (1): Shortcuts Overlay
 
-### Community 154 - "api.ts"
+### Community 134 - "Community 134"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 155 - "slice.ts"
+### Community 135 - "Community 135"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 156 - "api.ts"
+### Community 136 - "Community 136"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 157 - "api.ts"
+### Community 137 - "Community 137"
 Cohesion: 1.0
-Nodes (0): 
+Nodes (1): Theme Redux Slice
 
-### Community 158 - "api.ts"
+### Community 138 - "Community 138"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 159 - "slice.ts"
+### Community 139 - "Community 139"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 160 - "slice.ts"
+### Community 140 - "Community 140"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 161 - "api.ts"
+### Community 141 - "Community 141"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 162 - "api.ts"
+### Community 142 - "Community 142"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 163 - "hooks.ts"
+### Community 143 - "Community 143"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 164 - "setup.ts"
+### Community 144 - "Community 144"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 165 - "next-auth.d.ts"
+### Community 145 - "Community 145"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 166 - "pdfjs-dist.d.ts"
+### Community 146 - "Community 146"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 167 - "cross-user.test.ts"
+### Community 147 - "Community 147"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 168 - "geometry.test.ts"
+### Community 148 - "Community 148"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 169 - "reanchor.test.ts"
+### Community 149 - "Community 149"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 170 - "transforms.test.ts"
+### Community 150 - "Community 150"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 171 - "store.test.ts"
+### Community 151 - "Community 151"
 Cohesion: 1.0
 Nodes (0): 
 
-### Community 172 - "Eraser Tool Behavior"
+### Community 152 - "Community 152"
 Cohesion: 1.0
 Nodes (1): Eraser Tool Behavior
 
-### Community 173 - "Annotation Conflict Handling (Last-Write-Wins"
+### Community 153 - "Community 153"
 Cohesion: 1.0
 Nodes (1): Annotation Conflict Handling (Last-Write-Wins)
 
-### Community 174 - "Folder Structure"
+### Community 154 - "Community 154"
 Cohesion: 1.0
 Nodes (1): Folder Structure
 
-### Community 175 - "Component Architecture Rules"
+### Community 155 - "Community 155"
 Cohesion: 1.0
 Nodes (1): Component Architecture Rules
 
-### Community 176 - "Interaction Design Contract"
+### Community 156 - "Community 156"
 Cohesion: 1.0
 Nodes (1): Interaction Design Contract
 
-### Community 177 - "Keyboard Shortcuts Registry"
+### Community 157 - "Community 157"
 Cohesion: 1.0
 Nodes (1): Keyboard Shortcuts Registry
 
-### Community 178 - "Loading/Error/Empty State Requirement"
+### Community 158 - "Community 158"
 Cohesion: 1.0
 Nodes (1): Loading/Error/Empty State Requirement
 
-### Community 179 - "Copy Voice Guidelines"
+### Community 159 - "Community 159"
 Cohesion: 1.0
 Nodes (1): Copy Voice Guidelines
 
-### Community 180 - "Worker Deployment (Separate Process)"
+### Community 160 - "Community 160"
 Cohesion: 1.0
 Nodes (1): Worker Deployment (Separate Process)
 
-### Community 181 - "React Profiler Workflow"
+### Community 161 - "Community 161"
 Cohesion: 1.0
 Nodes (1): React Profiler Workflow
 
-### Community 182 - "Light/Dark Mode & Keyboard Accessibility Rule"
+### Community 162 - "Community 162"
 Cohesion: 1.0
 Nodes (1): Light/Dark Mode & Keyboard Accessibility Rule
 
-### Community 183 - "Background Jobs for Work Above 200ms"
+### Community 163 - "Community 163"
 Cohesion: 1.0
 Nodes (1): Background Jobs for Work Above 200ms
 
-### Community 184 - "SLO Definitions (P1/P2 Response Times)"
+### Community 164 - "Community 164"
 Cohesion: 1.0
 Nodes (1): SLO Definitions (P1/P2 Response Times)
 
-### Community 185 - "Full Commands Reference"
+### Community 165 - "Community 165"
 Cohesion: 1.0
 Nodes (1): Full Commands Reference
 
-### Community 186 - "Security PR Review Checklist"
+### Community 166 - "Community 166"
 Cohesion: 1.0
 Nodes (1): Security PR Review Checklist
 
-### Community 187 - "Verification Token"
+### Community 167 - "Community 167"
 Cohesion: 1.0
 Nodes (1): Verification Token
-
-### Community 188 - "Theme Redux Slice"
-Cohesion: 1.0
-Nodes (1): Theme Redux Slice
 
 ## Ambiguous Edges - Review These
 - `Responsive Dialog Component` → `Repository Pattern`  [AMBIGUOUS]
   lib/db/repositories/README.md · relation: conceptually_related_to
 
 ## Knowledge Gaps
-- **187 isolated node(s):** `DialogContent position prop`, `Radix UI Dialog`, `Old Dialog Component (@/components/ui/dialog)`, `Document Share Dialog`, `Auth Modal` (+182 more)
+- **186 isolated node(s):** `Auth Modal`, `Document List`, `Button Component`, `ScrollArea Component`, `Document Share Dialog` (+181 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **Thin community `providers.tsx`** (2 nodes): `providers.tsx`, `Providers()`
+- **Thin community `Community 44`** (2 nodes): `register()`, `instrumentation.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `page.tsx`** (2 nodes): `page.tsx`, `CollectionsPage()`
+- **Thin community `Community 45`** (2 nodes): `setSecurityHeaders()`, `middleware.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `page.tsx`** (2 nodes): `page.tsx`, `TagsPage()`
+- **Thin community `Community 46`** (2 nodes): `providers.tsx`, `Providers()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `page.tsx`** (2 nodes): `page.tsx`, `TrashPage()`
+- **Thin community `Community 47`** (2 nodes): `page.tsx`, `CollectionsPage()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `page.tsx`** (2 nodes): `page.tsx`, `UploadPage()`
+- **Thin community `Community 48`** (2 nodes): `page.tsx`, `TagsPage()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `error.tsx`** (2 nodes): `error.tsx`, `ViewerError()`
+- **Thin community `Community 49`** (2 nodes): `page.tsx`, `TrashPage()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `loading.tsx`** (2 nodes): `loading.tsx`, `ViewerLoading()`
+- **Thin community `Community 50`** (2 nodes): `page.tsx`, `UploadPage()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `document-activity-panel.tsx`** (2 nodes): `document-activity-panel.tsx`, `getInitials()`
+- **Thin community `Community 51`** (2 nodes): `error.tsx`, `ViewerError()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `AuthModal()`** (2 nodes): `AuthModal()`, `auth-modal.tsx`
+- **Thin community `Community 52`** (2 nodes): `loading.tsx`, `ViewerLoading()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `logo-mark.tsx`** (2 nodes): `logo-mark.tsx`, `LogoMark()`
+- **Thin community `Community 53`** (2 nodes): `document-activity-panel.tsx`, `getInitials()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `theme-toggle.tsx`** (2 nodes): `theme-toggle.tsx`, `ThemeToggle()`
+- **Thin community `Community 54`** (2 nodes): `logo-mark.tsx`, `LogoMark()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `guest-upload.tsx`** (2 nodes): `guest-upload.tsx`, `GuestUpload()`
+- **Thin community `Community 55`** (2 nodes): `theme-toggle.tsx`, `ThemeToggle()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `cn()`** (2 nodes): `cn()`, `avatar.tsx`
+- **Thin community `Community 56`** (2 nodes): `guest-upload.tsx`, `GuestUpload()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Badge()`** (2 nodes): `Badge()`, `badge.tsx`
+- **Thin community `Community 57`** (2 nodes): `cn()`, `avatar.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `cn()`** (2 nodes): `cn()`, `button.tsx`
+- **Thin community `Community 58`** (2 nodes): `Badge()`, `badge.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `dialog.tsx`** (2 nodes): `dialog.tsx`, `cn()`
+- **Thin community `Community 59`** (2 nodes): `dialog.tsx`, `cn()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `label.tsx`** (2 nodes): `label.tsx`, `Label()`
+- **Thin community `Community 60`** (2 nodes): `label.tsx`, `Label()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `popover.tsx`** (2 nodes): `popover.tsx`, `PopoverDescription()`
+- **Thin community `Community 61`** (2 nodes): `popover.tsx`, `PopoverDescription()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `responsive-dialog.tsx`** (2 nodes): `responsive-dialog.tsx`, `cn()`
+- **Thin community `Community 62`** (2 nodes): `responsive-dialog.tsx`, `cn()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `separator.tsx`** (2 nodes): `separator.tsx`, `Separator()`
+- **Thin community `Community 63`** (2 nodes): `separator.tsx`, `Separator()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `tabs.tsx`** (2 nodes): `tabs.tsx`, `Tabs()`
+- **Thin community `Community 64`** (2 nodes): `tabs.tsx`, `Tabs()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `getInitials()`** (2 nodes): `getInitials()`, `collaborators-bar.tsx`
+- **Thin community `Community 65`** (2 nodes): `getInitials()`, `collaborators-bar.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `image-viewer.tsx`** (2 nodes): `image-viewer.tsx`, `handleDownload()`
+- **Thin community `Community 66`** (2 nodes): `image-viewer.tsx`, `handleDownload()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `login-gate-modal.tsx`** (2 nodes): `login-gate-modal.tsx`, `LoginGateModal()`
+- **Thin community `Community 67`** (2 nodes): `login-gate-modal.tsx`, `LoginGateModal()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `offline-banner.tsx`** (2 nodes): `offline-banner.tsx`, `OfflineBanner()`
+- **Thin community `Community 68`** (2 nodes): `offline-banner.tsx`, `OfflineBanner()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `outline-panel.tsx`** (2 nodes): `outline-panel.tsx`, `OutlinePanel()`
+- **Thin community `Community 69`** (2 nodes): `outline-panel.tsx`, `OutlinePanel()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `pdf-viewer.tsx`** (2 nodes): `pdf-viewer.tsx`, `loadDimensions()`
+- **Thin community `Community 70`** (2 nodes): `pdf-viewer.tsx`, `loadDimensions()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `shortcuts-overlay.tsx`** (2 nodes): `shortcuts-overlay.tsx`, `ShortcutsOverlay()`
+- **Thin community `Community 71`** (2 nodes): `sidebar.tsx`, `Sidebar()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `sidebar.tsx`** (2 nodes): `sidebar.tsx`, `Sidebar()`
+- **Thin community `Community 72`** (2 nodes): `viewer-shell-loader.tsx`, `ViewerShellLoader()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `viewer-shell-loader.tsx`** (2 nodes): `viewer-shell-loader.tsx`, `ViewerShellLoader()`
+- **Thin community `Community 73`** (2 nodes): `invite-member-section.tsx`, `handleInvite()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `invite-member-section.tsx`** (2 nodes): `invite-member-section.tsx`, `handleInvite()`
+- **Thin community `Community 74`** (2 nodes): `share-link-section.tsx`, `handleCopyPublicLink()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `share-link-section.tsx`** (2 nodes): `share-link-section.tsx`, `handleCopyPublicLink()`
+- **Thin community `Community 75`** (2 nodes): `workspace-link-section.tsx`, `handleCopyWorkspaceLink()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `workspace-link-section.tsx`** (2 nodes): `workspace-link-section.tsx`, `handleCopyWorkspaceLink()`
+- **Thin community `Community 76`** (2 nodes): `use-debounced-mutation.ts`, `useDebouncedMutation()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `utils.ts`** (2 nodes): `utils.ts`, `cn()`
+- **Thin community `Community 77`** (2 nodes): `use-merge-guest-documents.ts`, `useMergeGuestDocuments()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `shouldLoadAnalytics()`** (2 nodes): `shouldLoadAnalytics()`, `consent.ts`
+- **Thin community `Community 78`** (2 nodes): `utils.ts`, `cn()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `documentsFor()`** (2 nodes): `documentsFor()`, `documents.ts`
+- **Thin community `Community 79`** (2 nodes): `shouldLoadAnalytics()`, `consent.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `zod-resolver.ts`** (2 nodes): `zod-resolver.ts`, `makeZodResolver()`
+- **Thin community `Community 80`** (2 nodes): `documentsFor()`, `documents.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `register()`** (2 nodes): `register()`, `instrumentation.ts`
+- **Thin community `Community 81`** (2 nodes): `zod-resolver.ts`, `makeZodResolver()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `setSecurityHeaders()`** (2 nodes): `setSecurityHeaders()`, `middleware.ts`
+- **Thin community `Community 82`** (2 nodes): `seed.ts`, `main()`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `use-debounced-mutation.ts`** (2 nodes): `use-debounced-mutation.ts`, `useDebouncedMutation()`
+- **Thin community `Community 83`** (2 nodes): `main()`, `requeue-failed.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `use-merge-guest-documents.ts`** (2 nodes): `use-merge-guest-documents.ts`, `useMergeGuestDocuments()`
+- **Thin community `Community 84`** (2 nodes): `makeReq()`, `create.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `seed.ts`** (2 nodes): `seed.ts`, `main()`
+- **Thin community `Community 85`** (2 nodes): `makeReq()`, `bookmarks.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `main()`** (2 nodes): `main()`, `requeue-failed.ts`
+- **Thin community `Community 86`** (2 nodes): `makeReq()`, `reading-progress.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `makeReq()`** (2 nodes): `makeReq()`, `create.test.ts`
+- **Thin community `Community 87`** (2 nodes): `makeReq()`, `search.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `makeReq()`** (2 nodes): `makeReq()`, `bookmarks.test.ts`
+- **Thin community `Community 88`** (2 nodes): `read()`, `accessibility-contract.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `makeReq()`** (2 nodes): `makeReq()`, `reading-progress.test.ts`
+- **Thin community `Community 89`** (2 nodes): `createTestStore()`, `api.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `makeReq()`** (2 nodes): `makeReq()`, `search.test.ts`
+- **Thin community `Community 90`** (2 nodes): `makeAnnotation()`, `list-utils.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `read()`** (2 nodes): `read()`, `accessibility-contract.test.ts`
+- **Thin community `Community 91`** (2 nodes): `RTK Query Base API (store/api.ts)`, `RTK Query Tag Taxonomy`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `createTestStore()`** (2 nodes): `createTestStore()`, `api.test.ts`
+- **Thin community `Community 92`** (2 nodes): `Design: WebhookEvent.eventId unique for idempotent webhook processing`, `Webhook Event`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `makeAnnotation()`** (2 nodes): `makeAnnotation()`, `list-utils.test.ts`
+- **Thin community `Community 93`** (1 nodes): `auth.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `RTK Query Base API (store/api.ts)`** (2 nodes): `RTK Query Base API (store/api.ts)`, `RTK Query Tag Taxonomy`
+- **Thin community `Community 94`** (1 nodes): `eslint.config.mjs`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Design: WebhookEvent.eventId unique for idemp`** (2 nodes): `Design: WebhookEvent.eventId unique for idempotent webhook processing`, `Webhook Event`
+- **Thin community `Community 95`** (1 nodes): `instrumentation-client.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `route.ts`** (1 nodes): `route.ts`
+- **Thin community `Community 96`** (1 nodes): `next-env.d.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `route.ts`** (1 nodes): `route.ts`
+- **Thin community `Community 97`** (1 nodes): `next.config.mjs`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `route.ts`** (1 nodes): `route.ts`
+- **Thin community `Community 98`** (1 nodes): `postcss.config.mjs`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `route.ts`** (1 nodes): `route.ts`
+- **Thin community `Community 99`** (1 nodes): `prisma.config.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `route.ts`** (1 nodes): `route.ts`
+- **Thin community `Community 100`** (1 nodes): `vitest.config.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `route.ts`** (1 nodes): `route.ts`
+- **Thin community `Community 101`** (1 nodes): `route.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `route.ts`** (1 nodes): `route.ts`
+- **Thin community `Community 102`** (1 nodes): `route.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `page.tsx`** (1 nodes): `page.tsx`
+- **Thin community `Community 103`** (1 nodes): `route.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `page.tsx`** (1 nodes): `page.tsx`
+- **Thin community `Community 104`** (1 nodes): `route.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `sign-in-form-wrapper.tsx`** (1 nodes): `sign-in-form-wrapper.tsx`
+- **Thin community `Community 105`** (1 nodes): `route.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `page.tsx`** (1 nodes): `page.tsx`
+- **Thin community `Community 106`** (1 nodes): `route.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `sign-up-form-wrapper.tsx`** (1 nodes): `sign-up-form-wrapper.tsx`
+- **Thin community `Community 107`** (1 nodes): `route.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `page.tsx`** (1 nodes): `page.tsx`
+- **Thin community `Community 108`** (1 nodes): `page.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `annotation-hover-card.tsx`** (1 nodes): `annotation-hover-card.tsx`
+- **Thin community `Community 109`** (1 nodes): `page.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `color-picker.tsx`** (1 nodes): `color-picker.tsx`
+- **Thin community `Community 110`** (1 nodes): `sign-in-form-wrapper.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `inline-toolbar.tsx`** (1 nodes): `inline-toolbar.tsx`
+- **Thin community `Community 111`** (1 nodes): `page.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `save-status.tsx`** (1 nodes): `save-status.tsx`
+- **Thin community `Community 112`** (1 nodes): `sign-up-form-wrapper.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `auth-shell.tsx`** (1 nodes): `auth-shell.tsx`
+- **Thin community `Community 113`** (1 nodes): `page.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `legal-page.tsx`** (1 nodes): `legal-page.tsx`
+- **Thin community `Community 114`** (1 nodes): `annotation-hover-card.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `protected-shell.tsx`** (1 nodes): `protected-shell.tsx`
+- **Thin community `Community 115`** (1 nodes): `color-picker.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `upload.tsx`** (1 nodes): `upload.tsx`
+- **Thin community `Community 116`** (1 nodes): `inline-toolbar.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `input.tsx`** (1 nodes): `input.tsx`
+- **Thin community `Community 117`** (1 nodes): `save-status.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `progress.tsx`** (1 nodes): `progress.tsx`
+- **Thin community `Community 118`** (1 nodes): `Auth Modal`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `sheet.tsx`** (1 nodes): `sheet.tsx`
+- **Thin community `Community 119`** (1 nodes): `auth-shell.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `switch.tsx`** (1 nodes): `switch.tsx`
+- **Thin community `Community 120`** (1 nodes): `legal-page.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `textarea.tsx`** (1 nodes): `textarea.tsx`
+- **Thin community `Community 121`** (1 nodes): `protected-shell.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `search-bar.tsx`** (1 nodes): `search-bar.tsx`
+- **Thin community `Community 122`** (1 nodes): `Document List`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `viewer-skeleton.tsx`** (1 nodes): `viewer-skeleton.tsx`
+- **Thin community `Community 123`** (1 nodes): `upload.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `index.ts`** (1 nodes): `index.ts`
+- **Thin community `Community 124`** (1 nodes): `Button Component`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `member-list.tsx`** (1 nodes): `member-list.tsx`
+- **Thin community `Community 125`** (1 nodes): `input.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `env.ts`** (1 nodes): `env.ts`
+- **Thin community `Community 126`** (1 nodes): `progress.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `events.ts`** (1 nodes): `events.ts`
+- **Thin community `Community 127`** (1 nodes): `ScrollArea Component`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `prisma.ts`** (1 nodes): `prisma.ts`
+- **Thin community `Community 128`** (1 nodes): `sheet.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `worker.ts`** (1 nodes): `worker.ts`
+- **Thin community `Community 129`** (1 nodes): `switch.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `auth.ts`** (1 nodes): `auth.ts`
+- **Thin community `Community 130`** (1 nodes): `textarea.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `eslint.config.mjs`** (1 nodes): `eslint.config.mjs`
+- **Thin community `Community 131`** (1 nodes): `Document Share Dialog`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `instrumentation-client.ts`** (1 nodes): `instrumentation-client.ts`
+- **Thin community `Community 132`** (1 nodes): `search-bar.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `next-env.d.ts`** (1 nodes): `next-env.d.ts`
+- **Thin community `Community 133`** (1 nodes): `Shortcuts Overlay`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `next.config.mjs`** (1 nodes): `next.config.mjs`
+- **Thin community `Community 134`** (1 nodes): `viewer-skeleton.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `postcss.config.mjs`** (1 nodes): `postcss.config.mjs`
+- **Thin community `Community 135`** (1 nodes): `index.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `prisma.config.ts`** (1 nodes): `prisma.config.ts`
+- **Thin community `Community 136`** (1 nodes): `member-list.tsx`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `vitest.config.ts`** (1 nodes): `vitest.config.ts`
+- **Thin community `Community 137`** (1 nodes): `Theme Redux Slice`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `api.ts`** (1 nodes): `api.ts`
+- **Thin community `Community 138`** (1 nodes): `env.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `schema.ts`** (1 nodes): `schema.ts`
+- **Thin community `Community 139`** (1 nodes): `events.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `slice.ts`** (1 nodes): `slice.ts`
+- **Thin community `Community 140`** (1 nodes): `prisma.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `api.ts`** (1 nodes): `api.ts`
+- **Thin community `Community 141`** (1 nodes): `worker.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `schema.ts`** (1 nodes): `schema.ts`
+- **Thin community `Community 142`** (1 nodes): `api.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `api.ts`** (1 nodes): `api.ts`
+- **Thin community `Community 143`** (1 nodes): `hooks.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `api.ts`** (1 nodes): `api.ts`
+- **Thin community `Community 144`** (1 nodes): `setup.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `api.ts`** (1 nodes): `api.ts`
+- **Thin community `Community 145`** (1 nodes): `next-auth.d.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `schema.ts`** (1 nodes): `schema.ts`
+- **Thin community `Community 146`** (1 nodes): `pdfjs-dist.d.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `api.ts`** (1 nodes): `api.ts`
+- **Thin community `Community 147`** (1 nodes): `cross-user.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `slice.ts`** (1 nodes): `slice.ts`
+- **Thin community `Community 148`** (1 nodes): `geometry.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `api.ts`** (1 nodes): `api.ts`
+- **Thin community `Community 149`** (1 nodes): `reanchor.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `api.ts`** (1 nodes): `api.ts`
+- **Thin community `Community 150`** (1 nodes): `transforms.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `api.ts`** (1 nodes): `api.ts`
+- **Thin community `Community 151`** (1 nodes): `store.test.ts`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `slice.ts`** (1 nodes): `slice.ts`
+- **Thin community `Community 152`** (1 nodes): `Eraser Tool Behavior`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `slice.ts`** (1 nodes): `slice.ts`
+- **Thin community `Community 153`** (1 nodes): `Annotation Conflict Handling (Last-Write-Wins)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `api.ts`** (1 nodes): `api.ts`
+- **Thin community `Community 154`** (1 nodes): `Folder Structure`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `api.ts`** (1 nodes): `api.ts`
+- **Thin community `Community 155`** (1 nodes): `Component Architecture Rules`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `hooks.ts`** (1 nodes): `hooks.ts`
+- **Thin community `Community 156`** (1 nodes): `Interaction Design Contract`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `setup.ts`** (1 nodes): `setup.ts`
+- **Thin community `Community 157`** (1 nodes): `Keyboard Shortcuts Registry`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `next-auth.d.ts`** (1 nodes): `next-auth.d.ts`
+- **Thin community `Community 158`** (1 nodes): `Loading/Error/Empty State Requirement`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `pdfjs-dist.d.ts`** (1 nodes): `pdfjs-dist.d.ts`
+- **Thin community `Community 159`** (1 nodes): `Copy Voice Guidelines`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `cross-user.test.ts`** (1 nodes): `cross-user.test.ts`
+- **Thin community `Community 160`** (1 nodes): `Worker Deployment (Separate Process)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `geometry.test.ts`** (1 nodes): `geometry.test.ts`
+- **Thin community `Community 161`** (1 nodes): `React Profiler Workflow`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `reanchor.test.ts`** (1 nodes): `reanchor.test.ts`
+- **Thin community `Community 162`** (1 nodes): `Light/Dark Mode & Keyboard Accessibility Rule`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `transforms.test.ts`** (1 nodes): `transforms.test.ts`
+- **Thin community `Community 163`** (1 nodes): `Background Jobs for Work Above 200ms`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `store.test.ts`** (1 nodes): `store.test.ts`
+- **Thin community `Community 164`** (1 nodes): `SLO Definitions (P1/P2 Response Times)`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Eraser Tool Behavior`** (1 nodes): `Eraser Tool Behavior`
+- **Thin community `Community 165`** (1 nodes): `Full Commands Reference`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Annotation Conflict Handling (Last-Write-Wins`** (1 nodes): `Annotation Conflict Handling (Last-Write-Wins)`
+- **Thin community `Community 166`** (1 nodes): `Security PR Review Checklist`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Folder Structure`** (1 nodes): `Folder Structure`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Component Architecture Rules`** (1 nodes): `Component Architecture Rules`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Interaction Design Contract`** (1 nodes): `Interaction Design Contract`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Keyboard Shortcuts Registry`** (1 nodes): `Keyboard Shortcuts Registry`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Loading/Error/Empty State Requirement`** (1 nodes): `Loading/Error/Empty State Requirement`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Copy Voice Guidelines`** (1 nodes): `Copy Voice Guidelines`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Worker Deployment (Separate Process)`** (1 nodes): `Worker Deployment (Separate Process)`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `React Profiler Workflow`** (1 nodes): `React Profiler Workflow`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Light/Dark Mode & Keyboard Accessibility Rule`** (1 nodes): `Light/Dark Mode & Keyboard Accessibility Rule`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Background Jobs for Work Above 200ms`** (1 nodes): `Background Jobs for Work Above 200ms`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `SLO Definitions (P1/P2 Response Times)`** (1 nodes): `SLO Definitions (P1/P2 Response Times)`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Full Commands Reference`** (1 nodes): `Full Commands Reference`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Security PR Review Checklist`** (1 nodes): `Security PR Review Checklist`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Verification Token`** (1 nodes): `Verification Token`
-  Too small to be a meaningful cluster - may be noise or needs more connections extracted.
-- **Thin community `Theme Redux Slice`** (1 nodes): `Theme Redux Slice`
+- **Thin community `Community 167`** (1 nodes): `Verification Token`
   Too small to be a meaningful cluster - may be noise or needs more connections extracted.
 
 ## Suggested Questions
@@ -1282,15 +1149,15 @@ _Questions this graph is uniquely positioned to answer:_
 
 - **What is the exact relationship between `Responsive Dialog Component` and `Repository Pattern`?**
   _Edge tagged AMBIGUOUS (relation: conceptually_related_to) - confidence is low._
-- **Why does `update()` connect `API Route Handlers (Mixed)` to `Architecture Rules & Contracts`, `UI Event Handlers & Notifications`, `Auth & Analytics Registration`, `Annotation Service Layer`?**
-  _High betweenness centrality (0.013) - this node is a cross-community bridge._
-- **Why does `handler()` connect `API Route Handlers (Mixed)` to `Authorization & Cache Layer`, `PM2 Production Deployment`?**
-  _High betweenness centrality (0.012) - this node is a cross-community bridge._
+- **Why does `updateAnnotation()` connect `Community 7` to `Community 0`, `Community 5`?**
+  _High betweenness centrality (0.030) - this node is a cross-community bridge._
+- **Why does `update()` connect `Community 0` to `Community 17`, `Community 10`, `Community 18`, `Community 7`?**
+  _High betweenness centrality (0.024) - this node is a cross-community bridge._
+- **Why does `handler()` connect `Community 0` to `Community 11`?**
+  _High betweenness centrality (0.017) - this node is a cross-community bridge._
 - **Are the 22 inferred relationships involving `handler()` (e.g. with `readDeviceTokenFromRequest()` and `getIpAddress()`) actually correct?**
   _`handler()` has 22 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 9 inferred relationships involving `getHandler()` (e.g. with `requireUser()` and `update()`) actually correct?**
   _`getHandler()` has 9 INFERRED edges - model-reasoned connections that need verification._
 - **Are the 12 inferred relationships involving `deleteHandler()` (e.g. with `requireUser()` and `createStorageAdapter()`) actually correct?**
   _`deleteHandler()` has 12 INFERRED edges - model-reasoned connections that need verification._
-- **What connects `DialogContent position prop`, `Radix UI Dialog`, `Old Dialog Component (@/components/ui/dialog)` to the rest of the system?**
-  _187 weakly-connected nodes found - possible documentation gaps or missing edges._
