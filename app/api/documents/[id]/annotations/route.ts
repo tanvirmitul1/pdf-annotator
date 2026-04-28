@@ -69,7 +69,14 @@ export const POST = withErrorHandling(
       tagCount: annotation.tags.length,
     })
 
-    // 9. Respond
-    return NextResponse.json({ data: annotation }, { status: 201 })
+    // 9. Optimized response - only essential fields for sync
+    // Don't return full annotation with tags/author (client already has it)
+    return NextResponse.json({ 
+      data: {
+        id: annotation.id,
+        clientId: annotation.clientId ?? input.clientId,
+        status: "saved",
+      }
+    }, { status: 201 })
   }
 )

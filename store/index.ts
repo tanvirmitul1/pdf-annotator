@@ -7,6 +7,7 @@ import { authReducer, setSession } from "@/features/auth/slice"
 import { modalsReducer } from "@/features/modals/slice"
 import { themeReducer, themeSlice } from "@/features/theme/slice"
 import { toastsReducer } from "@/features/toasts/slice"
+import localAnnotationsReducer from "@/features/annotations/local-slice"
 
 const createNoopStorage = () => ({
   getItem: async () => null,
@@ -43,6 +44,7 @@ const rootReducer = combineReducers({
   theme: persistedThemeReducer,
   toasts: toastsReducer,
   modals: modalsReducer,
+  localAnnotations: localAnnotationsReducer,
 })
 
 export function makeStore(preloadedState?: Partial<RootState>) {

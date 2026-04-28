@@ -4,6 +4,7 @@ import type { CreateAnnotationInput, UpdateAnnotationInput } from "./schema"
 
 export interface CreateAnnotationArg extends CreateAnnotationInput {
   documentId: string
+  clientId?: string // For idempotent upserts
 }
 
 export interface UpdateAnnotationArg extends UpdateAnnotationInput {
@@ -40,14 +41,92 @@ export const annotationsApi = api.injectEndpoints({
       ],
     }),
 
+    // ─── Bulk create annotations (optimized for batch) ──────────────────────
+    bulkCreateAnnotations: b.mutation<
+      { id: string; clientId?: string; status: string }[],
+      { annotations: CreateAnnotationArg[] }
+    >({
+      query: ({ annotations }) => {
+        // Extract documentId from first annotation
+        const documentId = annotations[0]?.documentId
+        return {
+          url: `/annotations/bulk`,
+          method: "POST",
+          body: { annotations },
+        }
+      },
+      transformResponse: (res: { data: Array<{ id: string; clientId?: string; status: string }>; count: number }) => res.data,
+      async onQueryStarted({ annotations }, { dispatch, queryFulfilled }) {
+        // Optimistic update for all annotations
+        const patches = annotations.map((input) => {
+          const tempId = `temp-${crypto.randomUUID()}`
+          const optimistic: AnnotationWithTags = {
+            id: tempId,
+            userId: "optimistic",
+            documentId: input.documentId,
+            pageNumber: input.pageNumber,
+            type: input.type,
+            status: input.status ?? "OPEN",
+            color: input.color,
+            positionData: input.positionData,
+            content: input.content ?? null,
+            deletedAt: null,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString(),
+            tags: [],
+            assignee: null,
+          }
+          const patch = dispatch(
+            annotationsApi.util.updateQueryData(
+              "listByDocument",
+              input.documentId,
+              (draft) => {
+                draft.push(optimistic)
+              }
+            )
+          )
+          return { tempId, patch, documentId: input.documentId }
+        })
+
+        try {
+          const { data: serverResponses } = await queryFulfilled
+          // Update cache with server IDs
+          serverResponses.forEach((serverResponse, idx) => {
+            const { tempId, patch, documentId } = patches[idx]
+            dispatch(
+              annotationsApi.util.updateQueryData(
+                "listByDocument",
+                documentId,
+                (draft) => {
+                  const annotation = draft.find((a) => a.id === tempId)
+                  if (annotation) {
+                    annotation.id = serverResponse.id
+                    annotation.userId = "server-synced"
+                  }
+                }
+              )
+            )
+          })
+        } catch {
+          // Undo all patches
+          patches.forEach(({ patch }) => patch.undo())
+        }
+      },
+      // No invalidation - cache already updated
+      invalidatesTags: [],
+    }),
+
     // ─── Create annotation (optimistic) ─────────────────────────────────────
-    createAnnotation: b.mutation<AnnotationWithTags, CreateAnnotationArg>({
-      query: ({ documentId, ...body }) => ({
+    createAnnotation: b.mutation<
+      { id: string; clientId?: string; status: string },
+      CreateAnnotationArg
+    >({
+      query: ({ documentId, clientId, ...body }) => ({
         url: `/documents/${documentId}/annotations`,
         method: "POST",
-        body,
+        body: { ...body, clientId }, // Send clientId to server for idempotency
       }),
-      transformResponse: (res: { data: AnnotationWithTags }) => res.data,
+      transformResponse: (res: { data: { id: string; clientId?: string; status: string } }) => res.data,
       async onQueryStarted(input, { dispatch, queryFulfilled }) {
         const tempId = `temp-${crypto.randomUUID()}`
         const optimistic: AnnotationWithTags = {
@@ -76,14 +155,19 @@ export const annotationsApi = api.injectEndpoints({
           )
         )
         try {
-          const { data } = await queryFulfilled
+          const { data: serverResponse } = await queryFulfilled
+          // Update cache with server ID (client already has all the data)
           dispatch(
             annotationsApi.util.updateQueryData(
               "listByDocument",
               input.documentId,
               (draft) => {
                 const idx = draft.findIndex((a) => a.id === tempId)
-                if (idx >= 0) draft[idx] = data
+                if (idx >= 0) {
+                  // Just update the ID, keep all other client data
+                  draft[idx].id = serverResponse.id
+                  draft[idx].userId = "server-synced" // Mark as synced
+                }
               }
             )
           )
@@ -91,9 +175,8 @@ export const annotationsApi = api.injectEndpoints({
           patch.undo()
         }
       },
-      invalidatesTags: (_r, _e, { documentId }) => [
-        { type: "Annotation", id: `LIST-${documentId}` },
-      ],
+      // No invalidation needed - cache already updated
+      invalidatesTags: [],
     }),
 
     // ─── Update annotation (optimistic) ──────────────────────────────────────
@@ -245,6 +328,7 @@ export const annotationsApi = api.injectEndpoints({
 export const {
   useListByDocumentQuery,
   useCreateAnnotationMutation,
+  useBulkCreateAnnotationsMutation,
   useUpdateAnnotationMutation,
   useDeleteAnnotationMutation,
   useAddTagMutation,

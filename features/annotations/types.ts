@@ -150,6 +150,7 @@ export interface AnnotationAssigneeSummary {
 
 export interface AnnotationWithTags {
   id: string
+  clientId?: string
   userId: string
   documentId: string
   pageNumber: number

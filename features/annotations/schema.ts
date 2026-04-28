@@ -96,6 +96,7 @@ export const AnnotationStatusSchema = z.enum([
 
 // ─── Create annotation ─────────────────────────────────────────────────────────
 export const CreateAnnotationSchema = z.object({
+  clientId: z.string().uuid().optional(), // For idempotent upserts
   pageNumber: z.number().int().positive(),
   type: AnnotationTypeSchema,
   status: AnnotationStatusSchema.optional(),
