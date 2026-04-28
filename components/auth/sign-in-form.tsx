@@ -77,7 +77,53 @@ export function SignInForm({ callbackUrl: propCallbackUrl, onSwitchToSignUp }: S
   }
 
   async function handleGoogleSignIn() {
-    await signIn("google", { callbackUrl })
+    const width = 500
+    const height = 620
+    const left = window.screenX + Math.round((window.outerWidth - width) / 2)
+    const top = window.screenY + Math.round((window.outerHeight - height) / 2)
+
+    // Use next-auth's signIn with redirect: false to get proper callback URL
+    const result = await signIn("google", {
+      callbackUrl: "/auth/popup-success",
+      redirect: false,
+    })
+
+    if (!result?.url) {
+      // Fallback to full redirect if popup or URL generation fails
+      await signIn("google", { callbackUrl })
+      return
+    }
+
+    const popup = window.open(
+      result.url,
+      "google-signin",
+      `width=${width},height=${height},left=${left},top=${top},scrollbars=yes,resizable=yes`,
+    )
+
+    if (!popup) {
+      // Popup blocked — fall back to redirect
+      await signIn("google", { callbackUrl })
+      return
+    }
+
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return
+      if ((event.data as { type?: string })?.type === "GOOGLE_AUTH_SUCCESS") {
+        window.removeEventListener("message", handleMessage)
+        clearInterval(closedPoller)
+        window.location.href = callbackUrl
+      }
+    }
+
+    // Detect if user closes the popup without completing auth
+    const closedPoller = setInterval(() => {
+      if (popup.closed) {
+        clearInterval(closedPoller)
+        window.removeEventListener("message", handleMessage)
+      }
+    }, 500)
+
+    window.addEventListener("message", handleMessage)
   }
 
   return (
@@ -111,7 +157,7 @@ export function SignInForm({ callbackUrl: propCallbackUrl, onSwitchToSignUp }: S
             aria-label="Continue with Google"
             title="Continue with Google"
             className="auth-social-btn"
-            onClick={() => void handleGoogleSignIn()}
+            onClick={handleGoogleSignIn}
           >
             <svg viewBox="0 0 24 24" className="w-5 h-5">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />

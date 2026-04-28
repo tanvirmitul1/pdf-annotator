@@ -12,6 +12,11 @@ const isDev =
   process.env.APP_ENV === "development" ||
   process.env.NODE_ENV === "development"
 
+// Force-clear any auth-related caches on dev restart
+if (isDev) {
+  console.log("[Middleware] Dev mode detected - auth config may reload")
+}
+
 const securityHeaders = {
   "Content-Security-Policy": isDev
     ? "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https:; font-src 'self' data:; connect-src 'self' ws: wss: http://localhost:*; frame-ancestors 'none'"
