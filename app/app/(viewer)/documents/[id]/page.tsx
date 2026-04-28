@@ -28,7 +28,13 @@ export default async function DocumentViewerPage({
                   fileName.endsWith(".gif")
 
   if (isImage) {
-    return <ImageViewer documentId={document.id} documentName={document.name} />
+    return <ImageViewer documentId={document.id} documentName={document.name} user={session?.user ? {
+      id: session.user.id,
+      name: session.user.name ?? null,
+      email: session.user.email ?? null,
+      image: session.user.image ?? null,
+      planId: session.user.planId,
+    } : null} />
   }
 
   return (
@@ -37,6 +43,17 @@ export default async function DocumentViewerPage({
       documentName={document.name}
       initialPage={1}
       isAuthenticated={Boolean(session?.user?.id)}
+      user={
+        session?.user
+          ? {
+              id: session.user.id,
+              name: session.user.name ?? null,
+              email: session.user.email ?? null,
+              image: session.user.image ?? null,
+              planId: session.user.planId,
+            }
+          : null
+      }
     />
   )
 }

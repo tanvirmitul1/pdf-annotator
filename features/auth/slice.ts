@@ -9,6 +9,8 @@ type SessionUser = {
   planId: string
 }
 
+export type { SessionUser }
+
 type AuthState = {
   user: SessionUser | null
 }

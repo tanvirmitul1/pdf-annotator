@@ -4,18 +4,23 @@ import { useState, useEffect } from "react"
 import Image from "next/image"
 import { Download, Loader2, ZoomIn, ZoomOut } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { ThemeToggle } from "@/components/common/theme-toggle"
+import { UserMenu } from "@/components/common/user-menu"
+import type { SessionUser } from "@/features/auth/slice"
 import { useGetDocumentViewerDataQuery } from "@/features/viewer/api"
 
 interface ImageViewerProps {
   documentId: string
   documentName: string
   initialStatus?: string
+  user?: SessionUser | null
 }
 
 export function ImageViewer({
   documentId,
   documentName,
   initialStatus = "PROCESSING",
+  user,
 }: ImageViewerProps) {
   const [zoom, setZoom] = useState(1)
   const [imageUrl, setImageUrl] = useState<string | null>(null)
@@ -91,6 +96,16 @@ export function ImageViewer({
           <Button variant="outline" size="icon" onClick={handleDownload}>
             <Download className="size-4" />
           </Button>
+
+          <div className="ml-2 flex items-center gap-1">
+            <ThemeToggle />
+            {user && <UserMenu
+              name={user.name}
+              email={user.email}
+              image={user.image}
+              planId={user.planId}
+            />}
+          </div>
         </div>
       </div>
 

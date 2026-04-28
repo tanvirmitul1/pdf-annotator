@@ -19,6 +19,7 @@ import { useGetMeQuery } from "@/features/auth/slice"
 import { useShortcuts } from "@/hooks/use-shortcuts"
 import { useAnnotationShortcuts } from "@/hooks/use-annotation-shortcuts"
 import { Toolbar } from "./toolbar"
+import type { SessionUser } from "@/features/auth/slice"
 import { Sidebar } from "./sidebar"
 import { PdfViewer } from "./pdf-viewer"
 import { SearchBar } from "./search-bar"
@@ -54,6 +55,7 @@ export interface ViewerShellProps {
   documentName: string
   initialPage?: number
   isAuthenticated?: boolean
+  user?: SessionUser | null
 }
 
 export function ViewerShell({
@@ -61,6 +63,7 @@ export function ViewerShell({
   documentName,
   initialPage = 1,
   isAuthenticated = false,
+  user: serverUser,
 }: ViewerShellProps) {
   const [showLoginGate, setShowLoginGate] = useState(false)
   const [verifiedAuth, setVerifiedAuth] = useState(isAuthenticated)
@@ -80,6 +83,9 @@ export function ViewerShell({
 
   // Use the verified auth status (server-side or client-side verified)
   const effectiveAuth = isAuthenticated || verifiedAuth
+
+  // Prefer server-provided user; fall back to client query if needed
+  const user = serverUser ?? authData?.user ?? null
 
   const handleAnnotationAttempt = useCallback(() => {
     if (!effectiveAuth) {
@@ -101,6 +107,7 @@ export function ViewerShell({
           documentName={documentName}
           initialPage={initialPage}
           isAuthenticated={effectiveAuth}
+          user={user}
         />
       </ViewerProvider>
       <LoginGateModal
@@ -130,6 +137,7 @@ function ViewerShellInner({
   documentId,
   documentName,
   initialPage,
+  user,
 }: ViewerShellProps) {
   const [pdfDocument, setPdfDocument] = useState<PDFDocumentProxy | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
@@ -530,6 +538,7 @@ function ViewerShellInner({
         collaborators={data?.collaborators ?? []}
         canInviteMembers={Boolean(data?.permissions.canInviteMembers)}
         canManageMembers={Boolean(data?.permissions.canManageMembers)}
+        user={user}
       />
 
       {/* Reading progress bar */}
