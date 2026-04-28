@@ -41,3 +41,9 @@ next-env.d.ts
 
 # uploads
 /uploads
+
+# graphify — entire output dir is local (hook keeps it fresh on every commit)
+/graphify-out/
+# graphify — stray directory from path bug
+/C:projectspdf-annotatorgraphify-out/
+.claude/settings.local.json

@@ -1,0 +1,24 @@
+# Codebase Knowledge Graph
+
+This project has a graphify knowledge graph at `graphify-out/`.
+
+Rules:
+- Before answering architecture or codebase questions, read `graphify-out/GRAPH_REPORT.md` for god nodes and community structure
+- If `graphify-out/wiki/index.md` exists, navigate it instead of reading raw files
+- The graph is gitignored — if `graphify-out/` is missing, run `graphify update .` first (requires `pip install graphifyy`)
+
+## Architecture summary (from graph)
+
+**Stack:** Next.js 15 App Router + TypeScript + PostgreSQL (Prisma) + Redux Toolkit + RTK Query + Zustand + Tailwind + shadcn/ui + Auth.js v5.
+
+**God nodes** (most connected, touch before modifying):
+- `prisma/schema.prisma` — source of truth for all data models
+- `lib/store.ts` — Redux store root
+- RTK Query API slices in `features/` — cache invalidation flows through here
+- `app/api/` routes — all mutating routes must auth + rate-limit + Zod validate
+
+**Non-negotiables:**
+- Every DB query touching user-owned data MUST filter by `session.user.id`
+- Soft delete only for Document and Annotation — never hard-delete
+- No `any`, no `@ts-ignore` without explanation
+- No `prisma db push` — migrations only
