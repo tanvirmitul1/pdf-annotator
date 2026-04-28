@@ -113,7 +113,7 @@ export function AnnotationOverlay({
   const [createAnnotation] = useCreateAnnotationMutation()
   const [deleteAnnotation] = useDeleteAnnotationMutation()
   const [updateAnnotation] = useUpdateAnnotationMutation()
-  const { addAnnotation } = useAnnotationManager()
+  const { addAnnotation } = useAnnotationManager(documentId)
 
   const activeTool = useViewer((state) => state.activeTool)
   const selectedColor = useViewer((state) => state.selectedColor)
@@ -512,7 +512,8 @@ export function AnnotationOverlay({
     return (
       annotation.author?.id === currentUser.id ||
       annotation.userId === currentUser.id ||
-      annotation.userId === "optimistic"
+      annotation.userId === "optimistic" ||
+      annotation.userId === "local"
     )
   }
 

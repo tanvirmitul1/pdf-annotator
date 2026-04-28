@@ -92,7 +92,8 @@ function isAnnotationOwner(
   return (
     annotation.author?.id === currentUserId ||
     annotation.userId === currentUserId ||
-    annotation.userId === "optimistic"
+    annotation.userId === "optimistic" ||
+    annotation.userId === "local"
   )
 }
 

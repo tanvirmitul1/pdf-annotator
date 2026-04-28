@@ -18,7 +18,7 @@ import type { Prisma } from "@prisma/client"
 // ─── Bulk create schema ──────────────────────────────────────────────────────
 
 const BulkCreateSchema = z.object({
-  documentId: z.string().cuid(),
+  documentId: z.string().uuid(),
   annotations: z.array(CreateAnnotationSchema).min(1).max(50), // Max 50 per batch
 })
 

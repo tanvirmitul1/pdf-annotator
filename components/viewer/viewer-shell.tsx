@@ -149,6 +149,7 @@ function ViewerShellInner({
   const closeShortcuts = useViewer((s) => s.closeShortcuts)
   const shortcutsOpen = useViewer((s) => s.shortcutsOpen)
   const rightPanelAnnotationId = useViewer((s) => s.rightPanelAnnotationId)
+  const draft = useViewer((s) => s.draft)
   const undo = useViewer((s) => s.undo)
   const redo = useViewer((s) => s.redo)
   const clearUndoHistory = useViewer((s) => s.clearUndoHistory)
@@ -159,7 +160,14 @@ function ViewerShellInner({
   const [createAnnotation] = useCreateAnnotationMutation()
   const [deleteAnnotation] = useDeleteAnnotationMutation()
   const [updateAnnotation] = useUpdateAnnotationMutation()
-  const { data: annotations = [] } = useListByDocumentQuery(documentId)
+
+  // Multi-user polling: poll every 10s when collaborators exist and user isn't drawing
+  const hasCollaborators = (data?.collaborators?.length ?? 0) > 1
+  const shouldPoll = hasCollaborators && !draft
+  const { data: annotations = [] } = useListByDocumentQuery(documentId, {
+    pollingInterval: shouldPoll ? 10_000 : 0,
+    skipPollingIfUnfocused: true,
+  })
 
   // Undo handler
   const handleUndo = useCallback(async () => {
@@ -256,15 +264,32 @@ function ViewerShellInner({
     [documentId, updateProgress]
   )
 
-  // Flush unsaved annotation data on page unload via sendBeacon
+  // Flush pending reading-progress on page unload via sendBeacon
   useEffect(() => {
     function onUnload() {
-      // RTK Query mutations in flight will be cancelled; nothing to do here
-      // for pending debounced saves, the component unmounts and useDebouncedMutation flushes
+      // Cancel the debounced timer — we'll flush synchronously via beacon
+      if (progressTimer.current) {
+        clearTimeout(progressTimer.current)
+        progressTimer.current = null
+      }
+
+      // Use sendBeacon to persist the last reading position before the tab closes
+      if (totalPages > 0 && currentPage > 0) {
+        const percent = Math.round(
+          ((currentPage - 1) / Math.max(totalPages - 1, 1)) * 100
+        )
+        navigator.sendBeacon(
+          `/api/documents/${documentId}/reading-progress`,
+          new Blob(
+            [JSON.stringify({ lastPage: currentPage, percentComplete: percent })],
+            { type: "application/json" }
+          )
+        )
+      }
     }
     window.addEventListener("beforeunload", onUnload)
     return () => window.removeEventListener("beforeunload", onUnload)
-  }, [])
+  }, [documentId, currentPage, totalPages])
 
   // Clear undo history on document change
   useEffect(() => {
@@ -444,31 +469,42 @@ function ViewerShellInner({
   if (isLoading || !pdfDocument) {
     const status = data?.document?.status
     return (
-      <div className="flex h-full flex-col rounded-[2rem] border border-border/60 bg-card/55 shadow-[0_28px_80px_-55px_rgba(15,23,42,0.65)]">
+      <div className="flex h-full flex-col overflow-hidden rounded-xl border border-border/60 bg-card/80 shadow-sm">
         {loadError ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8">
-            <p className="text-destructive">{loadError}</p>
+            <div className="flex size-12 items-center justify-center rounded-full bg-destructive/10 text-destructive">
+              <span className="text-xl font-bold">!</span>
+            </div>
+            <div className="space-y-1 text-center">
+              <p className="font-semibold text-foreground">Failed to load</p>
+              <p className="text-sm text-muted-foreground">{loadError}</p>
+            </div>
             <button
-              className="rounded-full border border-border/70 px-4 py-2 text-sm underline-offset-4 hover:bg-accent/50"
+              className="rounded-md border border-border/70 px-4 py-2 text-sm font-medium hover:bg-muted/50 transition-colors"
               onClick={() => window.location.reload()}
             >
-              Retry
+              Try again
             </button>
           </div>
         ) : status !== "READY" ? (
           <div className="flex flex-1 items-center justify-center px-6">
-            <div className="flex max-w-sm flex-col items-center gap-5 text-center">
-              <div className="flex size-14 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-primary">
-                <Loader2 className="size-5 animate-spin" />
+            <div className="flex max-w-xs flex-col items-center gap-4 text-center">
+              <div className="relative flex size-16 items-center justify-center">
+                <div className="absolute inset-0 animate-spin rounded-full border-2 border-border border-t-primary" />
+                <Loader2 className="size-5 text-primary animate-spin" style={{ animationDuration: "1.5s" }} />
               </div>
-              <div className="space-y-2">
-                <p className="font-heading text-lg font-semibold text-foreground">
-                  Preparing document
+              <div className="space-y-1.5">
+                <p className="font-heading text-base font-semibold text-foreground">
+                  Preparing your document
                 </p>
-                <p className="text-sm text-muted-foreground">
-                  Your pages and annotations will appear here as soon as they
-                  are ready.
+                <p className="text-sm text-muted-foreground leading-6">
+                  This usually takes a few seconds. Hang tight.
                 </p>
+              </div>
+              <div className="relative h-1 w-40 overflow-hidden rounded-full bg-muted">
+                <div className="absolute inset-y-0 left-0 w-1/3 rounded-full bg-primary" style={{
+                  animation: "shimmer-bar 1.5s ease-in-out infinite",
+                }} />
               </div>
             </div>
           </div>
@@ -483,7 +519,7 @@ function ViewerShellInner({
   const downloadUrl: string | null = null
 
   return (
-    <div className="flex h-full w-full flex-col overflow-hidden rounded-[2rem] border border-border/60 bg-card/55 shadow-[0_28px_80px_-55px_rgba(15,23,42,0.65)]">
+    <div className="flex h-full w-full flex-col overflow-hidden rounded-xl border border-border/60 bg-card/80 shadow-sm">
       <OfflineBanner />
 
       <Toolbar

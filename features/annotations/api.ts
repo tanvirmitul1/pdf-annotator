@@ -1,10 +1,16 @@
 import { api } from "@/store/api"
+import type { RootState } from "@/store"
 import type { AnnotationWithTags, TagSummary } from "./types"
 import type { CreateAnnotationInput, UpdateAnnotationInput } from "./schema"
 
 export interface CreateAnnotationArg extends CreateAnnotationInput {
   documentId: string
   clientId?: string // For idempotent upserts
+}
+
+// For bulk API — documentId is sent at top level, not per item
+export interface BulkAnnotationItem extends CreateAnnotationInput {
+  clientId?: string
 }
 
 export interface UpdateAnnotationArg extends UpdateAnnotationInput {
@@ -41,78 +47,23 @@ export const annotationsApi = api.injectEndpoints({
       ],
     }),
 
-    // ─── Bulk create annotations (optimized for batch) ──────────────────────
+    // ─── Bulk create annotations (background sync — no optimistic update) ───
+    // Cache is already populated by useAnnotationManager before this is called.
+    // This endpoint only syncs to server and returns IDs.
     bulkCreateAnnotations: b.mutation<
       { id: string; clientId?: string; status: string }[],
-      { annotations: CreateAnnotationArg[] }
+      { documentId: string; annotations: BulkAnnotationItem[] }
     >({
-      query: ({ annotations }) => {
-        // Extract documentId from first annotation
-        const documentId = annotations[0]?.documentId
-        return {
-          url: `/annotations/bulk`,
-          method: "POST",
-          body: { annotations },
-        }
-      },
+      query: ({ documentId, annotations }) => ({
+        url: `/annotations/bulk`,
+        method: "POST",
+        body: {
+          documentId,
+          annotations,
+        },
+      }),
       transformResponse: (res: { data: Array<{ id: string; clientId?: string; status: string }>; count: number }) => res.data,
-      async onQueryStarted({ annotations }, { dispatch, queryFulfilled }) {
-        // Optimistic update for all annotations
-        const patches = annotations.map((input) => {
-          const tempId = `temp-${crypto.randomUUID()}`
-          const optimistic: AnnotationWithTags = {
-            id: tempId,
-            userId: "optimistic",
-            documentId: input.documentId,
-            pageNumber: input.pageNumber,
-            type: input.type,
-            status: input.status ?? "OPEN",
-            color: input.color,
-            positionData: input.positionData,
-            content: input.content ?? null,
-            deletedAt: null,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
-            tags: [],
-            assignee: null,
-          }
-          const patch = dispatch(
-            annotationsApi.util.updateQueryData(
-              "listByDocument",
-              input.documentId,
-              (draft) => {
-                draft.push(optimistic)
-              }
-            )
-          )
-          return { tempId, patch, documentId: input.documentId }
-        })
-
-        try {
-          const { data: serverResponses } = await queryFulfilled
-          // Update cache with server IDs
-          serverResponses.forEach((serverResponse, idx) => {
-            const { tempId, patch, documentId } = patches[idx]
-            dispatch(
-              annotationsApi.util.updateQueryData(
-                "listByDocument",
-                documentId,
-                (draft) => {
-                  const annotation = draft.find((a) => a.id === tempId)
-                  if (annotation) {
-                    annotation.id = serverResponse.id
-                    annotation.userId = "server-synced"
-                  }
-                }
-              )
-            )
-          })
-        } catch {
-          // Undo all patches
-          patches.forEach(({ patch }) => patch.undo())
-        }
-      },
-      // No invalidation - cache already updated
+      // No onQueryStarted — cache already has the annotations locally
       invalidatesTags: [],
     }),
 
@@ -127,11 +78,13 @@ export const annotationsApi = api.injectEndpoints({
         body: { ...body, clientId }, // Send clientId to server for idempotency
       }),
       transformResponse: (res: { data: { id: string; clientId?: string; status: string } }) => res.data,
-      async onQueryStarted(input, { dispatch, queryFulfilled }) {
+      async onQueryStarted(input, { dispatch, getState, queryFulfilled }) {
+        const state = getState() as RootState
+        const currentUser = state.auth.user
         const tempId = `temp-${crypto.randomUUID()}`
         const optimistic: AnnotationWithTags = {
           id: tempId,
-          userId: "optimistic",
+          userId: currentUser?.id ?? "optimistic",
           documentId: input.documentId,
           pageNumber: input.pageNumber,
           type: input.type,
@@ -143,6 +96,14 @@ export const annotationsApi = api.injectEndpoints({
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           tags: [],
+          author: currentUser
+            ? {
+                id: currentUser.id,
+                name: currentUser.name,
+                email: currentUser.email,
+                image: currentUser.image,
+              }
+            : null,
           assignee: null,
         }
         const patch = dispatch(
@@ -156,7 +117,7 @@ export const annotationsApi = api.injectEndpoints({
         )
         try {
           const { data: serverResponse } = await queryFulfilled
-          // Update cache with server ID (client already has all the data)
+          // Replace optimistic entry with server-confirmed ID
           dispatch(
             annotationsApi.util.updateQueryData(
               "listByDocument",
@@ -164,9 +125,8 @@ export const annotationsApi = api.injectEndpoints({
               (draft) => {
                 const idx = draft.findIndex((a) => a.id === tempId)
                 if (idx >= 0) {
-                  // Just update the ID, keep all other client data
                   draft[idx].id = serverResponse.id
-                  draft[idx].userId = "server-synced" // Mark as synced
+                  draft[idx].userId = currentUser?.id ?? draft[idx].userId
                 }
               }
             )

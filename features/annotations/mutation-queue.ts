@@ -1,10 +1,10 @@
 import type { AppDispatch } from "@/store"
 import { annotationsApi } from "./api"
-import type { AnnotationWithTags } from "./types"
+import type { CreateAnnotationArg } from "./api"
 
 interface MutationJob {
   clientId: string
-  payload: any
+  payload: CreateAnnotationArg
   onSuccess?: (serverId: string) => void
   onError?: (error: unknown) => void
 }
@@ -72,6 +72,26 @@ export class MutationQueue {
   retry(job: MutationJob) {
     this.queue.unshift(job)
     void this.process()
+  }
+
+  /**
+   * Flush all pending jobs via sendBeacon before page unload.
+   * This is a best-effort fire-and-forget — the browser may not
+   * wait for responses, but sendBeacon is guaranteed to be queued.
+   */
+  flushViaSendBeacon() {
+    const pending = this.queue.filter((job) => !this.inFlight.has(job.clientId))
+    if (pending.length === 0) return
+
+    for (const job of pending) {
+      const { documentId } = job.payload
+      if (!documentId) continue
+
+      navigator.sendBeacon(
+        `/api/documents/${documentId}/annotations`,
+        new Blob([JSON.stringify(job.payload)], { type: "application/json" })
+      )
+    }
   }
 
   /**

@@ -116,6 +116,7 @@ export const UpdateAnnotationSchema = z
     positionData: PositionDataSchema,
     status: AnnotationStatusSchema,
     assigneeId: z.string().cuid().nullable(),
+    updatedAt: z.string().datetime(), // For staleness detection (409 conflict)
   })
   .partial()
   .refine((data) => Object.keys(data).length > 0, {
