@@ -41,3 +41,11 @@ next-env.d.ts
 
 # uploads
 /uploads
+
+# graphify — cache and personal artifacts (do not commit)
+/graphify-out/cache/
+/graphify-out/cost.json
+/graphify-out/graph.html
+# graphify — stray directory from path bug
+/C:projectspdf-annotatorgraphify-out/
+.claude/settings.local.json
