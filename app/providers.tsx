@@ -21,6 +21,7 @@ export function Providers({
     email?: string | null
     image?: string | null
     planId?: string
+    role?: string
   } | null
 }) {
   useEffect(() => {
@@ -33,6 +34,7 @@ export function Providers({
               email: initialUser.email ?? null,
               image: initialUser.image ?? null,
               planId: initialUser.planId ?? "free",
+              role: initialUser.role ?? "USER",
             }
           : null
       )

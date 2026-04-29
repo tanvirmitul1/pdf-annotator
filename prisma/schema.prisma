@@ -6,6 +6,25 @@ datasource db {
   provider = "postgresql"
 }
 
+enum ErrorType {
+  VALIDATION_ERROR
+  AUTHENTICATION_ERROR
+  AUTHORIZATION_ERROR
+  NOT_FOUND_ERROR
+  RATE_LIMIT_ERROR
+  DATABASE_ERROR
+  EXTERNAL_API_ERROR
+  FILE_UPLOAD_ERROR
+  PROCESSING_ERROR
+  INTERNAL_SERVER_ERROR
+  UNKNOWN_ERROR
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
 enum SubscriptionStatus {
   FREE
   TRIALING
@@ -83,6 +102,7 @@ model User {
   isAnonymous        Boolean            @default(false)
   deviceToken        String?            @unique
   lastKnownIp        String?
+  role               UserRole           @default(USER)
   planId             String             @default("free")
   trialEndsAt        DateTime?
   subscriptionStatus SubscriptionStatus @default(FREE)
@@ -111,6 +131,8 @@ model User {
   emailLogs          EmailLog[]
   auditLogs          AuditLog[]
   apiKeys            ApiKey[]
+  errorLogs          ErrorLog[]
+  resolvedErrors     ErrorLog[]        @relation("ErrorResolver")
 
   @@index([planId])
   @@index([deletedAt])
@@ -510,4 +532,33 @@ model ApiKey {
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+model ErrorLog {
+  id            String    @id @default(cuid())
+  userId        String?
+  userEmail     String?
+  userName      String?
+  errorType     ErrorType
+  errorCode     String?
+  message       String
+  stack         String?   @db.Text
+  url           String?
+  method        String?
+  statusCode    Int?
+  userAgent     String?
+  ipAddress     String
+  metadata      Json?
+  resolved      Boolean   @default(false)
+  resolvedBy    String?
+  resolvedAt    DateTime?
+  resolvedNotes String?   @db.Text
+  createdAt     DateTime  @default(now())
+  user          User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  resolver      User?     @relation("ErrorResolver", fields: [resolvedBy], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([errorType])
+  @@index([createdAt(sort: Desc)])
+  @@index([resolved])
 }

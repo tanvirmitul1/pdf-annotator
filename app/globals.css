@@ -113,6 +113,11 @@
     @apply font-sans;
   }
 
+  /* Prevent flash of unstyled content during theme initialization */
+  html:not([data-theme]) body {
+    visibility: hidden;
+  }
+
   body {
     @apply bg-background text-foreground;
     min-height: 100vh;

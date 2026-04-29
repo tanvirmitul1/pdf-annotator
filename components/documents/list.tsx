@@ -461,11 +461,6 @@ export function DocumentList({ showDeleted = false }: DocumentListProps) {
             <Checkbox
               id="select-all-page"
               checked={isAllSelected}
-              ref={(el: HTMLInputElement | null) => {
-                if (el) {
-                  el.indeterminate = isIndeterminate
-                }
-              }}
               onCheckedChange={(checked: boolean) => toggleSelectAll(checked)}
               aria-label={`Select all ${documents.length} documents on this page`}
             />

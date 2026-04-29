@@ -1,6 +1,6 @@
 "use client"
 
-import { CircleHelp, LogOut, Settings } from "lucide-react"
+import { CircleHelp, LogOut, Settings, Shield } from "lucide-react"
 import { signOut } from "next-auth/react"
 import Link from "next/link"
 
@@ -20,11 +20,13 @@ export function UserMenu({
   email,
   image,
   planId = "free",
+  role = "USER",
 }: {
   name: string | null
   email: string | null
   image?: string | null
   planId?: string
+  role?: string
 }) {
   const displayName = name ?? "Unknown"
   const displayEmail = email ?? "No email"
@@ -86,25 +88,33 @@ export function UserMenu({
         <Separator />
 
         <div className="p-1.5">
-          <DropdownMenuItem asChild className="rounded-lg px-3 py-2.5 text-sm">
+          <DropdownMenuItem asChild className="rounded-lg px-3 py-2.5 text-sm cursor-pointer">
             <Link href="/app/settings">
               <Settings className="size-4 text-muted-foreground" />
               <span>Settings</span>
             </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem asChild className="rounded-lg px-3 py-2.5 text-sm">
+          <DropdownMenuItem asChild className="rounded-lg px-3 py-2.5 text-sm cursor-pointer">
             <Link href="/app/help">
               <CircleHelp className="size-4 text-muted-foreground" />
               <span>Help & Support</span>
             </Link>
           </DropdownMenuItem>
+          {role === "ADMIN" && (
+            <DropdownMenuItem asChild className="rounded-lg px-3 py-2.5 text-sm cursor-pointer">
+              <Link href="/app/admin">
+                <Shield className="size-4 text-muted-foreground" />
+                <span>Admin Dashboard</span>
+              </Link>
+            </DropdownMenuItem>
+          )}
         </div>
 
         <Separator />
 
         <div className="p-1.5">
           <DropdownMenuItem
-            className="rounded-lg px-3 py-2.5 text-sm text-destructive focus:text-destructive focus:bg-destructive/8"
+            className="rounded-lg px-3 py-2.5 text-sm text-destructive focus:text-destructive focus:bg-destructive/8 cursor-pointer"
             onSelect={() => void signOut({ callbackUrl: "/" })}
           >
             <LogOut className="size-4" />

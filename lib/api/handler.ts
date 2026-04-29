@@ -2,6 +2,8 @@ import { NextResponse, type NextRequest } from "next/server"
 import { ZodError } from "zod"
 
 import { AppError, RateLimitedError } from "@/lib/errors"
+import { logApiError } from "@/lib/error-logger"
+import { auth } from "@/auth"
 
 export function withErrorHandling<TContext>(
   handler: (req: NextRequest, ctx: TContext) => Promise<Response>
@@ -10,6 +12,14 @@ export function withErrorHandling<TContext>(
     try {
       return await handler(req, ctx)
     } catch (error) {
+      // Log the error to database
+      try {
+        const session = await auth()
+        await logApiError(error, req, session?.user?.id)
+      } catch (logError) {
+        console.error("Failed to log error:", logError)
+      }
+      
       return toErrorResponse(error)
     }
   }

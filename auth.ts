@@ -33,7 +33,7 @@ const SESSION_MAX_AGE = 7 * 24 * 60 * 60
 const SESSION_UPDATE_AGE = 60 * 60
 // Hard ceiling: force re-login after 30 days regardless of activity.
 const ABSOLUTE_SESSION_LIMIT = 30 * 24 * 60 * 60
-// Re-fetch planId from DB at most once every 5 minutes (per JWT rotation).
+// Re-fetch planId and role from DB at most once every 5 minutes (per JWT rotation).
 const PLAN_CACHE_TTL = 5 * 60
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -106,6 +106,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           email: user.email,
           image: user.image,
           planId: user.planId,
+          role: user.role,
         }
       },
     }),
@@ -138,8 +139,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       // First sign-in: seed the token with user data
       if (user?.id) {
+        // For OAuth providers, fetch role from database
+        const dbUser = await prisma.user.findUnique({
+          where: { id: user.id },
+          select: { planId: true, role: true },
+        })
         token.userId = user.id
-        token.planId = (user as { planId?: string }).planId ?? "free"
+        token.planId = dbUser?.planId ?? (user as { planId?: string }).planId ?? "free"
+        token.role = dbUser?.role ?? (user as { role?: string }).role ?? "USER"
         token.issuedAt = now
         token.planFetchedAt = now
         return token
@@ -155,14 +162,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (typeof userId === "string") {
         token.userId = userId
 
-        // Only re-fetch planId from DB if cache is stale or on explicit session update
+        // Only re-fetch planId and role from DB if cache is stale or on explicit session update
         const planFetchedAt = typeof token.planFetchedAt === "number" ? token.planFetchedAt : 0
         if (trigger === "update" || now - planFetchedAt > PLAN_CACHE_TTL) {
           const currentUser = await prisma.user.findUnique({
             where: { id: userId },
-            select: { planId: true },
+            select: { planId: true, role: true },
           })
           token.planId = currentUser?.planId ?? "free"
+          token.role = currentUser?.role ?? "USER"
           token.planFetchedAt = now
         }
       }
@@ -178,6 +186,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (session.user) {
         session.user.id = typeof token.userId === "string" ? token.userId : token.sub ?? ""
         session.user.planId = typeof token.planId === "string" ? token.planId : "free"
+        session.user.role = typeof token.role === "string" ? token.role : "USER"
       }
 
       return session

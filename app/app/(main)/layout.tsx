@@ -1,5 +1,6 @@
 import { ProtectedShell } from "@/components/common/protected-shell"
 import { requireAppUser } from "@/lib/auth/require"
+import { ErrorBoundary } from "@/components/error-boundary"
 
 export const dynamic = "force-dynamic"
 
@@ -14,8 +15,11 @@ export default async function AppLayout({
       email={session.user.email ?? "signed-in user"}
       image={session.user.image ?? null}
       planId={session.user.planId}
+      role={session.user.role}
     >
-      {children}
+      <ErrorBoundary>
+        {children}
+      </ErrorBoundary>
     </ProtectedShell>
   )
 }

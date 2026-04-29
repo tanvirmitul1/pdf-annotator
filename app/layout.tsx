@@ -62,8 +62,10 @@ export default async function RootLayout({
         manrope.variable
       )}
     >
-      <body>
+      <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
+      <body>
         <a href="#main-content" className="skip-link">
           Skip to content
         </a>

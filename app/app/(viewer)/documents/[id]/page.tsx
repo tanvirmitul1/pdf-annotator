@@ -34,6 +34,7 @@ export default async function DocumentViewerPage({
       email: session.user.email ?? null,
       image: session.user.image ?? null,
       planId: session.user.planId,
+      role: session.user.role,
     } : null} />
   }
 
@@ -51,6 +52,7 @@ export default async function DocumentViewerPage({
               email: session.user.email ?? null,
               image: session.user.image ?? null,
               planId: session.user.planId,
+              role: session.user.role,
             }
           : null
       }

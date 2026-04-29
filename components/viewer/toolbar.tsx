@@ -434,6 +434,7 @@ export function Toolbar({
             email={user.email}
             image={user.image}
             planId={user.planId}
+            role={user.role}
           />
         )}
 

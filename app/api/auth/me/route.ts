@@ -24,6 +24,8 @@ async function handler() {
       email: session.user.email,
       name: session.user.name,
       image: session.user.image,
+      planId: session.user.planId,
+      role: session.user.role,
     },
   })
 }

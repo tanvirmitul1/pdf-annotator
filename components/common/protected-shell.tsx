@@ -11,6 +11,7 @@ import {
   Menu,
   Search,
   Settings,
+  Shield,
   Tag,
   Trash2,
 } from "lucide-react"
@@ -18,15 +19,9 @@ import { signOut } from "next-auth/react"
 
 import { LogoMark } from "@/components/common/logo-mark"
 import { ThemeToggle } from "@/components/common/theme-toggle"
+import { UserMenu } from "@/components/common/user-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
@@ -48,6 +43,7 @@ export interface ProtectedShellProps {
   email: string
   image?: string | null
   planId?: string
+  role?: string
   children: React.ReactNode
 }
 
@@ -56,6 +52,7 @@ export function ProtectedShell({
   email,
   image,
   planId = "free",
+  role = "USER",
   children,
 }: ProtectedShellProps) {
   const pathname = usePathname()
@@ -98,75 +95,13 @@ export function ProtectedShell({
   }
 
   const userDropdown = (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-9 rounded-full ring-2 ring-border/60 hover:ring-primary/40 transition-all"
-          aria-label="User menu"
-        >
-          <Avatar className="size-8">
-            <AvatarImage src={image ?? undefined} alt={name} />
-            <AvatarFallback className="text-xs font-semibold">{initials}</AvatarFallback>
-          </Avatar>
-        </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent
-        align="end"
-        sideOffset={8}
-        className="w-64 rounded-xl border border-border/70 bg-popover/95 p-0 shadow-lg backdrop-blur-xl"
-      >
-        {/* User info header */}
-        <div className="px-4 py-4">
-          <div className="flex items-center gap-3">
-            <Avatar className="size-10 shrink-0">
-              <AvatarImage src={image ?? undefined} alt={name} />
-              <AvatarFallback className="text-sm font-semibold">{initials}</AvatarFallback>
-            </Avatar>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-semibold text-foreground">{name}</p>
-              <p className="truncate text-xs text-muted-foreground">{email}</p>
-              <Badge
-                variant="outline"
-                className="mt-1.5 h-5 rounded-full border-primary/25 bg-primary/8 px-2 text-[10px] font-medium text-primary capitalize"
-              >
-                {planId} plan
-              </Badge>
-            </div>
-          </div>
-        </div>
-
-        <Separator />
-
-        <div className="p-1.5">
-          <DropdownMenuItem asChild className="rounded-lg px-3 py-2.5 text-sm">
-            <Link href="/app/settings">
-              <Settings className="size-4 text-muted-foreground" />
-              Settings
-            </Link>
-          </DropdownMenuItem>
-          <DropdownMenuItem asChild className="rounded-lg px-3 py-2.5 text-sm">
-            <Link href="/app/help">
-              <CircleHelp className="size-4 text-muted-foreground" />
-              Help & Support
-            </Link>
-          </DropdownMenuItem>
-        </div>
-
-        <Separator />
-
-        <div className="p-1.5">
-          <DropdownMenuItem
-            className="rounded-lg px-3 py-2.5 text-sm text-destructive focus:text-destructive focus:bg-destructive/8"
-            onSelect={() => void signOut({ callbackUrl: "/" })}
-          >
-            <LogOut className="size-4" />
-            Sign out
-          </DropdownMenuItem>
-        </div>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <UserMenu
+      name={name}
+      email={email}
+      image={image}
+      planId={planId}
+      role={role}
+    />
   )
 
   return (
@@ -193,6 +128,31 @@ export function ProtectedShell({
             </div>
 
             <Separator />
+
+            {role === "ADMIN" && (
+              <>
+                <div>
+                  <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
+                    Admin
+                  </p>
+                  <nav className="space-y-0.5">
+                    <Link
+                      href="/app/admin"
+                      className={cn(
+                        "group flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors",
+                        pathname.startsWith("/app/admin")
+                          ? "bg-primary/10 text-primary font-medium"
+                          : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
+                      )}
+                    >
+                      <Shield className={cn("size-4 shrink-0", pathname.startsWith("/app/admin") ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
+                      Admin
+                    </Link>
+                  </nav>
+                </div>
+                <Separator />
+              </>
+            )}
 
             <div>
               <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">

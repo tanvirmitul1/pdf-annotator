@@ -7,6 +7,7 @@ type SessionUser = {
   email: string | null
   image: string | null
   planId: string
+  role: string
 }
 
 export type { SessionUser }

@@ -104,6 +104,7 @@ export function ImageViewer({
               email={user.email}
               image={user.image}
               planId={user.planId}
+              role={user.role}
             />}
           </div>
         </div>
