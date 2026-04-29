@@ -2,6 +2,7 @@ import bcrypt from "bcrypt"
 import NextAuth from "next-auth"
 import { PrismaAdapter } from "@auth/prisma-adapter"
 import Credentials from "next-auth/providers/credentials"
+import GitHub from "next-auth/providers/github"
 import Google from "next-auth/providers/google"
 import { z } from "zod"
 
@@ -39,6 +40,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     Google({
       clientId: env.GOOGLE_CLIENT_ID || process.env.AUTH_GOOGLE_ID || process.env.GOOGLE_CLIENT_ID,
       clientSecret: env.GOOGLE_CLIENT_SECRET || process.env.AUTH_GOOGLE_SECRET || process.env.GOOGLE_CLIENT_SECRET,
+      allowDangerousEmailAccountLinking: true,
       profile(profile) {
         if (!profile.email_verified) {
           throw new Error("Google account email is not verified")
@@ -49,6 +51,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           name: profile.name,
           email: profile.email,
           image: profile.picture,
+        }
+      },
+    }),
+    GitHub({
+      clientId: env.GITHUB_CLIENT_ID,
+      clientSecret: env.GITHUB_CLIENT_SECRET,
+      allowDangerousEmailAccountLinking: true,
+      profile(profile) {
+        return {
+          id: String(profile.id),
+          name: profile.name ?? profile.login,
+          email: profile.email,
+          image: profile.avatar_url,
         }
       },
     }),
@@ -93,7 +108,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async signIn({ user, account }) {
       if (user.id && account?.provider) {
         await track(user.id, "user_signed_in", {
-          method: account.provider === "google" ? "google" : "credentials",
+          method: account.provider === "credentials" ? "credentials" : account.provider,
         })
       }
     },

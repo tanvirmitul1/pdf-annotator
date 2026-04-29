@@ -2,13 +2,13 @@
 
 import { useEffect } from "react"
 
-// This page is only ever loaded inside the Google OAuth popup.
+// This page is loaded inside OAuth popups (Google, GitHub, etc.).
 // It signals the opener tab that auth completed, then closes itself.
 export default function PopupSuccessPage() {
   useEffect(() => {
     if (window.opener) {
       window.opener.postMessage(
-        { type: "GOOGLE_AUTH_SUCCESS" },
+        { type: "OAUTH_SUCCESS" },
         window.location.origin,
       )
       window.close()
