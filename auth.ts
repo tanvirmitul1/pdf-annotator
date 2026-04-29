@@ -27,10 +27,21 @@ const CredentialsSchema = z.object({
   password: z.string().min(8),
 })
 
+// How long a session JWT is valid (7 days).
+const SESSION_MAX_AGE = 7 * 24 * 60 * 60
+// Re-sign the JWT cookie every 1 hour so the expiry slides forward.
+const SESSION_UPDATE_AGE = 60 * 60
+// Hard ceiling: force re-login after 30 days regardless of activity.
+const ABSOLUTE_SESSION_LIMIT = 30 * 24 * 60 * 60
+// Re-fetch planId from DB at most once every 5 minutes (per JWT rotation).
+const PLAN_CACHE_TTL = 5 * 60
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: PrismaAdapter(prisma),
   session: {
     strategy: "jwt",
+    maxAge: SESSION_MAX_AGE,
+    updateAge: SESSION_UPDATE_AGE,
   },
   debug: process.env.NODE_ENV === "development",
   pages: {
@@ -122,20 +133,43 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       return true
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
+      const now = Math.floor(Date.now() / 1000)
+
+      // First sign-in: seed the token with user data
       if (user?.id) {
         token.userId = user.id
+        token.planId = (user as { planId?: string }).planId ?? "free"
+        token.issuedAt = now
+        token.planFetchedAt = now
+        return token
+      }
+
+      // Absolute session timeout — force re-login after 30 days
+      const issuedAt = typeof token.issuedAt === "number" ? token.issuedAt : now
+      if (now - issuedAt > ABSOLUTE_SESSION_LIMIT) {
+        return {} // returning empty token causes Auth.js to clear the session
       }
 
       const userId = token.userId ?? token.sub
       if (typeof userId === "string") {
-        const currentUser = await prisma.user.findUnique({
-          where: { id: userId },
-          select: { planId: true },
-        })
-
         token.userId = userId
-        token.planId = currentUser?.planId ?? "free"
+
+        // Only re-fetch planId from DB if cache is stale or on explicit session update
+        const planFetchedAt = typeof token.planFetchedAt === "number" ? token.planFetchedAt : 0
+        if (trigger === "update" || now - planFetchedAt > PLAN_CACHE_TTL) {
+          const currentUser = await prisma.user.findUnique({
+            where: { id: userId },
+            select: { planId: true },
+          })
+          token.planId = currentUser?.planId ?? "free"
+          token.planFetchedAt = now
+        }
+      }
+
+      // Preserve issuedAt across rotations
+      if (!token.issuedAt) {
+        token.issuedAt = now
       }
 
       return token
