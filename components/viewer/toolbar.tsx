@@ -18,6 +18,7 @@ import {
   BookmarkCheck,
 } from "lucide-react"
 import type { DocumentMemberRole } from "@prisma/client"
+import type { SessionUser } from "@/features/auth/slice"
 
 import { useViewer } from "@/features/viewer/provider"
 import {
@@ -41,6 +42,8 @@ import {
 } from "@/components/ui/tooltip"
 import { NotificationBell } from "@/components/notifications/notification-bell"
 import { DocumentShareDialog } from "./document-share-dialog"
+import { UserMenu } from "@/components/common/user-menu"
+import { ThemeToggle } from "@/components/common/theme-toggle"
 
 const ZOOM_STEPS = [0.25, 0.33, 0.5, 0.67, 0.75, 1, 1.25, 1.5, 2, 3, 4]
 
@@ -58,6 +61,8 @@ interface ToolbarProps {
   }>
   canInviteMembers?: boolean
   canManageMembers?: boolean
+  /** Current user info for avatar dropdown */
+  user?: SessionUser | null
 }
 
 function initials(name: string | null, email: string | null) {
@@ -95,6 +100,7 @@ export function Toolbar({
   collaborators = [],
   canInviteMembers = false,
   canManageMembers = false,
+  user,
 }: ToolbarProps) {
   const zoom = useViewer((s) => s.zoom)
   const setZoom = useViewer((s) => s.setZoom)
@@ -414,7 +420,23 @@ export function Toolbar({
           canManageMembers={canManageMembers}
         />
 
+        <Divider />
+
+        {/* Theme toggle */}
+        <ThemeToggle />
         <NotificationBell />
+
+
+        {/* User menu - always show when authenticated */}
+        {user && (
+          <UserMenu
+            name={user.name}
+            email={user.email}
+            image={user.image}
+            planId={user.planId}
+          />
+        )}
+
       </div>
     </header>
   )

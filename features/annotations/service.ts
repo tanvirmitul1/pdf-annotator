@@ -1,5 +1,5 @@
 import { annotationsFor } from "@/lib/db/repositories/annotations"
-import { NotFoundError } from "@/lib/errors"
+import { NotFoundError, ConflictError } from "@/lib/errors"
 import { listDocumentCollaborators } from "@/lib/db/repositories/document-access"
 
 import type { CreateAnnotationInput, UpdateAnnotationInput } from "./schema"
@@ -51,9 +51,24 @@ export async function updateAnnotation(
     throw new NotFoundError("Annotation")
   }
 
+  // Staleness detection: if client sends updatedAt and it's > 5s stale, reject
+  if (changes.updatedAt) {
+    const clientTime = new Date(changes.updatedAt).getTime()
+    const serverTime = new Date(existing.updatedAt).getTime()
+    const STALE_THRESHOLD_MS = 5_000
+
+    if (serverTime - clientTime > STALE_THRESHOLD_MS) {
+      throw new ConflictError(
+        "Annotation was modified by another user. Please refresh."
+      )
+    }
+  }
+
   await assertValidAssignee(existing.documentId, changes.assigneeId)
 
-  return repo.update(annotationId, changes)
+  // Strip updatedAt from the changes before passing to the repository
+  const { updatedAt: _clientUpdatedAt, ...repoChanges } = changes
+  return repo.update(annotationId, repoChanges)
 }
 
 export async function softDeleteAnnotation(

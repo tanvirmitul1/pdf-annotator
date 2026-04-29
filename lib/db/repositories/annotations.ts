@@ -47,6 +47,7 @@ type AnnotationRow = Prisma.AnnotationGetPayload<{
 function toClient(row: AnnotationRow): AnnotationWithTags {
   return {
     id: row.id,
+    clientId: row.clientId ?? undefined,
     userId: row.userId,
     documentId: row.documentId,
     pageNumber: row.pageNumber,
@@ -123,8 +124,42 @@ export function annotationsFor(userId: string) {
     },
     create: async (
       documentId: string,
-      input: CreateAnnotationInput
+      input: CreateAnnotationInput & { clientId?: string }
     ): Promise<AnnotationWithTags> => {
+      // If clientId is provided, try upsert for idempotency
+      if (input.clientId) {
+        const row = await prisma.annotation.upsert({
+          where: {
+            clientId: input.clientId,
+          },
+          create: {
+            clientId: input.clientId,
+            userId,
+            documentId,
+            pageNumber: input.pageNumber,
+            type: input.type,
+            status: input.status ?? "OPEN",
+            assigneeId: input.assigneeId ?? null,
+            color: input.color,
+            positionData: input.positionData as Prisma.InputJsonValue,
+            content: input.content ?? null,
+          },
+          update: {
+            // Update existing annotation with new data
+            pageNumber: input.pageNumber,
+            type: input.type,
+            color: input.color,
+            positionData: input.positionData as Prisma.InputJsonValue,
+            content: input.content ?? null,
+            updatedAt: new Date(),
+          },
+          include: annotationInclude,
+        })
+
+        return toClient(row)
+      }
+
+      // Fallback to regular create (backward compatibility)
       const row = await prisma.annotation.create({
         data: {
           userId,

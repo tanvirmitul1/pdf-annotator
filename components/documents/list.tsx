@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useMemo, useCallback, useRef } from "react"
 import Image from "next/image"
 import Link from "next/link"
 import { formatDistanceToNow } from "date-fns"
@@ -13,10 +13,12 @@ import {
   RotateCcw,
   Trash2,
   X,
+  CheckCircle2,
 } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -44,6 +46,18 @@ import { cn } from "@/lib/utils"
 
 interface DocumentListProps {
   showDeleted?: boolean
+}
+
+type SelectionMode = "none" | "some" | "all"
+
+interface BulkDeleteState {
+  isOpen: boolean
+  selectedIds: string[]
+  names?: string[]
+  currentIndex: number
+  total: number
+  isCancelled: boolean
+  errors: Array<{ id: string; name: string; error: string }>
 }
 
 function Tip({
@@ -177,23 +191,25 @@ export function DocumentList({ showDeleted = false }: DocumentListProps) {
     name: string
   } | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
-  const [hasProcessing, setHasProcessing] = useState(false)
+
+  // Selection state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [bulkDelete, setBulkDelete] = useState<BulkDeleteState>({
+    isOpen: false,
+    selectedIds: [],
+    currentIndex: 0,
+    total: 0,
+    isCancelled: false,
+    errors: [],
+  })
 
   const { data, isLoading } = useListDocumentsQuery(
     { search, sort: sortBy, limit: 20, showDeleted },
     {
-      pollingInterval: hasProcessing ? 3000 : 0,
+      pollingInterval: 0,
       refetchOnMountOrArgChange: true,
     }
   )
-
-  // Update polling state when data changes
-  if (data?.items) {
-    const shouldPoll = data.items.some((doc) => doc.status === "PROCESSING")
-    if (shouldPoll !== hasProcessing) {
-      setHasProcessing(shouldPoll)
-    }
-  }
 
   const [deleteDocument] = useDeleteDocumentMutation()
   const [restoreDocument] = useRestoreDocumentMutation()
@@ -204,6 +220,15 @@ export function DocumentList({ showDeleted = false }: DocumentListProps) {
   const handleDelete = async () => {
     if (!deleteTarget || isDeleting) {
       return
+    }
+
+    // Remove from selection if present
+    if (selectedIds.has(deleteTarget.id)) {
+      setSelectedIds((prev) => {
+        const next = new Set(prev)
+        next.delete(deleteTarget.id)
+        return next
+      })
     }
 
     setIsDeleting(true)
@@ -225,6 +250,14 @@ export function DocumentList({ showDeleted = false }: DocumentListProps) {
       setIsDeleting(false)
     }
   }
+
+  const cancelBulkDelete = () => {
+    cancelRef.current = true
+    setBulkDelete((prev) => ({ ...prev, isCancelled: true }))
+  }
+
+  // Ref for latest cancellation state
+  const cancelRef = useRef(false)
 
   const handleRestore = async (id: string, name: string) => {
     try {
@@ -259,6 +292,99 @@ export function DocumentList({ showDeleted = false }: DocumentListProps) {
   }
 
   const documents = data?.items ?? []
+
+  // Selection helpers
+  const allIds = useMemo(() => documents.map((d) => d.id), [documents])
+  const visibleIds = useMemo(() => documents.map((d) => d.id), [documents])
+
+  const isAllSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id))
+  const isIndeterminate = visibleIds.some((id) => selectedIds.has(id)) && !isAllSelected
+
+  const toggleSelection = useCallback((id: string, checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (checked) {
+        next.add(id)
+      } else {
+        next.delete(id)
+      }
+      return next
+    })
+  }, [])
+
+  const toggleSelectAll = useCallback((checked: boolean) => {
+    if (checked) {
+      setSelectedIds(new Set(visibleIds))
+    } else {
+      setSelectedIds(new Set())
+    }
+  }, [visibleIds])
+
+  const clearSelection = useCallback(() => {
+    setSelectedIds(new Set())
+  }, [])
+
+  const selectedCount = selectedIds.size
+
+  // Sequential bulk delete with progress
+  const runBulkDelete = useCallback(async () => {
+    const idsToDelete = Array.from(selectedIds)
+    if (idsToDelete.length === 0) return
+
+    setBulkDelete({
+      isOpen: true,
+      selectedIds: idsToDelete,
+      names: idsToDelete.map(id => documents.find(d => d.id === id)?.name ?? "Unknown"),
+      currentIndex: 0,
+      total: idsToDelete.length,
+      isCancelled: false,
+      errors: [],
+    })
+
+    const errors: BulkDeleteState["errors"] = []
+
+    for (let i = 0; i < idsToDelete.length; i++) {
+      if (cancelRef.current) break
+
+      const id = idsToDelete[i]
+      const doc = documents.find((d) => d.id === id)
+
+      // Update progress
+      setBulkDelete((prev) => ({
+        ...prev,
+        currentIndex: i,
+      }))
+
+      try {
+        await deleteDocument(id).unwrap()
+      } catch (error: unknown) {
+        const apiError = error as ApiError
+        errors.push({
+          id,
+          name: doc?.name ?? "Unknown",
+          error: apiError.data?.error ?? "Delete failed",
+        })
+      }
+
+      // Small delay to show progress and avoid overwhelming server
+      await new Promise((resolve) => setTimeout(resolve, 150))
+    }
+
+    setBulkDelete((prev) => ({
+      ...prev,
+      isOpen: false,
+    }))
+
+    clearSelection()
+
+    // Show summary toast
+    const successCount = idsToDelete.length - errors.length
+    if (errors.length === 0) {
+      toast.success(`Deleted ${successCount} document${successCount === 1 ? "" : "s"} successfully`)
+    } else {
+      toast.error(`Deleted ${successCount}, ${errors.length} failed`)
+    }
+   }, [selectedIds, deleteDocument, documents, clearSelection])
 
   if (isLoading) {
     return (
@@ -329,15 +455,82 @@ export function DocumentList({ showDeleted = false }: DocumentListProps) {
           </div>
         </div>
 
+        {/* Select all bar - always visible when documents exist (not in trash) */}
+        {!showDeleted && documents.length > 0 && (
+          <div className="flex items-center gap-2 py-2">
+            <Checkbox
+              id="select-all-page"
+              checked={isAllSelected}
+              ref={(el: HTMLInputElement | null) => {
+                if (el) {
+                  el.indeterminate = isIndeterminate
+                }
+              }}
+              onCheckedChange={(checked: boolean) => toggleSelectAll(checked)}
+              aria-label={`Select all ${documents.length} documents on this page`}
+            />
+            <label
+              htmlFor="select-all-page"
+              className="cursor-pointer text-sm font-medium select-none"
+            >
+              Select all {documents.length} document{documents.length === 1 ? "" : "s"}
+            </label>
+          </div>
+        )}
+
+        {/* Bulk action bar - shown when items selected */}
+        {selectedCount > 0 && (
+          <div className="flex items-center justify-between rounded-lg border border-border/60 bg-primary/10 px-4 py-2.5 shadow-sm">
+            <div className="flex items-center gap-3">
+              <span className="text-sm font-medium">
+                {selectedCount} document{selectedCount === 1 ? "" : "s"} selected
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-destructive hover:text-destructive"
+                onClick={() => clearSelection()}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => runBulkDelete()}
+                disabled={isDeleting}
+              >
+                <Trash2 className="mr-1.5 size-3.5" />
+                Delete Selected
+              </Button>
+            </div>
+          </div>
+        )}
+
         <div className="divide-y divide-border/40 overflow-hidden rounded-lg border border-border/50 bg-card/60">
           {documents.map((doc) => (
             <div
               key={doc.id}
               className={cn(
                 "group flex flex-col gap-3 bg-card/40 px-4 py-3.5 transition-colors duration-150 sm:flex-row sm:items-center",
-                !showDeleted && "hover:bg-muted/40"
+                !showDeleted && "hover:bg-muted/40",
+                selectedIds.has(doc.id) && "bg-primary/10"
               )}
             >
+              {/* Checkbox column */}
+              {!showDeleted && (
+                <div className="flex shrink-0 items-center pr-2">
+                  <Checkbox
+                    id={`select-${doc.id}`}
+                    checked={selectedIds.has(doc.id)}
+                    onCheckedChange={(checked: boolean) => toggleSelection(doc.id, checked)}
+                    aria-label={`Select ${doc.name}`}
+                    className="size-4"
+                  />
+                </div>
+              )}
+
               <Link
                 href={`/app/documents/${doc.id}`}
                 className={cn(
@@ -518,6 +711,103 @@ export function DocumentList({ showDeleted = false }: DocumentListProps) {
             >
               {isDeleting ? "Deleting..." : "Delete"}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Bulk Delete Progress Dialog */}
+      <Dialog
+        open={bulkDelete.isOpen}
+        onOpenChange={(open) => {
+          if (!open && !bulkDelete.isCancelled) {
+            // Don't allow closing while in progress; cancel must be clicked
+          }
+        }}
+      >
+        <DialogContent
+          className="rounded-xl border border-border/60 bg-card/95 p-6 backdrop-blur-xl sm:max-w-md"
+          size="sm"
+        >
+          <DialogHeader className="gap-3">
+            <DialogTitle className="flex items-center gap-2 text-base font-semibold">
+              <div className="flex size-5 items-center justify-center">
+                {bulkDelete.currentIndex < bulkDelete.total ? (
+                  <div className="size-3 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                ) : (
+                  <CheckCircle2 className="size-4 text-primary" />
+                )}
+              </div>
+              Deleting documents...
+            </DialogTitle>
+            <DialogDescription className="space-y-3 text-sm leading-6">
+              {/* Progress bar */}
+              <div className="flex items-center gap-2">
+                <div className="flex-1">
+                  <div className="h-2 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-primary transition-all duration-200"
+                      style={{
+                        width: `${((bulkDelete.currentIndex + (bulkDelete.isCancelled ? 0 : 1)) / bulkDelete.total) * 100}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+                <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                  {bulkDelete.currentIndex + (bulkDelete.isCancelled ? 0 : 1)}/{bulkDelete.total}
+                </span>
+              </div>
+
+              {/* Current item */}
+              {bulkDelete.names && bulkDelete.currentIndex < bulkDelete.total && (
+                <p className="text-foreground/80">
+                  Deleting: <span className="font-medium text-foreground">
+                    {bulkDelete.names[bulkDelete.currentIndex]}
+                  </span>
+                </p>
+              )}
+
+              {/* Errors */}
+              {bulkDelete.errors.length > 0 && (
+                <div className="mt-2 space-y-1 rounded-lg bg-destructive/10 p-3">
+                  <p className="text-xs font-medium text-destructive">
+                    Failed to delete {bulkDelete.errors.length} document{bulkDelete.errors.length === 1 ? "" : "s"}:
+                  </p>
+                  <ul className="space-y-0.5">
+                    {bulkDelete.errors.slice(0, 3).map((err) => (
+                      <li key={err.id} className="text-xs text-destructive/80 truncate" title={err.name}>
+                        {err.name}: {err.error}
+                      </li>
+                    ))}
+                    {bulkDelete.errors.length > 3 && (
+                      <li className="text-xs text-destructive/70">
+                        +{bulkDelete.errors.length - 3} more...
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <DialogFooter className="mt-4 gap-2">
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full sm:w-auto"
+              onClick={cancelBulkDelete}
+              disabled={bulkDelete.currentIndex >= bulkDelete.total}
+            >
+              {bulkDelete.isCancelled ? "Cancelled" : "Cancel"}
+            </Button>
+            {!bulkDelete.isCancelled && bulkDelete.currentIndex >= bulkDelete.total && (
+              <Button
+                type="button"
+                className="w-full sm:w-auto"
+                onClick={() => setBulkDelete((prev) => ({ ...prev, isOpen: false }))}
+              >
+                Done
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

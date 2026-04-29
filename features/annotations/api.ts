@@ -1,9 +1,16 @@
 import { api } from "@/store/api"
+import type { RootState } from "@/store"
 import type { AnnotationWithTags, TagSummary } from "./types"
 import type { CreateAnnotationInput, UpdateAnnotationInput } from "./schema"
 
 export interface CreateAnnotationArg extends CreateAnnotationInput {
   documentId: string
+  clientId?: string // For idempotent upserts
+}
+
+// For bulk API — documentId is sent at top level, not per item
+export interface BulkAnnotationItem extends CreateAnnotationInput {
+  clientId?: string
 }
 
 export interface UpdateAnnotationArg extends UpdateAnnotationInput {
@@ -40,19 +47,44 @@ export const annotationsApi = api.injectEndpoints({
       ],
     }),
 
+    // ─── Bulk create annotations (background sync — no optimistic update) ───
+    // Cache is already populated by useAnnotationManager before this is called.
+    // This endpoint only syncs to server and returns IDs.
+    bulkCreateAnnotations: b.mutation<
+      { id: string; clientId?: string; status: string }[],
+      { documentId: string; annotations: BulkAnnotationItem[] }
+    >({
+      query: ({ documentId, annotations }) => ({
+        url: `/annotations/bulk`,
+        method: "POST",
+        body: {
+          documentId,
+          annotations,
+        },
+      }),
+      transformResponse: (res: { data: Array<{ id: string; clientId?: string; status: string }>; count: number }) => res.data,
+      // No onQueryStarted — cache already has the annotations locally
+      invalidatesTags: [],
+    }),
+
     // ─── Create annotation (optimistic) ─────────────────────────────────────
-    createAnnotation: b.mutation<AnnotationWithTags, CreateAnnotationArg>({
-      query: ({ documentId, ...body }) => ({
+    createAnnotation: b.mutation<
+      { id: string; clientId?: string; status: string },
+      CreateAnnotationArg
+    >({
+      query: ({ documentId, clientId, ...body }) => ({
         url: `/documents/${documentId}/annotations`,
         method: "POST",
-        body,
+        body: { ...body, clientId }, // Send clientId to server for idempotency
       }),
-      transformResponse: (res: { data: AnnotationWithTags }) => res.data,
-      async onQueryStarted(input, { dispatch, queryFulfilled }) {
+      transformResponse: (res: { data: { id: string; clientId?: string; status: string } }) => res.data,
+      async onQueryStarted(input, { dispatch, getState, queryFulfilled }) {
+        const state = getState() as RootState
+        const currentUser = state.auth.user
         const tempId = `temp-${crypto.randomUUID()}`
         const optimistic: AnnotationWithTags = {
           id: tempId,
-          userId: "optimistic",
+          userId: currentUser?.id ?? "optimistic",
           documentId: input.documentId,
           pageNumber: input.pageNumber,
           type: input.type,
@@ -64,6 +96,14 @@ export const annotationsApi = api.injectEndpoints({
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           tags: [],
+          author: currentUser
+            ? {
+                id: currentUser.id,
+                name: currentUser.name,
+                email: currentUser.email,
+                image: currentUser.image,
+              }
+            : null,
           assignee: null,
         }
         const patch = dispatch(
@@ -76,14 +116,18 @@ export const annotationsApi = api.injectEndpoints({
           )
         )
         try {
-          const { data } = await queryFulfilled
+          const { data: serverResponse } = await queryFulfilled
+          // Replace optimistic entry with server-confirmed ID
           dispatch(
             annotationsApi.util.updateQueryData(
               "listByDocument",
               input.documentId,
               (draft) => {
                 const idx = draft.findIndex((a) => a.id === tempId)
-                if (idx >= 0) draft[idx] = data
+                if (idx >= 0) {
+                  draft[idx].id = serverResponse.id
+                  draft[idx].userId = currentUser?.id ?? draft[idx].userId
+                }
               }
             )
           )
@@ -91,9 +135,8 @@ export const annotationsApi = api.injectEndpoints({
           patch.undo()
         }
       },
-      invalidatesTags: (_r, _e, { documentId }) => [
-        { type: "Annotation", id: `LIST-${documentId}` },
-      ],
+      // No invalidation needed - cache already updated
+      invalidatesTags: [],
     }),
 
     // ─── Update annotation (optimistic) ──────────────────────────────────────
@@ -245,6 +288,7 @@ export const annotationsApi = api.injectEndpoints({
 export const {
   useListByDocumentQuery,
   useCreateAnnotationMutation,
+  useBulkCreateAnnotationsMutation,
   useUpdateAnnotationMutation,
   useDeleteAnnotationMutation,
   useAddTagMutation,

@@ -96,6 +96,7 @@ export const AnnotationStatusSchema = z.enum([
 
 // ─── Create annotation ─────────────────────────────────────────────────────────
 export const CreateAnnotationSchema = z.object({
+  clientId: z.string().uuid().optional(), // For idempotent upserts
   pageNumber: z.number().int().positive(),
   type: AnnotationTypeSchema,
   status: AnnotationStatusSchema.optional(),
@@ -115,6 +116,7 @@ export const UpdateAnnotationSchema = z
     positionData: PositionDataSchema,
     status: AnnotationStatusSchema,
     assigneeId: z.string().cuid().nullable(),
+    updatedAt: z.string().datetime(), // For staleness detection (409 conflict)
   })
   .partial()
   .refine((data) => Object.keys(data).length > 0, {

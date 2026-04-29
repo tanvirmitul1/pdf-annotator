@@ -209,6 +209,7 @@ model Document {
 
 model Annotation {
   id           String         @id @default(cuid())
+  clientId     String?        @unique // For idempotent upserts
   userId       String
   assigneeId   String?
   documentId   String

@@ -16,6 +16,7 @@ import {
   positionDataEquals,
   resizePositionData,
   translatePositionData,
+  simplifyPath,
   type ResizeHandle,
 } from "@/features/annotations/geometry"
 import { resolveTextAnchor } from "@/features/annotations/reanchor"
@@ -30,6 +31,7 @@ import type {
   TextAnchor,
   TextRect,
 } from "@/features/annotations/types"
+import { useAnnotationManager } from "@/features/annotations/use-annotation-manager"
 import { useViewer } from "@/features/viewer/provider"
 import { cn } from "@/lib/utils"
 import { useAppSelector } from "@/store/hooks"
@@ -111,6 +113,7 @@ export function AnnotationOverlay({
   const [createAnnotation] = useCreateAnnotationMutation()
   const [deleteAnnotation] = useDeleteAnnotationMutation()
   const [updateAnnotation] = useUpdateAnnotationMutation()
+  const { addAnnotation } = useAnnotationManager(documentId)
 
   const activeTool = useViewer((state) => state.activeTool)
   const selectedColor = useViewer((state) => state.selectedColor)
@@ -509,7 +512,8 @@ export function AnnotationOverlay({
     return (
       annotation.author?.id === currentUser.id ||
       annotation.userId === currentUser.id ||
-      annotation.userId === "optimistic"
+      annotation.userId === "optimistic" ||
+      annotation.userId === "local"
     )
   }
 
@@ -664,7 +668,7 @@ export function AnnotationOverlay({
 
   const restoreDeletedAnnotation = useCallback(
     async (annotation: AnnotationWithTags) => {
-      const recreated = await createAnnotation({
+      await createAnnotation({
         documentId,
         pageNumber: annotation.pageNumber,
         type: annotation.type,
@@ -673,9 +677,10 @@ export function AnnotationOverlay({
         ...(annotation.content ? { content: annotation.content } : {}),
       }).unwrap()
 
-      pushUndo({ action: "create", before: null, after: recreated })
+      // Note: The annotation is already in the cache via optimistic update
+      // We don't need to push undo here since it's a restore operation
     },
-    [createAnnotation, documentId, pushUndo]
+    [createAnnotation, documentId]
   )
 
   const deleteAnnotationImmediate = useCallback(
@@ -907,25 +912,6 @@ export function AnnotationOverlay({
     hoverTimerRef.current = setTimeout(apply, HOVER_DELAY_MS)
   }
 
-  async function createAndTrack(
-    input: Parameters<typeof createAnnotation>[0],
-    options?: { openPanel?: boolean }
-  ) {
-    try {
-      const created = await createAnnotation(input).unwrap()
-      pushUndo({ action: "create", before: null, after: created })
-
-      if (options?.openPanel) {
-        openAnnotation(created.id)
-      }
-
-      return created
-    } catch {
-      toast.error("Could not create annotation")
-      return null
-    }
-  }
-
   async function commitTextAnnotation(
     color: string,
     options?: { openPanel?: boolean }
@@ -944,20 +930,30 @@ export function AnnotationOverlay({
       return
     }
 
-    await createAndTrack(
-      {
-        documentId,
+    // Use new annotation manager
+    addAnnotation({
+      documentId,
+      pageNumber,
+      type: annotationType,
+      color,
+      positionData: {
+        kind: "TEXT",
         pageNumber,
-        type: annotationType,
-        color,
-        positionData: {
-          kind: "TEXT",
-          pageNumber,
-          anchor,
-        },
+        anchor,
       },
-      options
-    )
+    })
+
+    if (options?.openPanel) {
+      // Will open panel after annotation is created
+      // Note: With optimistic UI, we need to wait for the server ID
+      setTimeout(() => {
+        // Open most recent annotation
+        const latestId = allAnnotations
+          .filter((a) => a.pageNumber === pageNumber)
+          .slice(-1)[0]?.id
+        if (latestId) openAnnotation(latestId)
+      }, 100)
+    }
   }
 
   async function handleAnnotationActivate(annotation: AnnotationWithTags) {
@@ -1058,22 +1054,24 @@ export function AnnotationOverlay({
 
     if (activeTool === "note") {
       const srcPos = getSrcPos(rel)
-      await createAndTrack(
-        {
-          documentId,
+      // Use new annotation manager
+      const clientId = addAnnotation({
+        documentId,
+        pageNumber,
+        type: "NOTE",
+        color: selectedColor,
+        positionData: {
+          kind: "POINT",
           pageNumber,
-          type: "NOTE",
-          color: selectedColor,
-          positionData: {
-            kind: "POINT",
-            pageNumber,
-            x: srcPos.x,
-            y: srcPos.y,
-          },
-          content: "",
+          x: srcPos.x,
+          y: srcPos.y,
         },
-        { openPanel: true }
-      )
+        content: "",
+      })
+      
+      // Open panel for note editing
+      setTimeout(() => openAnnotation(clientId), 100)
+      
       drawingRef.current = false
       startPosRef.current = null
       return
@@ -1081,24 +1079,22 @@ export function AnnotationOverlay({
 
     if (activeTool === "textbox") {
       const srcPos = getSrcPos(rel)
-      await createAndTrack(
-        {
-          documentId,
+      // Use new annotation manager
+      addAnnotation({
+        documentId,
+        pageNumber,
+        type: "TEXTBOX",
+        color: selectedColor,
+        positionData: {
+          kind: "RECT",
           pageNumber,
-          type: "TEXTBOX",
-          color: selectedColor,
-          positionData: {
-            kind: "RECT",
-            pageNumber,
-            x: srcPos.x,
-            y: srcPos.y,
-            width: 150 / zoom,
-            height: 80 / zoom,
-          },
-          content: "",
+          x: srcPos.x,
+          y: srcPos.y,
+          width: 150 / zoom,
+          height: 80 / zoom,
         },
-        { openPanel: true }
-      )
+        content: "",
+      })
       drawingRef.current = false
       startPosRef.current = null
     }
@@ -1160,6 +1156,10 @@ export function AnnotationOverlay({
       drawPath.length >= 2
     ) {
       const srcPoints = drawPath.map((point) => getSrcPos(point))
+      
+      // Simplify points to reduce payload size by 50-70%
+      const simplifiedPoints = simplifyPath(srcPoints, 2)
+      
       const pathStyle =
         activeTool === "freehandHighlight" ? "highlighter" : "pen"
       const nextPath = {
@@ -1170,13 +1170,14 @@ export function AnnotationOverlay({
         positionData: {
           kind: "PATH" as const,
           pageNumber,
-          points: srcPoints,
+          points: simplifiedPoints, // Use simplified points
           strokeWidth: toolThickness / zoom,
           style: pathStyle as "pen" | "highlighter",
         },
       }
       setDrawPath([])
-      void createAndTrack(nextPath)
+      // Use new annotation manager for instant UI + queued sync
+      addAnnotation(nextPath)
     } else if (activeTool === "arrow" && arrowDraw) {
       const nextArrow = {
         documentId,
@@ -1193,7 +1194,8 @@ export function AnnotationOverlay({
       }
       setDrawPath([])
       setArrowDraw(null)
-      void createAndTrack(nextArrow)
+      // Use new annotation manager
+      addAnnotation(nextArrow)
     } else if (
       (activeTool === "rectangle" || activeTool === "circle") &&
       drawRect &&
@@ -1218,7 +1220,8 @@ export function AnnotationOverlay({
         },
       }
       setDrawRect(null)
-      void createAndTrack(nextShape)
+      // Use new annotation manager
+      addAnnotation(nextShape)
     }
 
     setDrawPath([])

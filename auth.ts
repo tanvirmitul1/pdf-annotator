@@ -11,6 +11,16 @@ import { usersRepository } from "@/lib/db/repositories/users"
 import { provisionOAuthUser } from "@/lib/auth/register"
 import { track } from "@/lib/analytics"
 
+// Debug: Log Google OAuth config on module load (remove in production)
+console.log("[Auth Config] GOOGLE_CLIENT_ID:", env.GOOGLE_CLIENT_ID ? "set" : "MISSING")
+console.log("[Auth Config] GOOGLE_CLIENT_SECRET:", env.GOOGLE_CLIENT_SECRET ? "set" : "MISSING")
+console.log("[Auth Config] NEXTAUTH_SECRET:", env.NEXTAUTH_SECRET ? "set" : "MISSING")
+console.log("[Auth Config] AUTH_SECRET:", process.env.AUTH_SECRET ? "set" : "MISSING")
+console.log("[Auth Config] AUTH_GOOGLE_ID:", process.env.AUTH_GOOGLE_ID ? "set" : "MISSING")
+console.log("[Auth Config] AUTH_GOOGLE_SECRET:", process.env.AUTH_GOOGLE_SECRET ? "set" : "MISSING")
+console.log("[Auth Config] Effective clientId:", (env.GOOGLE_CLIENT_ID || process.env.AUTH_GOOGLE_ID || process.env.GOOGLE_CLIENT_ID) ? "available" : "UNDEFINED")
+console.log("[Auth Config] Effective secret:", (env.GOOGLE_CLIENT_SECRET || process.env.AUTH_GOOGLE_SECRET || process.env.GOOGLE_CLIENT_SECRET) ? "available" : "UNDEFINED")
+
 const CredentialsSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
@@ -21,13 +31,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: {
     strategy: "jwt",
   },
+  debug: process.env.NODE_ENV === "development",
   pages: {
     signIn: "/login",
   },
   providers: [
     Google({
-      clientId: env.GOOGLE_CLIENT_ID,
-      clientSecret: env.GOOGLE_CLIENT_SECRET,
+      clientId: env.GOOGLE_CLIENT_ID || process.env.AUTH_GOOGLE_ID || process.env.GOOGLE_CLIENT_ID,
+      clientSecret: env.GOOGLE_CLIENT_SECRET || process.env.AUTH_GOOGLE_SECRET || process.env.GOOGLE_CLIENT_SECRET,
       profile(profile) {
         if (!profile.email_verified) {
           throw new Error("Google account email is not verified")
@@ -123,5 +134,5 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       return session
     },
   },
-  secret: env.NEXTAUTH_SECRET,
+  secret: env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
 })

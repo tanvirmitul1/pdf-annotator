@@ -92,7 +92,8 @@ function isAnnotationOwner(
   return (
     annotation.author?.id === currentUserId ||
     annotation.userId === currentUserId ||
-    annotation.userId === "optimistic"
+    annotation.userId === "optimistic" ||
+    annotation.userId === "local"
   )
 }
 
@@ -369,7 +370,7 @@ export function AnnotationPanel({ documentId }: AnnotationPanelProps) {
       return
     }
 
-    const recreated = await createAnnotation({
+    await createAnnotation({
       documentId,
       pageNumber: annotation.pageNumber,
       type: annotation.type,
@@ -380,7 +381,7 @@ export function AnnotationPanel({ documentId }: AnnotationPanelProps) {
       ...(annotation.content ? { content: annotation.content } : {}),
     }).unwrap()
 
-    pushUndo({ action: "create", before: null, after: recreated })
+    // Note: The annotation is already in the cache via optimistic update
   }
 
   async function handleDelete() {
