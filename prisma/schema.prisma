@@ -110,6 +110,7 @@ model User {
   exportJobs         ExportJob[]
   emailLogs          EmailLog[]
   auditLogs          AuditLog[]
+  apiKeys            ApiKey[]
 
   @@index([planId])
   @@index([deletedAt])
@@ -494,4 +495,19 @@ model Notification {
   @@index([userId])
   @@index([userId, readAt])
   @@index([userId, createdAt(sort: Desc)])
+}
+
+model ApiKey {
+  id         String    @id @default(cuid())
+  userId     String
+  name       String
+  prefix     String
+  tokenHash  String    @unique
+  lastUsedAt DateTime?
+  expiresAt  DateTime?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }

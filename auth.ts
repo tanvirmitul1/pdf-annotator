@@ -119,7 +119,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     async signIn({ user, account }) {
       if (user.id && account?.provider) {
         await track(user.id, "user_signed_in", {
-          method: account.provider === "credentials" ? "credentials" : account.provider,
+          method: account.provider as "google" | "github" | "credentials",
         })
       }
     },

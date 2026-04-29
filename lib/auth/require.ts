@@ -13,6 +13,7 @@ import {
 } from "@/lib/device/identity"
 import { getIpAddressFromRequestHeaders } from "@/lib/request"
 import { UnauthenticatedError } from "@/lib/errors"
+import { extractBearerToken, verifyApiKey } from "@/lib/auth/api-keys"
 
 export async function getCurrentUser() {
   const session = await auth()
@@ -94,15 +95,28 @@ export async function getCurrentIdentity() {
 }
 
 export async function requireRequestIdentity(request: NextRequest) {
+  // 1. Try cookie-based session first
   const session = await auth()
   const identity = await resolveOptionalIdentityFromRequest(
     request,
     session?.user?.id ?? null
   )
 
-  if (!identity) {
-    throw new UnauthenticatedError()
+  if (identity) {
+    return identity
   }
 
-  return identity
+  // 2. Fall back to Bearer token (for desktop/mobile/API clients)
+  const bearerToken = extractBearerToken(request.headers.get("authorization"))
+  if (bearerToken) {
+    const userId = await verifyApiKey(bearerToken)
+    return {
+      userId,
+      isAnonymous: false as const,
+      cookieWasCreated: false as const,
+      deviceToken: null,
+    }
+  }
+
+  throw new UnauthenticatedError()
 }

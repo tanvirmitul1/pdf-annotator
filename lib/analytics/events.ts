@@ -3,8 +3,8 @@ export const ANALYTICS_CONSENT_COOKIE = "pdf-annotator-analytics-consent"
 export type AnalyticsConsent = "accepted" | "rejected" | "unknown"
 
 export type AnalyticsEvent =
-  | { name: "user_signed_up"; props: { method: "google" | "credentials" } }
-  | { name: "user_signed_in"; props: { method: "google" | "credentials" } }
+  | { name: "user_signed_up"; props: { method: "google" | "github" | "credentials" } }
+  | { name: "user_signed_in"; props: { method: "google" | "github" | "credentials" } }
   | { name: "user_signed_out"; props: Record<string, never> }
   | { name: "document_uploaded"; props: { pageCount: number; sizeMb: number; type: "pdf" | "image" } }
   | { name: "document_opened"; props: { documentId: string; pageCount: number } }
