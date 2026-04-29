@@ -41,3 +41,6 @@ next-env.d.ts
 
 # uploads
 /uploads
+
+# graphify
+/graphify-out
