@@ -170,6 +170,14 @@ jobs:
               --node-args="--max-old-space-size=512" \
               -- --hostname 0.0.0.0
 
+            # Update worker code and restart
+            WORKER_DIR="$HOME/pdf-annotator"
+            if [ -d "$WORKER_DIR" ]; then
+              cd "$WORKER_DIR"
+              git pull origin master
+              pm2 restart pdf-worker 2>/dev/null || true
+            fi
+
             pm2 save
 
             echo "Deploy complete"
