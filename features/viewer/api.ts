@@ -80,9 +80,10 @@ export const viewerApi = api.injectEndpoints({
           patch.undo()
         }
       },
-      invalidatesTags: (_r, _e, { documentId }) => [
-        { type: "ReadingProgress", id: documentId },
-      ],
+      // No invalidatesTags here — the optimistic update via onQueryStarted
+      // already patches the cached viewer data. Invalidating would refetch
+      // getDocumentViewerData on every scroll, triggering a cascade:
+      // scroll → progress PUT → viewer-data GET → PDF download GET → loop.
     }),
   }),
 })

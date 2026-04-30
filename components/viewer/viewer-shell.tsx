@@ -304,18 +304,26 @@ function ViewerShellInner({
     clearUndoHistory()
   }, [documentId, clearUndoHistory])
 
-  // Load PDF
+  // Capture initial reading position once — not as a reactive dependency
+  const initialLastPage = useRef<number | null>(null)
+  if (initialLastPage.current === null && data?.readingProgress?.lastPage) {
+    initialLastPage.current = data.readingProgress.lastPage
+  }
+
+  // Load PDF — only depends on document metadata, NOT reading progress
+  const docStatus = data?.document?.status
+  const docStorageKey = data?.document?.storageKey
   useEffect(() => {
     if (!data?.document) return
 
-    if (data.document.status !== "READY") {
+    if (docStatus !== "READY") {
       const interval = setInterval(() => {
         void refetch()
       }, 2000)
       return () => clearInterval(interval)
     }
 
-    if (!data.document.storageKey) return
+    if (!docStorageKey) return
 
     let cancelled = false
 
@@ -333,7 +341,7 @@ function ViewerShellInner({
         if (!cancelled) {
           setPdfDocument(pdf)
           setTotalPages(pdf.numPages)
-          const lastPage = data?.readingProgress?.lastPage
+          const lastPage = initialLastPage.current
           if (lastPage && lastPage > 1) {
             setPage(lastPage)
           } else if (initialPage && initialPage > 1) {
@@ -352,13 +360,14 @@ function ViewerShellInner({
       cancelled = true
     }
   }, [
-    data?.document,
+    docStatus,
+    docStorageKey,
     documentId,
-    data?.readingProgress?.lastPage,
     initialPage,
     setPage,
     setTotalPages,
     refetch,
+    data?.document,
   ])
 
   const ZOOM_STEPS = [0.25, 0.33, 0.5, 0.67, 0.75, 1, 1.25, 1.5, 2, 3, 4]
