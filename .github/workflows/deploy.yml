@@ -1,0 +1,142 @@
+name: Build & Deploy (Low RAM VPS Safe)
+
+# ──────────────────────────────────────────────────────────────
+# WHY: Your 1GB VPS cannot survive `next build`. This workflow
+# builds on GitHub's 7GB runner, then ships only the compiled
+# standalone output (~50-100MB) to your server.
+# ──────────────────────────────────────────────────────────────
+
+on:
+  push:
+    branches: [master]   # change to 'main' if you rename later
+
+  # Allows manual trigger from GitHub UI (Actions → Run workflow)
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: "20"
+  DEPLOY_PATH: "/var/www/pdf-annotator"
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      # ─── 1. Checkout code ───────────────────────────────────
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # ─── 2. Setup Node + pnpm ──────────────────────────────
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"   # caches ~/.pnpm-store between runs
+
+      # ─── 3. Install dependencies ───────────────────────────
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # ─── 4. Generate Prisma client ─────────────────────────
+      # postinstall runs `prisma generate` but let's be explicit
+      - name: Generate Prisma client
+        run: pnpm db:generate
+
+      # ─── 5. Build (standalone mode) ────────────────────────
+      # CI_BUILD=1 triggers `output: "standalone"` in next.config.mjs
+      - name: Build Next.js (standalone)
+        run: pnpm build
+        env:
+          CI_BUILD: "1"
+          NODE_OPTIONS: "--max-old-space-size=4096"
+          # ⚠️ Server-side vars: dummy values fine — real values loaded
+          # at runtime from .env on your VPS.
+          DATABASE_URL: "postgresql://dummy:dummy@localhost:5432/dummy"
+          DIRECT_URL: "postgresql://dummy:dummy@localhost:5432/dummy"
+          AUTH_SECRET: "build-time-placeholder-not-used-at-runtime"
+          NEXTAUTH_SECRET: "build-time-placeholder-not-used-at-runtime"
+          NEXTAUTH_URL: "http://localhost:3000"
+          # ⚠️ NEXT_PUBLIC_* vars are BAKED INTO client JS at build time.
+          # These must be real values — they cannot be overridden at runtime.
+          NEXT_PUBLIC_POSTHOG_KEY: ${{ secrets.NEXT_PUBLIC_POSTHOG_KEY }}
+          NEXT_PUBLIC_POSTHOG_HOST: "https://app.posthog.com"
+          NEXT_PUBLIC_SENTRY_DSN: ${{ secrets.NEXT_PUBLIC_SENTRY_DSN }}
+
+      # ─── 6. Prepare deploy package ─────────────────────────
+      # standalone output structure:
+      #   .next/standalone/   → full Node.js server (server.js + node_modules)
+      #   .next/static/       → client-side assets (JS, CSS)
+      #   public/             → static files (favicon, images)
+      - name: Prepare deploy package
+        run: |
+          mkdir -p deploy/.next
+          cp -r .next/standalone/* deploy/
+          cp -r .next/static deploy/.next/static
+          cp -r public deploy/public
+
+          # Copy Prisma schema + migrations for `prisma migrate deploy`
+          mkdir -p deploy/prisma
+          cp -r prisma/schema.prisma deploy/prisma/
+          cp -r prisma/migrations deploy/prisma/migrations
+
+      # ─── 7. Upload to VPS via SCP ──────────────────────────
+      - name: Upload to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          source: "deploy/*"
+          target: "${{ env.DEPLOY_PATH }}/incoming"
+          strip_components: 1   # removes the "deploy/" prefix
+
+      # ─── 8. Deploy on VPS ──────────────────────────────────
+      - name: Deploy and restart
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          script: |
+            set -e
+            APP_DIR="${{ env.DEPLOY_PATH }}"
+            ENV_FILE="$APP_DIR/.env"
+
+            # Swap old → new atomically
+            rm -rf "$APP_DIR/previous"
+            if [ -d "$APP_DIR/current" ]; then
+              mv "$APP_DIR/current" "$APP_DIR/previous"
+            fi
+            mv "$APP_DIR/incoming" "$APP_DIR/current"
+
+            cd "$APP_DIR/current"
+
+            # Symlink the shared .env into the current release
+            ln -sf "$ENV_FILE" .env
+
+            # Load env vars so prisma can connect to DB
+            set -a
+            source "$ENV_FILE"
+            set +a
+
+            # Run database migrations
+            npx prisma migrate deploy
+
+            # Restart via PM2 (ecosystem file loads .env automatically)
+            pm2 reload pdf-annotator --update-env 2>/dev/null \
+              || pm2 start server.js --name pdf-annotator \
+                   --node-args="--max-old-space-size=512" \
+                   --env-file "$ENV_FILE" \
+                   -- --hostname 0.0.0.0
+
+            pm2 save
+
+            echo "Deploy complete"
