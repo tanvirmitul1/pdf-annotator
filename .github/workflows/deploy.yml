@@ -89,20 +89,15 @@ jobs:
           cp -r .next/static deploy/.next/static
           cp -r public deploy/public
 
-          # Copy Prisma schema, config + migrations for `prisma migrate deploy`
+          # Copy Prisma schema + migrations for `prisma migrate deploy`
           mkdir -p deploy/prisma
           cp -r prisma/schema.prisma deploy/prisma/
           cp -r prisma/migrations deploy/prisma/migrations
-          cp prisma.config.ts deploy/
 
-          # Create a no-op dotenv stub so prisma.config.ts can import
-          # "dotenv/config" without error. The real env vars are loaded
-          # via `source .env` in the deploy script — dotenv is not needed.
-          mkdir -p deploy/node_modules/dotenv
-          echo '{"name":"dotenv","main":"lib/main.js"}' > deploy/node_modules/dotenv/package.json
-          mkdir -p deploy/node_modules/dotenv/lib
-          echo "module.exports = {}" > deploy/node_modules/dotenv/lib/main.js
-          echo "// no-op: env vars loaded by shell" > deploy/node_modules/dotenv/config.js
+          # Create a deploy-only prisma.config.ts that doesn't depend on
+          # dotenv or prisma/config (not available in standalone output).
+          # Env vars are loaded via `source .env` in the deploy script.
+          printf '%s\n' 'export default {' '  schema: "prisma/schema.prisma",' '  datasource: { url: process.env.DIRECT_URL },' '}' > deploy/prisma.config.ts
 
       # ─── 7. Upload to VPS via SCP ──────────────────────────
       - name: Upload to VPS
