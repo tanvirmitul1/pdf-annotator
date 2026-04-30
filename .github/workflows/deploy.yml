@@ -89,10 +89,11 @@ jobs:
           cp -r .next/static deploy/.next/static
           cp -r public deploy/public
 
-          # Copy Prisma schema + migrations for `prisma migrate deploy`
+          # Copy Prisma schema, config + migrations for `prisma migrate deploy`
           mkdir -p deploy/prisma
           cp -r prisma/schema.prisma deploy/prisma/
           cp -r prisma/migrations deploy/prisma/migrations
+          cp prisma.config.ts deploy/
 
       # ─── 7. Upload to VPS via SCP ──────────────────────────
       - name: Upload to VPS
@@ -135,6 +136,10 @@ jobs:
             set -a
             source "$ENV_FILE"
             set +a
+
+            # Export explicitly for prisma.config.ts which reads DIRECT_URL
+            export DIRECT_URL
+            export DATABASE_URL
 
             # Run database migrations
             npx prisma migrate deploy
