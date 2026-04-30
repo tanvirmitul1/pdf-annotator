@@ -115,6 +115,7 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ secrets.SERVER_PORT || 22 }}
+          command_timeout: 5m
           script: |
             set -e
             APP_DIR="${{ env.DEPLOY_PATH }}"
@@ -141,9 +142,14 @@ jobs:
             export DIRECT_URL
             export DATABASE_URL
 
-            # Install dotenv (required by prisma.config.ts) — standalone
-            # output doesn't include it since it's not a runtime dependency
-            npm install --no-save dotenv 2>/dev/null
+            # Symlink global dotenv into local node_modules so
+            # prisma.config.ts can import "dotenv/config"
+            # (run `sudo npm install -g dotenv` once on VPS)
+            GLOBAL_DOTENV=$(node -e "console.log(require.resolve('dotenv').replace(/\/lib\/main\.js$/,''))" 2>/dev/null || true)
+            if [ -n "$GLOBAL_DOTENV" ]; then
+              mkdir -p node_modules
+              ln -sf "$GLOBAL_DOTENV" node_modules/dotenv
+            fi
 
             # Run database migrations (uses prisma.config.ts)
             npx prisma migrate deploy
@@ -152,7 +158,6 @@ jobs:
             pm2 reload pdf-annotator --update-env 2>/dev/null \
               || pm2 start server.js --name pdf-annotator \
                    --node-args="--max-old-space-size=512" \
-                   --env-file "$ENV_FILE" \
                    -- --hostname 0.0.0.0
 
             pm2 save
