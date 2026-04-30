@@ -84,10 +84,18 @@ jobs:
       #   public/             → static files (favicon, images)
       - name: Prepare deploy package
         run: |
-          mkdir -p deploy/.next
-          cp -r .next/standalone/* deploy/
+          # Copy standalone output (includes server.js, node_modules, .next/)
+          cp -r .next/standalone deploy
+
+          # The standalone .next/ is missing static assets — add them
           cp -r .next/static deploy/.next/static
+
+          # Copy public directory
           cp -r public deploy/public
+
+          # Debug: verify BUILD_ID exists
+          echo "BUILD_ID: $(cat deploy/.next/BUILD_ID 2>/dev/null || echo 'MISSING!')"
+          ls -la deploy/.next/
 
           # Copy Prisma schema + migrations for `prisma migrate deploy`
           mkdir -p deploy/prisma
@@ -154,11 +162,13 @@ jobs:
             # Run database migrations
             npx prisma migrate deploy
 
-            # Restart via PM2 (ecosystem file loads .env automatically)
-            pm2 reload pdf-annotator --update-env 2>/dev/null \
-              || pm2 start server.js --name pdf-annotator \
-                   --node-args="--max-old-space-size=512" \
-                   -- --hostname 0.0.0.0
+            # Always delete and re-create PM2 process to ensure correct cwd
+            pm2 delete pdf-annotator 2>/dev/null || true
+            pm2 start server.js \
+              --name pdf-annotator \
+              --cwd "$APP_DIR/current" \
+              --node-args="--max-old-space-size=512" \
+              -- --hostname 0.0.0.0
 
             pm2 save
 
