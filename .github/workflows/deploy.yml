@@ -95,9 +95,14 @@ jobs:
           cp -r prisma/migrations deploy/prisma/migrations
           cp prisma.config.ts deploy/
 
-          # Copy dotenv into deploy so prisma.config.ts can import it on VPS
-          cp -r node_modules/.pnpm/dotenv*/node_modules/dotenv deploy/node_modules/dotenv 2>/dev/null \
-            || cp -r node_modules/dotenv deploy/node_modules/dotenv
+          # Create a no-op dotenv stub so prisma.config.ts can import
+          # "dotenv/config" without error. The real env vars are loaded
+          # via `source .env` in the deploy script — dotenv is not needed.
+          mkdir -p deploy/node_modules/dotenv
+          echo '{"name":"dotenv","main":"lib/main.js"}' > deploy/node_modules/dotenv/package.json
+          mkdir -p deploy/node_modules/dotenv/lib
+          echo "module.exports = {}" > deploy/node_modules/dotenv/lib/main.js
+          echo "// no-op: env vars loaded by shell" > deploy/node_modules/dotenv/config.js
 
       # ─── 7. Upload to VPS via SCP ──────────────────────────
       - name: Upload to VPS
