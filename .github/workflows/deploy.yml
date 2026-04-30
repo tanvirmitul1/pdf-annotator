@@ -137,16 +137,21 @@ jobs:
             # Symlink the shared .env into the current release
             ln -sf "$ENV_FILE" .env
 
-            # Load env vars so prisma can connect to DB
+            # Extract DIRECT_URL from .env and write it directly into
+            # prisma.config.ts (process.env is unreliable in SSH actions)
+            DB_URL=$(grep '^DIRECT_URL=' "$ENV_FILE" | cut -d'=' -f2-)
+            printf '%s\n' \
+              "export default {" \
+              "  schema: \"prisma/schema.prisma\"," \
+              "  datasource: { url: \"${DB_URL}\" }," \
+              "}" > prisma.config.ts
+
+            # Load all env vars for PM2
             set -a
             source "$ENV_FILE"
             set +a
 
-            # Export explicitly for prisma.config.ts which reads DIRECT_URL
-            export DIRECT_URL
-            export DATABASE_URL
-
-            # Run database migrations (uses prisma.config.ts)
+            # Run database migrations
             npx prisma migrate deploy
 
             # Restart via PM2 (ecosystem file loads .env automatically)
