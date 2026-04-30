@@ -1,4 +1,5 @@
 import { api } from "@/store/api"
+import { generateUUID } from "@/lib/utils/uuid"
 import type { RootState } from "@/store"
 import type { AnnotationWithTags, TagSummary } from "./types"
 import type { CreateAnnotationInput, UpdateAnnotationInput } from "./schema"
@@ -81,7 +82,7 @@ export const annotationsApi = api.injectEndpoints({
       async onQueryStarted(input, { dispatch, getState, queryFulfilled }) {
         const state = getState() as RootState
         const currentUser = state.auth.user
-        const tempId = `temp-${crypto.randomUUID()}`
+        const tempId = `temp-${generateUUID()}`
         const optimistic: AnnotationWithTags = {
           id: tempId,
           userId: currentUser?.id ?? "optimistic",

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef } from "react"
+import { generateUUID } from "@/lib/utils/uuid"
 import { useDispatch } from "react-redux"
 import type { AppDispatch, RootState } from "@/store"
 import { useAppSelector } from "@/store/hooks"
@@ -160,7 +161,7 @@ export function useAnnotationManager(documentId: string) {
    */
   const addAnnotation = useCallback(
     (annotation: Omit<CreateAnnotationArg, "clientId">) => {
-      const clientId = crypto.randomUUID()
+      const clientId = generateUUID()
       const localId = `local-${clientId}`
 
       // 1. Track sync status

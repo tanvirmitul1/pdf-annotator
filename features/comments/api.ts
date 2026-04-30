@@ -1,4 +1,5 @@
 import { api } from "@/store/api"
+import { generateUUID } from "@/lib/utils/uuid"
 import type { CommentWithAuthor, CommentPage, ReactionSummary } from "@/lib/db/repositories/comments"
 
 // ── Arg types ────────────────────────────────────────────────────────────────
@@ -60,7 +61,7 @@ export const commentsApi = api.injectEndpoints({
       }),
       transformResponse: (res: { data: CommentWithAuthor }) => res.data,
       async onQueryStarted(input, { dispatch, queryFulfilled, getState }) {
-        const tempId = `temp-${crypto.randomUUID()}`
+        const tempId = `temp-${generateUUID()}`
         const state = getState() as {
           auth?: { user?: { id: string; name: string | null; email: string | null; image: string | null } | null }
         }
