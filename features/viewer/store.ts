@@ -8,7 +8,7 @@ import type {
 } from "@/features/annotations/types"
 import { MAX_UNDO_STACK, DEFAULT_ANNOTATION_COLOR } from "@/features/annotations/types"
 
-export type SidebarTab = "thumbnails" | "outline" | "bookmarks" | "annotations"
+export type SidebarTab = "thumbnails" | "outline" | "bookmarks" | "annotations" | "organize"
 
 export interface SearchMatch {
   pageNumber: number
@@ -16,6 +16,13 @@ export interface SearchMatch {
   text: string
   startOffset: number
   endOffset: number
+}
+
+export interface PageMetadata {
+  originalIndex?: number // 1-based, only for 'original'
+  type: "original" | "blank"
+  rotation: 0 | 90 | 180 | 270
+  deleted?: boolean
 }
 
 function getDefaultToolThickness(tool: ToolId) {
@@ -51,6 +58,7 @@ export interface ViewerState {
   currentMatchIndex: number
   searchOpen: boolean
   shortcutsOpen: boolean
+  pageOrder: PageMetadata[]
 
   // ─── Annotation state ────────────────────────────────────────────────────
   /** The currently active annotation tool */
@@ -79,6 +87,12 @@ export interface ViewerState {
   redoStack: UndoEntry[]
   /** Autosave status indicator */
   saveStatus: SaveStatus
+  /** Current font family for text tools */
+  activeFont: string
+  /** Current font size for text tools */
+  activeFontSize: number
+  /** Current text alignment for text tools */
+  activeAlign: "left" | "center" | "right"
 
   // ─── Viewer actions ───────────────────────────────────────────────────────
   setZoom: (z: number) => void
@@ -98,6 +112,12 @@ export interface ViewerState {
   closeSearch: () => void
   openShortcuts: () => void
   closeShortcuts: () => void
+  setPageOrder: (order: PageMetadata[]) => void
+  reorderPage: (fromIndex: number, toIndex: number) => void
+  rotatePage: (pageIndex: number, degrees: 90 | -90) => void
+  deletePage: (pageIndex: number) => void
+  duplicatePage: (pageIndex: number) => void
+  addBlankPage: (afterIndex: number | null) => void
 
   // ─── Annotation actions ───────────────────────────────────────────────────
   setTool: (t: ToolId) => void
@@ -117,6 +137,9 @@ export interface ViewerState {
   redo: () => UndoEntry | null
   clearUndoHistory: () => void
   setSaveStatus: (s: SaveStatus) => void
+  setFont: (font: string) => void
+  setFontSize: (size: number) => void
+  setAlign: (align: "left" | "center" | "right") => void
 }
 
 export const createViewerStore = (documentId: string, isAuthenticated = false, onAnnotationAttempt?: () => boolean) =>
@@ -138,6 +161,7 @@ export const createViewerStore = (documentId: string, isAuthenticated = false, o
       currentMatchIndex: 0,
       searchOpen: false,
       shortcutsOpen: false,
+      pageOrder: [],
 
       // ─── Annotation defaults ──────────────────────────────────────────────
       activeTool: "select" as ToolId,
@@ -153,6 +177,9 @@ export const createViewerStore = (documentId: string, isAuthenticated = false, o
       undoStack: [],
       redoStack: [],
       saveStatus: "idle" as SaveStatus,
+      activeFont: "font-sans",
+      activeFontSize: 16,
+      activeAlign: "left" as const,
 
       // ─── Viewer actions ───────────────────────────────────────────────────
       setZoom: (zoom) => set({ zoom: Math.max(0.25, Math.min(4, zoom)) }),
@@ -188,6 +215,56 @@ export const createViewerStore = (documentId: string, isAuthenticated = false, o
         set({ searchOpen: false, searchQuery: "", searchMatches: [] }),
       openShortcuts: () => set({ shortcutsOpen: true }),
       closeShortcuts: () => set({ shortcutsOpen: false }),
+      setPageOrder: (pageOrder) => set({ pageOrder }),
+      reorderPage: (from, to) =>
+        set((s) => {
+          const next = [...s.pageOrder]
+          const [moved] = next.splice(from, 1)
+          next.splice(to, 0, moved)
+          return { pageOrder: next }
+        }),
+      rotatePage: (index, degrees) =>
+        set((s) => {
+          const next = [...s.pageOrder]
+          const page = next[index]
+          if (page) {
+            const nextRotation = ((page.rotation + degrees + 360) %
+              360) as 0 | 90 | 180 | 270
+            next[index] = { ...page, rotation: nextRotation }
+          }
+          return { pageOrder: next }
+        }),
+      deletePage: (index) =>
+        set((s) => {
+          const next = [...s.pageOrder]
+          if (next[index]) {
+            next[index] = { ...next[index], deleted: true }
+          }
+          return { pageOrder: next }
+        }),
+      duplicatePage: (index) =>
+        set((s) => {
+          const next = [...s.pageOrder]
+          if (next[index]) {
+            const dup = { ...next[index] }
+            next.splice(index + 1, 0, dup)
+          }
+          return { pageOrder: next }
+        }),
+      addBlankPage: (afterIndex) =>
+        set((s) => {
+          const next = [...s.pageOrder]
+          const blank: PageMetadata = {
+            type: "blank",
+            rotation: 0,
+          }
+          if (afterIndex === null) {
+            next.push(blank)
+          } else {
+            next.splice(afterIndex + 1, 0, blank)
+          }
+          return { pageOrder: next }
+        }),
 
       // ─── Annotation actions ───────────────────────────────────────────────
       setTool: (activeTool) => {
@@ -276,6 +353,9 @@ export const createViewerStore = (documentId: string, isAuthenticated = false, o
           relocatingAnnotationId: null,
         }),
       setSaveStatus: (saveStatus) => set({ saveStatus }),
+      setFont: (activeFont) => set({ activeFont }),
+      setFontSize: (activeFontSize) => set({ activeFontSize }),
+      setAlign: (activeAlign) => set({ activeAlign }),
     }))
   )
 

@@ -24,7 +24,13 @@ export function isMovablePosition(positionData: PositionData) {
 }
 
 export function isResizablePosition(positionData: PositionData) {
-  return positionData.kind === "RECT" || positionData.kind === "ARROW"
+  return (
+    positionData.kind === "RECT" ||
+    positionData.kind === "TEXT_BOX" ||
+    positionData.kind === "ARROW" ||
+    positionData.kind === "SIGNATURE" ||
+    positionData.kind === "IMAGE"
+  )
 }
 
 export function translatePositionData(
@@ -51,7 +57,8 @@ export function translatePositionData(
         y: point.y,
       }
     }
-    case "RECT": {
+    case "RECT":
+    case "TEXT_BOX": {
       const nextX = clamp(positionData.x + delta.x, 0, Math.max(0, srcW - positionData.width))
       const nextY = clamp(
         positionData.y + delta.y,
@@ -104,6 +111,24 @@ export function translatePositionData(
         to,
       }
     }
+    case "SIGNATURE":
+    case "IMAGE": {
+      const nextX = clamp(
+        positionData.x + delta.x,
+        0,
+        Math.max(0, srcW - positionData.width)
+      )
+      const nextY = clamp(
+        positionData.y + delta.y,
+        0,
+        Math.max(0, srcH - positionData.height)
+      )
+      return {
+        ...positionData,
+        x: nextX,
+        y: nextY,
+      }
+    }
   }
 }
 
@@ -118,7 +143,7 @@ export function resizePositionData(
   const clampedPoint = clampPoint(nextPoint, srcW, srcH)
   const minSize = MIN_SCREEN_SIZE_PX / zoom
 
-  if (positionData.kind === "RECT") {
+  if (positionData.kind === "RECT" || positionData.kind === "TEXT_BOX") {
     let left = positionData.x
     let right = positionData.x + positionData.width
     let top = positionData.y
@@ -164,6 +189,36 @@ export function resizePositionData(
       y: nextTop,
       width: Math.max(minSize, nextRight - nextLeft),
       height: Math.max(minSize, nextBottom - nextTop),
+    }
+  }
+
+  if (positionData.kind === "SIGNATURE" || positionData.kind === "IMAGE") {
+    let left = positionData.x
+    let right = positionData.x + positionData.width
+    let top = positionData.y
+    let bottom = positionData.y + positionData.height
+
+    if (handle === "nw" || handle === "sw") left = clampedPoint.x
+    if (handle === "ne" || handle === "se") right = clampedPoint.x
+    if (handle === "nw" || handle === "ne") top = clampedPoint.y
+    if (handle === "sw" || handle === "se") bottom = clampedPoint.y
+
+    if (Math.abs(right - left) < minSize) {
+      if (handle === "nw" || handle === "sw") left = right - minSize
+      else right = left + minSize
+    }
+
+    if (Math.abs(bottom - top) < minSize) {
+      if (handle === "nw" || handle === "ne") top = bottom - minSize
+      else bottom = top + minSize
+    }
+
+    return {
+      ...positionData,
+      x: Math.min(left, right),
+      y: Math.min(top, bottom),
+      width: Math.max(minSize, Math.abs(right - left)),
+      height: Math.max(minSize, Math.abs(bottom - top)),
     }
   }
 

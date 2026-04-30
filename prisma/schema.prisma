@@ -58,6 +58,12 @@ enum AnnotationType {
   ARROW
   TEXTBOX
   IMAGE_SHAPE
+  SIGNATURE
+  REDACTION
+  CHECKMARK
+  CROSS
+  LINE
+  STAMP
 }
 
 enum AnnotationStatus {
@@ -224,6 +230,7 @@ model Document {
   members       DocumentMember[]
   textPages     DocumentText[]
   outline       DocumentOutline?
+  pageOrder     Json? // Array of { originalIndex: number, rotation: number, deleted: boolean }
 
   @@index([userId])
   @@index([userId, deletedAt])

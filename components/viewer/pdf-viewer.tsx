@@ -37,6 +37,14 @@ export function PdfViewer({
   const searchMatches = useViewer((s) => s.searchMatches)
   const currentMatchIndex = useViewer((s) => s.currentMatchIndex)
   const activeTool = useViewer((s) => s.activeTool)
+  const pageOrder = useViewer((s) => s.pageOrder)
+
+  const displayPages = useMemo(() => {
+    const visible = pageOrder.filter(p => !p.deleted)
+    if (visible.length > 0) return visible
+    // Fallback if pageOrder isn't initialized yet
+    return Array.from({ length: totalPages }, (_, i) => ({ originalIndex: i + 1, rotation: 0 as const }))
+  }, [pageOrder, totalPages])
 
   const [pageDimensions, setPageDimensions] = useState<PageDimension[]>([])
   const [loadedPages, setLoadedPages] = useState<Map<number, PDFPageProxy>>(
@@ -99,17 +107,19 @@ export function PdfViewer({
   // Compute item sizes for virtualizer (height includes gap)
   const getItemSize = useCallback(
     (index: number) => {
-      if (!pageDimensions[index]) return 800 * zoom + PAGE_GAP
-      const dim = pageDimensions[index]
-      const isRotated = rotation === 90 || rotation === 270
+      const pageRec = displayPages[index]
+      if (!pageRec || !pageDimensions[pageRec.originalIndex - 1]) return 800 * zoom + PAGE_GAP
+      const dim = pageDimensions[pageRec.originalIndex - 1]
+      const totalRot = (rotation + pageRec.rotation) % 360
+      const isRotated = totalRot === 90 || totalRot === 270
       const h = isRotated ? dim.width : dim.height
       return Math.round(h * zoom) + PAGE_GAP
     },
-    [pageDimensions, zoom, rotation]
+    [pageDimensions, zoom, rotation, displayPages]
   )
 
   const virtualizer = useVirtualizer({
-    count: totalPages,
+    count: displayPages.length,
     getScrollElement: () => scrollRef.current,
     estimateSize: getItemSize,
     overscan: 2,
@@ -122,8 +132,8 @@ export function PdfViewer({
     if (!pdfDocument || pageDimensions.length === 0) return
 
     const toLoad = virtualItems
-      .map((vi) => vi.index + 1)
-      .filter((n) => !loadedPages.has(n))
+      .map((vi) => displayPages[vi.index]?.originalIndex)
+      .filter((n): n is number => !!n && !loadedPages.has(n))
 
     if (toLoad.length === 0) return
 
@@ -180,10 +190,11 @@ export function PdfViewer({
     for (let i = 0; i < totalPages; i++) {
       const size = getItemSize(i)
       if (accumulated + size / 2 >= center) {
-        setPage(i + 1)
+        const pageRec = displayPages[i]
+        setPage(pageRec?.originalIndex ?? i + 1)
         const percent =
-          totalPages > 1 ? Math.round(((i + 1) / totalPages) * 100) : 100
-        onProgressUpdate?.(i + 1, percent)
+          displayPages.length > 1 ? Math.round(((i + 1) / displayPages.length) * 100) : 100
+        onProgressUpdate?.(pageRec?.originalIndex ?? i + 1, percent)
         return
       }
       accumulated += size
@@ -194,12 +205,16 @@ export function PdfViewer({
   // Max page width for centering
   const maxPageWidth = useMemo(() => {
     if (pageDimensions.length === 0) return 600
-    const isRotated = rotation === 90 || rotation === 270
     return Math.round(
-      Math.max(...pageDimensions.map((d) => (isRotated ? d.height : d.width))) *
-        zoom
+      Math.max(...displayPages.map((p) => {
+        const dim = pageDimensions[p.originalIndex - 1]
+        if (!dim) return 600
+        const totalRot = (rotation + p.rotation) % 360
+        const isRotated = totalRot === 90 || totalRot === 270
+        return isRotated ? dim.height : dim.width
+      })) * zoom
     )
-  }, [pageDimensions, zoom, rotation])
+  }, [pageDimensions, zoom, rotation, displayPages])
 
   // Change cursor for annotation tools
   const cursorStyle = useMemo(() => {
@@ -241,11 +256,14 @@ export function PdfViewer({
         }}
       >
         {virtualItems.map((vi) => {
-          const pageNum = vi.index + 1
-          const dim = pageDimensions[vi.index]
+          const pageRec = displayPages[vi.index]
+          if (!pageRec) return null
+          const pageNum = pageRec.originalIndex
+          const dim = pageDimensions[pageNum - 1]
           if (!dim) return null
 
-          const isRotated = rotation === 90 || rotation === 270
+          const totalRot = (rotation + pageRec.rotation) % 360 as 0 | 90 | 180 | 270
+          const isRotated = totalRot === 90 || totalRot === 270
           const naturalW = isRotated ? dim.height : dim.width
           const naturalH = isRotated ? dim.width : dim.height
 
@@ -290,31 +308,31 @@ export function PdfViewer({
                 >
                   <div className="relative" style={{ width: scaledW, height: scaledH }}>
                     <PdfCanvas
-                      page={loadedPages.get(pageNum) ?? null}
-                      zoom={zoom}
-                      rotation={rotation}
-                      active={true}
-                      naturalWidth={naturalW}
-                      naturalHeight={naturalH}
-                      textLayerGenerationKey={textLayerGenerationKey}
-                      onTextLayerReady={handleTextLayerReady}
-                      searchMatches={pageMatches}
-                      isCurrentMatch={isCurrentMatchPage}
-                    />
-
-                    {/* Annotation overlay */}
-                    <AnnotationOverlay
-                      documentId={documentId}
-                      pageNumber={pageNum}
-                      zoom={zoom}
-                      rotation={rotation}
-                      srcW={srcW}
-                      srcH={srcH}
-                      screenW={scaledW}
-                      screenH={scaledH}
-                      textLayerGenerationKey={textLayerGenerationKey}
-                      textLayerReadyKey={textLayerReadyByPage[pageNum] ?? null}
-                    />
+                        page={loadedPages.get(pageNum) ?? null}
+                        zoom={zoom}
+                        rotation={totalRot}
+                        active={true}
+                        naturalWidth={naturalW}
+                        naturalHeight={naturalH}
+                        textLayerGenerationKey={`${textLayerGenerationKey}:${pageRec.rotation}`}
+                        onTextLayerReady={handleTextLayerReady}
+                        searchMatches={pageMatches}
+                        isCurrentMatch={isCurrentMatchPage}
+                      />
+  
+                      {/* Annotation overlay */}
+                      <AnnotationOverlay
+                        documentId={documentId}
+                        pageNumber={pageNum}
+                        zoom={zoom}
+                        rotation={totalRot}
+                        srcW={srcW}
+                        srcH={srcH}
+                        screenW={scaledW}
+                        screenH={scaledH}
+                        textLayerGenerationKey={`${textLayerGenerationKey}:${pageRec.rotation}`}
+                        textLayerReadyKey={textLayerReadyByPage[pageNum] ?? null}
+                      />
                   </div>
                 </div>
               </div>

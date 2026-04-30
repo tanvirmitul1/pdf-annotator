@@ -27,6 +27,8 @@ import { ShortcutsOverlay } from "./shortcuts-overlay"
 import { OfflineBanner } from "./offline-banner"
 import { ViewerSkeleton } from "./viewer-skeleton"
 import { AnnotationToolbar } from "@/components/annotations/annotation-toolbar"
+import { SecondaryToolbar } from "@/components/annotations/secondary-toolbar"
+import { BottomBar } from "@/components/annotations/bottom-bar"
 import { AnnotationPanel } from "@/components/annotations/annotation-panel"
 import { SaveStatus } from "@/components/annotations/save-status"
 import { LoginGateModal } from "./login-gate-modal"
@@ -578,8 +580,15 @@ function ViewerShellInner({
           />
         )}
 
-        {/* Annotation toolbar (floating, left edge of PDF area) */}
-        <div className="relative flex flex-col items-center px-1 py-4">
+        {/* Top-center Secondary Toolbar (Floating) */}
+        <div className="pointer-events-none absolute left-0 right-0 top-4 z-50 flex justify-center">
+          <div className="pointer-events-auto">
+            <SecondaryToolbar />
+          </div>
+        </div>
+
+        {/* Annotation toolbar (floating pill, left edge) */}
+        <div className="z-40 flex flex-col items-center px-2 py-4">
           <AnnotationToolbar />
         </div>
 
@@ -590,6 +599,13 @@ function ViewerShellInner({
           onProgressUpdate={handleProgressUpdate}
         />
 
+        {/* Bottom Toolbar (Floating) */}
+        <div className="pointer-events-none absolute bottom-6 left-0 right-0 z-50 flex justify-center">
+          <div className="pointer-events-auto">
+            <BottomBar />
+          </div>
+        </div>
+
         {/* Right annotation panel */}
         {rightPanelAnnotationId && <AnnotationPanel documentId={documentId} />}
 
@@ -598,28 +614,6 @@ function ViewerShellInner({
 
         {/* Shortcuts overlay */}
         <ShortcutsOverlay />
-      </div>
-
-      {/* Bottom status bar */}
-      <div className="flex h-8 shrink-0 items-center justify-end gap-3 border-t border-border/70 bg-card/75 px-4 text-xs text-muted-foreground backdrop-blur-xl">
-        <span>
-          Page {currentPage} of {totalPages || "—"}
-          {totalPages > 0 && (
-            <span className="ml-1 text-muted-foreground/70">
-              (
-              {Math.round(
-                ((currentPage - 1) / Math.max(totalPages - 1, 1)) * 100
-              )}
-              %)
-            </span>
-          )}
-        </span>
-        <span>{Math.round(zoom * 100)}%</span>
-        {annotations.length > 0 && (
-          <span className="text-muted-foreground/60">
-            {annotations.length} annotation{annotations.length !== 1 ? "s" : ""}
-          </span>
-        )}
       </div>
     </div>
   )

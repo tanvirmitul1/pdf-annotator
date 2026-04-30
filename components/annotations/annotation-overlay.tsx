@@ -134,6 +134,9 @@ export function AnnotationOverlay({
   const setAnnotationOrphaned = useViewer(
     (state) => state.setAnnotationOrphaned
   )
+  const activeFont = useViewer((state) => state.activeFont)
+  const activeFontSize = useViewer((state) => state.activeFontSize)
+  const activeAlign = useViewer((state) => state.activeAlign)
   const currentUser = useAppSelector((state) => state.auth.user)
 
   const coarsePointer = useCoarsePointer()
@@ -564,7 +567,7 @@ export function AnnotationOverlay({
       }
     }
 
-    if (positionData.kind === "RECT") {
+    if (positionData.kind === "RECT" || positionData.kind === "TEXT_BOX") {
       const topLeft = srcToScreen(
         positionData.x,
         positionData.y,
@@ -1047,8 +1050,32 @@ export function AnnotationOverlay({
       return
     }
 
-    if (activeTool === "rectangle" || activeTool === "circle") {
+    if (activeTool === "rectangle" || activeTool === "circle" || activeTool === "redact") {
       setDrawRect({ x: rel.x, y: rel.y, w: 0, h: 0 })
+      return
+    }
+
+    if (activeTool === "checkmark" || activeTool === "cross" || activeTool === "stamp") {
+      const srcPos = getSrcPos(rel)
+      addAnnotation({
+        documentId,
+        pageNumber,
+        type: (activeTool === "checkmark" ? "CHECKMARK" : activeTool === "cross" ? "CROSS" : "STAMP") as any,
+        color: selectedColor,
+        positionData: {
+          kind: "POINT",
+          pageNumber,
+          x: srcPos.x,
+          y: srcPos.y,
+        },
+      })
+      drawingRef.current = false
+      startPosRef.current = null
+      return
+    }
+
+    if (activeTool === "line") {
+      setArrowDraw({ from: rel, to: rel })
       return
     }
 
@@ -1086,12 +1113,15 @@ export function AnnotationOverlay({
         type: "TEXTBOX",
         color: selectedColor,
         positionData: {
-          kind: "RECT",
+          kind: "TEXT_BOX",
           pageNumber,
           x: srcPos.x,
           y: srcPos.y,
-          width: 150 / zoom,
-          height: 80 / zoom,
+          width: 200 / zoom,
+          height: 100 / zoom,
+          fontSize: activeFontSize,
+          fontFamily: activeFont,
+          textAlign: activeAlign,
         },
         content: "",
       })
@@ -1124,7 +1154,7 @@ export function AnnotationOverlay({
       return
     }
 
-    if (activeTool === "rectangle" || activeTool === "circle") {
+    if (activeTool === "rectangle" || activeTool === "circle" || activeTool === "redact") {
       const start = startPosRef.current
       const deltaX = rel.x - start.x
       const deltaY = rel.y - start.y
@@ -1143,6 +1173,11 @@ export function AnnotationOverlay({
         w: width,
         h: height,
       })
+    }
+
+    if (activeTool === "line") {
+      const start = startPosRef.current
+      setArrowDraw({ from: start, to: rel })
     }
   }
 
@@ -1196,8 +1231,7 @@ export function AnnotationOverlay({
       setArrowDraw(null)
       // Use new annotation manager
       addAnnotation(nextArrow)
-    } else if (
-      (activeTool === "rectangle" || activeTool === "circle") &&
+    } else if ((activeTool === "rectangle" || activeTool === "circle" || activeTool === "redact") &&
       drawRect &&
       drawRect.w > 4 &&
       drawRect.h > 4
@@ -1206,10 +1240,8 @@ export function AnnotationOverlay({
       const nextShape = {
         documentId,
         pageNumber,
-        type: (activeTool === "rectangle" ? "RECTANGLE" : "CIRCLE") as
-          | "RECTANGLE"
-          | "CIRCLE",
-        color: selectedColor,
+        type: (activeTool === "rectangle" ? "RECTANGLE" : activeTool === "circle" ? "CIRCLE" : "REDACTION") as any,
+        color: activeTool === "redact" ? "#000000" : selectedColor,
         positionData: {
           kind: "RECT" as const,
           pageNumber,
@@ -1220,8 +1252,22 @@ export function AnnotationOverlay({
         },
       }
       setDrawRect(null)
-      // Use new annotation manager
       addAnnotation(nextShape)
+    } else if (activeTool === "line" && arrowDraw) {
+      addAnnotation({
+        documentId,
+        pageNumber,
+        type: "LINE" as any,
+        color: selectedColor,
+        positionData: {
+          kind: "ARROW" as const,
+          pageNumber,
+          from: getSrcPos(arrowDraw.from),
+          to: getSrcPos(arrowDraw.to),
+          strokeWidth: toolThickness / zoom,
+        },
+      })
+      setArrowDraw(null)
     }
 
     setDrawPath([])
@@ -1326,6 +1372,20 @@ export function AnnotationOverlay({
       const y1 = Math.min(topLeft.y, bottomRight.y)
       const x2 = Math.max(topLeft.x, bottomRight.x)
       const y2 = Math.max(topLeft.y, bottomRight.y)
+
+      return [
+        handleProps("nw", x1, y1, "nwse-resize"),
+        handleProps("ne", x2, y1, "nesw-resize"),
+        handleProps("sw", x1, y2, "nesw-resize"),
+        handleProps("se", x2, y2, "nwse-resize"),
+      ]
+    }
+
+    if (positionData.kind === "SIGNATURE" || positionData.kind === "IMAGE") {
+      const x1 = positionData.x * zoom
+      const y1 = positionData.y * zoom
+      const x2 = (positionData.x + positionData.width) * zoom
+      const y2 = (positionData.y + positionData.height) * zoom
 
       return [
         handleProps("nw", x1, y1, "nwse-resize"),
@@ -1566,6 +1626,92 @@ export function AnnotationOverlay({
         zoom,
         rotation
       )
+
+      if (annotation.type === "CHECKMARK" || annotation.type === "CROSS") {
+        return (
+          <g
+            key={annotation.id}
+            {...sharedProps}
+            transform={`translate(${point.x - 12}, ${point.y - 12})`}
+          >
+            {annotation.type === "CHECKMARK" ? (
+              <path
+                d="M4 12l4 4L20 6"
+                fill="none"
+                stroke={annotation.color}
+                strokeWidth={3}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            ) : (
+              <path
+                d="M18 6L6 18M6 6l12 12"
+                fill="none"
+                stroke={annotation.color}
+                strokeWidth={3}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            )}
+            {isSelected || isHovered ? (
+              <rect
+                x={-2}
+                y={-2}
+                width={28}
+                height={28}
+                fill="none"
+                stroke={ringColor}
+                strokeWidth={1.5}
+                rx={4}
+              />
+            ) : null}
+          </g>
+        )
+      }
+
+      if (annotation.type === "STAMP") {
+        return (
+          <g
+            key={annotation.id}
+            {...sharedProps}
+            transform={`translate(${point.x - 20}, ${point.y - 10})`}
+          >
+            <rect
+              width={40}
+              height={20}
+              rx={4}
+              fill={annotation.color}
+              fillOpacity={0.2}
+              stroke={annotation.color}
+              strokeWidth={1}
+            />
+            <text
+              x={20}
+              y={14}
+              textAnchor="middle"
+              fontSize={10}
+              fontWeight="bold"
+              fill={annotation.color}
+              style={{ pointerEvents: "none", userSelect: "none" }}
+            >
+              {annotation.content || "APPROVED"}
+            </text>
+            {isSelected || isHovered ? (
+              <rect
+                x={-2}
+                y={-2}
+                width={44}
+                height={24}
+                fill="none"
+                stroke={ringColor}
+                strokeWidth={1.5}
+                rx={6}
+              />
+            ) : null}
+          </g>
+        )
+      }
+
       return (
         <g key={annotation.id} {...sharedProps}>
           <circle
@@ -1596,12 +1742,11 @@ export function AnnotationOverlay({
           >
             N
           </text>
-          {renderResizeHandles(annotation, resolvedPosition)}
         </g>
       )
     }
 
-    if (resolvedPosition.kind === "RECT") {
+    if (resolvedPosition.kind === "RECT" || resolvedPosition.kind === "TEXT_BOX") {
       const topLeft = srcToScreen(
         resolvedPosition.x,
         resolvedPosition.y,
@@ -1664,7 +1809,7 @@ export function AnnotationOverlay({
               strokeOpacity={isSelected ? 0.95 : 0.7}
             />
           ) : null}
-          {annotation.type === "TEXTBOX" ? (
+          {annotation.type === "TEXTBOX" && resolvedPosition.kind === "TEXT_BOX" ? (
             <foreignObject
               x={x + TEXTBOX_PADDING}
               y={y + TEXTBOX_PADDING}
@@ -1673,12 +1818,30 @@ export function AnnotationOverlay({
               style={{ pointerEvents: "none" }}
             >
               <div
-                className="h-full w-full overflow-hidden text-[13px] leading-5 break-words whitespace-pre-wrap text-foreground"
-                style={{ color: annotation.color }}
+                className={cn(
+                  "h-full w-full overflow-hidden leading-tight break-words whitespace-pre-wrap",
+                  resolvedPosition.fontFamily
+                )}
+                style={{ 
+                  color: annotation.color,
+                  fontSize: resolvedPosition.fontSize ? `${resolvedPosition.fontSize * zoom}px` : undefined,
+                  textAlign: resolvedPosition.textAlign ?? "left",
+                  opacity: resolvedPosition.opacity ?? 1,
+                }}
               >
                 {annotation.content}
               </div>
             </foreignObject>
+          ) : null}
+          {annotation.type === "REDACTION" ? (
+            <rect
+              x={x}
+              y={y}
+              width={width}
+              height={height}
+              fill="black"
+              fillOpacity={1}
+            />
           ) : null}
           {renderResizeHandles(annotation, resolvedPosition)}
         </g>
@@ -1779,7 +1942,9 @@ export function AnnotationOverlay({
             stroke={annotation.color}
             strokeWidth={resolvedPosition.strokeWidth * zoom}
             strokeLinecap="round"
-            markerEnd={`url(#${markerId})`}
+            markerEnd={
+              annotation.type === "ARROW" ? `url(#${markerId})` : undefined
+            }
             opacity={opacity}
           />
           {isSelected || isHovered ? (
@@ -1802,6 +1967,84 @@ export function AnnotationOverlay({
             stroke="transparent"
             strokeWidth={Math.max(12, resolvedPosition.strokeWidth * zoom * 3)}
           />
+          {renderResizeHandles(annotation, resolvedPosition)}
+        </g>
+      )
+    }
+
+    if (resolvedPosition.kind === "SIGNATURE") {
+      const x = resolvedPosition.x * zoom
+      const y = resolvedPosition.y * zoom
+      const width = resolvedPosition.width * zoom
+      const height = resolvedPosition.height * zoom
+      const isPath = !resolvedPosition.data.startsWith("data:image")
+
+      return (
+        <g key={annotation.id} {...sharedProps}>
+          {isPath ? (
+            <path
+              d={resolvedPosition.data}
+              fill="none"
+              stroke={annotation.color}
+              strokeWidth={2 * zoom}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              transform={`translate(${x}, ${y}) scale(${zoom})`}
+            />
+          ) : (
+            <image
+              href={resolvedPosition.data}
+              x={x}
+              y={y}
+              width={width}
+              height={height}
+              style={{ mixBlendMode: "multiply" }}
+            />
+          )}
+          {isSelected || isHovered ? (
+            <rect
+              x={x - 2}
+              y={y - 2}
+              width={width + 4}
+              height={height + 4}
+              fill="none"
+              stroke={ringColor}
+              strokeWidth={2}
+              rx={4}
+            />
+          ) : null}
+          {renderResizeHandles(annotation, resolvedPosition)}
+        </g>
+      )
+    }
+
+    if (resolvedPosition.kind === "IMAGE") {
+      const x = resolvedPosition.x * zoom
+      const y = resolvedPosition.y * zoom
+      const width = resolvedPosition.width * zoom
+      const height = resolvedPosition.height * zoom
+
+      return (
+        <g key={annotation.id} {...sharedProps}>
+          <image
+            href={resolvedPosition.url}
+            x={x}
+            y={y}
+            width={width}
+            height={height}
+          />
+          {isSelected || isHovered ? (
+            <rect
+              x={x - 2}
+              y={y - 2}
+              width={width + 4}
+              height={height + 4}
+              fill="none"
+              stroke={ringColor}
+              strokeWidth={2}
+              rx={4}
+            />
+          ) : null}
           {renderResizeHandles(annotation, resolvedPosition)}
         </g>
       )

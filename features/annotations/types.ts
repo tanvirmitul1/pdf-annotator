@@ -2,6 +2,8 @@
 
 export type ToolId =
   | "select"
+  | "hand"
+  | "editText"
   | "highlight"
   | "freehandHighlight"
   | "underline"
@@ -11,8 +13,15 @@ export type ToolId =
   | "freehand"
   | "rectangle"
   | "circle"
+  | "checkmark"
+  | "cross"
+  | "line"
   | "arrow"
   | "textbox"
+  | "signature"
+  | "redact"
+  | "image"
+  | "stamp"
   | "eraser"
 
 // ─── Annotation types (mirrors Prisma AnnotationType enum) ───────────────────
@@ -29,6 +38,12 @@ export type AnnotationType =
   | "ARROW"
   | "TEXTBOX"
   | "IMAGE_SHAPE"
+  | "SIGNATURE"
+  | "REDACTION"
+  | "CHECKMARK"
+  | "CROSS"
+  | "LINE"
+  | "STAMP"
 
 export type AnnotationStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED"
 
@@ -43,8 +58,15 @@ export const TOOL_TO_TYPE: Partial<Record<ToolId, AnnotationType>> = {
   freehand: "FREEHAND",
   rectangle: "RECTANGLE",
   circle: "CIRCLE",
+  checkmark: "CHECKMARK",
+  cross: "CROSS",
+  line: "LINE",
   arrow: "ARROW",
   textbox: "TEXTBOX",
+  signature: "SIGNATURE",
+  redact: "REDACTION",
+  image: "IMAGE_SHAPE",
+  stamp: "STAMP",
 }
 
 // ─── Annotation color presets ────────────────────────────────────────────────
@@ -94,6 +116,22 @@ export interface PointPositionData extends PositionDataBase {
   y: number
 }
 
+export interface TextboxPositionData {
+  kind: "TEXT_BOX"
+  pageNumber: number
+  x: number
+  y: number
+  width: number
+  height: number
+  fontSize?: number
+  fontFamily?: string
+  textAlign?: "left" | "center" | "right"
+  fillColor?: string
+  strokeColor?: string
+  strokeWidth?: number
+  opacity?: number
+}
+
 export interface RectPositionData extends PositionDataBase {
   kind: "RECT"
   x: number
@@ -117,12 +155,33 @@ export interface ArrowPositionData extends PositionDataBase {
   strokeWidth: number
 }
 
+export interface SignaturePositionData extends PositionDataBase {
+  kind: "SIGNATURE"
+  x: number
+  y: number
+  width: number
+  height: number
+  data: string // Base64 or SVG path
+}
+
+export interface ImagePositionData extends PositionDataBase {
+  kind: "IMAGE"
+  x: number
+  y: number
+  width: number
+  height: number
+  url: string
+}
+
 export type PositionData =
   | TextPositionData
   | PointPositionData
   | RectPositionData
+  | TextboxPositionData
   | PathPositionData
   | ArrowPositionData
+  | SignaturePositionData
+  | ImagePositionData
 
 // ─── Tag ─────────────────────────────────────────────────────────────────────
 

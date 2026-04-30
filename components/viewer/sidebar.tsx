@@ -8,6 +8,7 @@ import { ThumbnailsPanel } from "./thumbnails-panel"
 import { OutlinePanel } from "./outline-panel"
 import { BookmarksPanel } from "./bookmarks-panel"
 import { AnnotationList } from "@/components/annotations/annotation-list"
+import { PageManager } from "./page-manager"
 import type { DocumentOutlineEntry } from "@/features/viewer/api"
 
 interface SidebarProps {
@@ -41,7 +42,7 @@ export function Sidebar({
       <Tabs
         value={currentTab}
         onValueChange={(v) =>
-          setSidebarTab(v as "thumbnails" | "outline" | "bookmarks" | "annotations")
+          setSidebarTab(v as any)
         }
         className="flex h-full flex-col"
       >
@@ -92,6 +93,10 @@ export function Sidebar({
 
           <TabsContent value="annotations" className="mt-0 h-full">
             <AnnotationList documentId={documentId} />
+          </TabsContent>
+
+          <TabsContent value="organize" className="mt-0 h-full">
+            <PageManager pdfDocument={pdfDocument} />
           </TabsContent>
         </div>
       </Tabs>

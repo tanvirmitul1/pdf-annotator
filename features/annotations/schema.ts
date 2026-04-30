@@ -31,6 +31,22 @@ const PointPositionDataSchema = z.object({
   y: z.number(),
 })
 
+export const TextboxPositionDataSchema = z.object({
+  kind: z.literal("TEXT_BOX"),
+  pageNumber: z.number(),
+  x: z.number(),
+  y: z.number(),
+  width: z.number(),
+  height: z.number(),
+  fontSize: z.number().optional(),
+  fontFamily: z.string().optional(),
+  textAlign: z.enum(["left", "center", "right"]).optional(),
+  fillColor: z.string().optional(),
+  strokeColor: z.string().optional(),
+  strokeWidth: z.number().optional(),
+  opacity: z.number().optional(),
+})
+
 const RectPositionDataSchema = z.object({
   kind: z.literal("RECT"),
   pageNumber: z.number().int().positive(),
@@ -65,12 +81,35 @@ const ArrowPositionDataSchema = z.object({
   strokeWidth: z.number().positive(),
 })
 
+const SignaturePositionDataSchema = z.object({
+  kind: z.literal("SIGNATURE"),
+  pageNumber: z.number().int().positive(),
+  x: z.number(),
+  y: z.number(),
+  width: z.number().positive(),
+  height: z.number().positive(),
+  data: z.string(), // Base64 or SVG path
+})
+
+const ImagePositionDataSchema = z.object({
+  kind: z.literal("IMAGE"),
+  pageNumber: z.number().int().positive(),
+  x: z.number(),
+  y: z.number(),
+  width: z.number().positive(),
+  height: z.number().positive(),
+  url: z.string().url(),
+})
+
 export const PositionDataSchema = z.discriminatedUnion("kind", [
   TextPositionDataSchema,
   PointPositionDataSchema,
+  TextboxPositionDataSchema,
   RectPositionDataSchema,
   PathPositionDataSchema,
   ArrowPositionDataSchema,
+  SignaturePositionDataSchema,
+  ImagePositionDataSchema,
 ])
 
 // ─── Annotation type enum ──────────────────────────────────────────────────────
@@ -86,6 +125,12 @@ export const AnnotationTypeSchema = z.enum([
   "ARROW",
   "TEXTBOX",
   "IMAGE_SHAPE",
+  "SIGNATURE",
+  "REDACTION",
+  "CHECKMARK",
+  "CROSS",
+  "LINE",
+  "STAMP",
 ])
 
 export const AnnotationStatusSchema = z.enum([
