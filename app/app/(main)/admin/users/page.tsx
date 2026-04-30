@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import Image from "next/image"
 import { useListAdminUsersQuery, useUpdateAdminUserMutation, useDeleteAdminUserMutation } from "@/features/admin/api"
 import { DataTable, type Column, type BulkAction } from "@/components/admin/advanced-data-table"
 import { AdvancedFilterBar, type FilterOption } from "@/components/admin/advanced-filter-bar"
@@ -92,7 +93,7 @@ export default function UsersPage() {
       render: (user) => (
         <div className="flex items-center gap-3">
           {user.image && (
-            <img src={user.image} alt="" className="h-8 w-8 rounded-full" />
+            <Image src={user.image} alt="" width={32} height={32} className="h-8 w-8 rounded-full" />
           )}
           <div>
             <div className="font-medium">{user.name || "Anonymous"}</div>
