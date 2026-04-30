@@ -17,13 +17,21 @@ env:
   NODE_VERSION: "20"
   DEPLOY_PATH: "/var/www/pdf-annotator"
   # Dummy values needed at build time — Prisma requires these during
-  # `postinstall` (prisma generate) and Next.js build. Real values
-  # are loaded at runtime from .env on your VPS.
+  # `postinstall` (prisma generate) and Zod env validation runs during
+  # Next.js "Collecting page data" phase. Real values are loaded at
+  # runtime from .env on your VPS.
   DATABASE_URL: "postgresql://dummy:dummy@localhost:5432/dummy"
   DIRECT_URL: "postgresql://dummy:dummy@localhost:5432/dummy"
-  AUTH_SECRET: "build-time-placeholder-not-used-at-runtime"
-  NEXTAUTH_SECRET: "build-time-placeholder-not-used-at-runtime"
+  AUTH_SECRET: "build-time-placeholder-not-used-at-runtime-xxxxx"
+  NEXTAUTH_SECRET: "build-time-placeholder-not-used-at-runtime-xxxxx"
   NEXTAUTH_URL: "http://localhost:3000"
+  GOOGLE_CLIENT_ID: "dummy-google-client-id"
+  GOOGLE_CLIENT_SECRET: "dummy-google-client-secret"
+  GITHUB_CLIENT_ID: "dummy-github-client-id"
+  GITHUB_CLIENT_SECRET: "dummy-github-client-secret"
+  EMAIL_FROM: "build@localhost"
+  APP_ENV: "production"
+  APP_URL: "http://localhost:3000"
 
 jobs:
   build-and-deploy:
