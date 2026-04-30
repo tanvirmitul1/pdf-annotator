@@ -95,6 +95,10 @@ jobs:
           cp -r prisma/migrations deploy/prisma/migrations
           cp prisma.config.ts deploy/
 
+          # Copy dotenv into deploy so prisma.config.ts can import it on VPS
+          cp -r node_modules/.pnpm/dotenv*/node_modules/dotenv deploy/node_modules/dotenv 2>/dev/null \
+            || cp -r node_modules/dotenv deploy/node_modules/dotenv
+
       # ─── 7. Upload to VPS via SCP ──────────────────────────
       - name: Upload to VPS
         uses: appleboy/scp-action@v0.1.7
@@ -141,15 +145,6 @@ jobs:
             # Export explicitly for prisma.config.ts which reads DIRECT_URL
             export DIRECT_URL
             export DATABASE_URL
-
-            # Symlink global dotenv into local node_modules so
-            # prisma.config.ts can import "dotenv/config"
-            # (run `sudo npm install -g dotenv` once on VPS)
-            GLOBAL_DOTENV=$(node -e "console.log(require.resolve('dotenv').replace(/\/lib\/main\.js$/,''))" 2>/dev/null || true)
-            if [ -n "$GLOBAL_DOTENV" ]; then
-              mkdir -p node_modules
-              ln -sf "$GLOBAL_DOTENV" node_modules/dotenv
-            fi
 
             # Run database migrations (uses prisma.config.ts)
             npx prisma migrate deploy
