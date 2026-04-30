@@ -16,6 +16,14 @@ on:
 env:
   NODE_VERSION: "20"
   DEPLOY_PATH: "/var/www/pdf-annotator"
+  # Dummy values needed at build time — Prisma requires these during
+  # `postinstall` (prisma generate) and Next.js build. Real values
+  # are loaded at runtime from .env on your VPS.
+  DATABASE_URL: "postgresql://dummy:dummy@localhost:5432/dummy"
+  DIRECT_URL: "postgresql://dummy:dummy@localhost:5432/dummy"
+  AUTH_SECRET: "build-time-placeholder-not-used-at-runtime"
+  NEXTAUTH_SECRET: "build-time-placeholder-not-used-at-runtime"
+  NEXTAUTH_URL: "http://localhost:3000"
 
 jobs:
   build-and-deploy:
@@ -55,14 +63,7 @@ jobs:
         env:
           CI_BUILD: "1"
           NODE_OPTIONS: "--max-old-space-size=4096"
-          # ⚠️ Server-side vars: dummy values fine — real values loaded
-          # at runtime from .env on your VPS.
-          DATABASE_URL: "postgresql://dummy:dummy@localhost:5432/dummy"
-          DIRECT_URL: "postgresql://dummy:dummy@localhost:5432/dummy"
-          AUTH_SECRET: "build-time-placeholder-not-used-at-runtime"
-          NEXTAUTH_SECRET: "build-time-placeholder-not-used-at-runtime"
-          NEXTAUTH_URL: "http://localhost:3000"
-          # ⚠️ NEXT_PUBLIC_* vars are BAKED INTO client JS at build time.
+          # NEXT_PUBLIC_* vars are BAKED INTO client JS at build time.
           # These must be real values — they cannot be overridden at runtime.
           NEXT_PUBLIC_POSTHOG_KEY: ${{ secrets.NEXT_PUBLIC_POSTHOG_KEY }}
           NEXT_PUBLIC_POSTHOG_HOST: "https://app.posthog.com"
