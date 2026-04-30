@@ -141,7 +141,11 @@ jobs:
             export DIRECT_URL
             export DATABASE_URL
 
-            # Run database migrations
+            # Install dotenv (required by prisma.config.ts) — standalone
+            # output doesn't include it since it's not a runtime dependency
+            npm install --no-save dotenv 2>/dev/null
+
+            # Run database migrations (uses prisma.config.ts)
             npx prisma migrate deploy
 
             # Restart via PM2 (ecosystem file loads .env automatically)
