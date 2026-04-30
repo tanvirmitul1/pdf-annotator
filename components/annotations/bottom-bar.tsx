@@ -6,8 +6,7 @@ import {
   ChevronRight, 
   Maximize, 
   Minus, 
-  Plus, 
-  Search 
+  Plus
 } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -27,139 +26,105 @@ export function BottomBar() {
   const setPage = useViewer((state) => state.setPage)
   const zoom = useViewer((state) => state.zoom)
   const setZoom = useViewer((state) => state.setZoom)
-  const openSearch = useViewer((state) => state.openSearch)
 
-  const handleZoomIn = () => setZoom(zoom + 0.1)
-  const handleZoomOut = () => setZoom(zoom - 0.1)
+  const handleZoomIn = () => setZoom(Math.min(zoom + 0.1, 4))
+  const handleZoomOut = () => setZoom(Math.max(zoom - 0.1, 0.25))
+  
   const handlePageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseInt(e.target.value)
-    if (!isNaN(val)) setPage(val)
+    if (!isNaN(val) && val >= 1 && val <= totalPages) setPage(val)
   }
 
   return (
     <TooltipProvider delayDuration={400}>
       <motion.div
-        initial={{ y: 20, opacity: 0 }}
+        initial={{ y: 24, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="flex h-12 items-center gap-1 rounded-full border border-border/40 bg-card/80 px-2 shadow-2xl backdrop-blur-2xl transition-all hover:bg-card/95"
+        className="flex h-11 items-center gap-1.5 rounded-full border border-border/40 bg-card/70 px-2 shadow-[0_12px_40px_-12px_rgba(0,0,0,0.3)] backdrop-blur-2xl ring-1 ring-border/20 transition-all hover:bg-card/90"
       >
-        {/* Page Navigation */}
+        {/* Page Navigation Group */}
         <div className="flex items-center gap-0.5">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-8 rounded-full"
-                onClick={() => setPage(currentPage - 1)}
-                disabled={currentPage <= 1}
-              >
-                <ChevronLeft className="size-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Previous Page</TooltipContent>
-          </Tooltip>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8 rounded-full"
+            onClick={() => setPage(currentPage - 1)}
+            disabled={currentPage <= 1}
+          >
+            <ChevronLeft className="size-4" />
+          </Button>
 
-          <div className="flex items-center gap-1 px-2">
+          <div className="flex items-center gap-1.5 px-1.5">
             <Input
-              className="h-7 w-12 border-none bg-accent/30 px-1 text-center font-mono text-xs focus-visible:ring-1"
+              className="h-7 w-11 border-none bg-accent/40 px-0 text-center font-mono text-[11px] font-black focus-visible:ring-1 rounded-md"
               value={currentPage}
               onChange={handlePageChange}
             />
-            <span className="text-[10px] font-medium text-muted-foreground uppercase opacity-60">
-              of {totalPages || "?"}
+            <span className="text-[10px] font-bold text-muted-foreground uppercase opacity-40 select-none">
+              / {totalPages || "?"}
             </span>
           </div>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-8 rounded-full"
-                onClick={() => setPage(currentPage + 1)}
-                disabled={currentPage >= totalPages}
-              >
-                <ChevronRight className="size-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Next Page</TooltipContent>
-          </Tooltip>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8 rounded-full"
+            onClick={() => setPage(currentPage + 1)}
+            disabled={currentPage >= totalPages}
+          >
+            <ChevronRight className="size-4" />
+          </Button>
         </div>
 
-        <Separator orientation="vertical" className="mx-1 h-6 opacity-40" />
+        <Separator orientation="vertical" className="mx-1 h-5 opacity-30" />
 
-        {/* Zoom Controls */}
-        <div className="flex items-center gap-0.5">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-8 rounded-full"
-                onClick={handleZoomOut}
-              >
-                <Minus className="size-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Zoom Out</TooltipContent>
-          </Tooltip>
+        {/* Zoom Controls Group */}
+        <div className="flex items-center gap-0.5 pr-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8 rounded-full"
+            onClick={handleZoomOut}
+            disabled={zoom <= 0.25}
+          >
+            <Minus className="size-3.5" />
+          </Button>
 
           <button 
-            className="px-2 text-[10px] font-bold tabular-nums text-primary hover:underline"
+            className="min-w-[3.5rem] px-1 text-[11px] font-black tabular-nums text-primary hover:underline"
             onClick={() => setZoom(1)}
           >
             {Math.round(zoom * 100)}%
           </button>
 
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8 rounded-full"
+            onClick={handleZoomIn}
+            disabled={zoom >= 4}
+          >
+            <Plus className="size-3.5" />
+          </Button>
+          
+          <Separator orientation="vertical" className="mx-1 h-5 opacity-30 hidden sm:block" />
+          
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"
-                className="size-8 rounded-full"
-                onClick={handleZoomIn}
+                className="size-8 rounded-full hidden sm:flex"
+                onClick={() => setZoom(1.5)} 
               >
-                <Plus className="size-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Zoom In</TooltipContent>
-          </Tooltip>
-        </div>
-
-        <Separator orientation="vertical" className="mx-1 h-6 opacity-40" />
-
-        {/* Fit to Width / Search */}
-        <div className="flex items-center gap-0.5 pr-1">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-8 rounded-full"
-                onClick={() => setZoom(1.5)} // Placeholder for "Fit to Width"
-              >
-                <Maximize className="size-4" />
+                <Maximize className="size-3.5" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Fit to Width</TooltipContent>
-          </Tooltip>
-
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="size-8 rounded-full"
-                onClick={openSearch}
-              >
-                <Search className="size-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Search (Ctrl+F)</TooltipContent>
           </Tooltip>
         </div>
       </motion.div>
     </TooltipProvider>
   )
 }
+

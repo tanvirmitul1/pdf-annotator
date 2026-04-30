@@ -9,7 +9,6 @@ export interface AuthShellProps {
   title: string
   description: string
   form: React.ReactNode
-  mode: "login" | "signup"
 }
 
 const features = [
@@ -37,7 +36,6 @@ export function AuthShell({
   title,
   description,
   form,
-  mode,
 }: AuthShellProps) {
   return (
     <main

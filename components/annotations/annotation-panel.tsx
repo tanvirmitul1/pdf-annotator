@@ -19,6 +19,7 @@ import type {
 } from "@/features/annotations/types"
 import { useGetDocumentViewerDataQuery } from "@/features/viewer/api"
 import { useViewer } from "@/features/viewer/provider"
+import { cn } from "@/lib/utils"
 import { useDebouncedMutation } from "@/hooks/use-debounced-mutation"
 import { Button } from "@/components/ui/button"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -519,283 +520,173 @@ export function AnnotationPanel({ documentId }: AnnotationPanelProps) {
   return (
     <div
       ref={panelRef}
-      className="pointer-events-auto flex h-full min-h-0 w-[min(24rem,calc(100vw-1rem))] max-w-full flex-col overflow-hidden rounded-lg border border-border/70 bg-card/95 shadow-[0_20px_56px_-30px_rgba(15,23,42,0.35)] backdrop-blur-xl will-change-transform md:w-[22rem]"
+      className="pointer-events-auto flex h-full min-h-0 w-full flex-col overflow-hidden bg-card/40 backdrop-blur-3xl will-change-transform"
       role="dialog"
       aria-label="Annotation editor"
       aria-modal="false"
-      style={{ animation: "slideInRight 220ms cubic-bezier(0.22,1,0.36,1) both" }}
     >
-      <div className="flex h-12 shrink-0 items-center gap-2 border-b border-border/60 px-3">
-        <span className="text-sm font-medium">
-          {TYPE_LABELS[annotation.type] ?? annotation.type}
+      <div className="flex h-11 shrink-0 items-center gap-2 border-b border-border/40 px-3 bg-muted/20">
+        <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">
+          {TYPE_LABELS[annotation.type] ?? "Annotation"}
         </span>
         <button
           type="button"
           aria-label="Close panel"
           onClick={closeAnnotation}
-          className="ml-auto flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+          className="ml-auto flex size-7 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
         >
           <X className="size-4" />
         </button>
       </div>
 
       <ScrollArea className="min-h-0 flex-1">
-        <div className="space-y-4 p-3 pb-6">
+        <div className="space-y-4 p-4">
           {quotedText ? (
-            <div className="rounded-md border-l-2 border-primary/60 bg-primary/5 px-3 py-2">
-              <p className="line-clamp-4 text-xs text-foreground/80">
+            <div className="rounded-lg border-l-2 border-primary/40 bg-primary/5 px-3 py-2 italic">
+              <p className="line-clamp-3 text-[11px] leading-relaxed text-foreground/70">
                 &ldquo;{quotedText}&rdquo;
               </p>
             </div>
           ) : null}
 
-          {orphaned ? (
-            <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700 dark:text-amber-300">
-              Text changed on this page. This annotation needs relocation.
+          {orphaned && (
+            <div className="rounded-md border border-amber-500/20 bg-amber-500/5 px-2.5 py-1.5 text-[10px] font-medium text-amber-600 dark:text-amber-400">
+              Content moved. Relocation required.
             </div>
-          ) : null}
+          )}
 
-          {!canEdit ? (
-            <div className="rounded-md border border-border/70 bg-muted/35 px-3 py-2 text-xs text-muted-foreground">
-              This annotation was created by another collaborator. You can view
-              it, but only the author can edit or delete it.
+          {/* Author & Meta */}
+          <div className="flex items-center gap-2.5 px-0.5">
+            <Avatar className="size-7 ring-1 ring-border/50">
+              <AvatarImage src={annotation.author?.image ?? undefined} />
+              <AvatarFallback className="text-[9px] font-bold">{getInitials(annotation.author?.name, annotation.author?.email)}</AvatarFallback>
+            </Avatar>
+            <div className="min-w-0">
+              <p className="truncate text-[11px] font-bold text-foreground/90">
+                {getDisplayName(annotation.author?.name, annotation.author?.email)}
+              </p>
+              <p className="text-[9px] font-medium text-muted-foreground opacity-60">
+                {new Date(annotation.createdAt).toLocaleDateString()} at {new Date(annotation.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </p>
             </div>
-          ) : null}
+          </div>
 
-          <div className="space-y-2 rounded-xl border border-border/60 bg-background/50 p-3">
-            <div className="flex items-center gap-2">
-              <Avatar size="sm">
-                <AvatarImage
-                  src={annotation.author?.image ?? undefined}
-                  alt={annotation.author?.name ?? "Author"}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <span className="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60">Status</span>
+              <select
+                value={annotation.status}
+                onChange={(e) => void handleStatusChange(e.target.value as AnnotationStatus)}
+                className="h-8 w-full rounded-lg border border-border/40 bg-background/50 px-2 text-[11px] font-medium focus:ring-1 focus:ring-primary outline-none transition-all"
+                disabled={!canEdit}
+              >
+                {STATUS_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>{o.label}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <span className="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60">Assignee</span>
+              <select
+                value={annotation.assignee?.id ?? ""}
+                onChange={(e) => void handleAssigneeChange(e.target.value)}
+                className="h-8 w-full rounded-lg border border-border/40 bg-background/50 px-2 text-[11px] font-medium focus:ring-1 focus:ring-primary outline-none transition-all"
+                disabled={!canEdit}
+              >
+                <option value="">None</option>
+                {assignableCollaborators.map((c) => (
+                  <option key={c.id} value={c.id}>{getDisplayName(c.name, c.email)}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          <Separator className="opacity-30" />
+
+          {/* Color & Actions */}
+          <div className="flex items-center justify-between">
+             <div className="flex flex-col gap-1.5">
+                <span className="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60">Color</span>
+                <ColorPicker
+                  value={annotation.color}
+                  onChange={handleColorChange}
+                  size="sm"
                 />
-                <AvatarFallback>
-                  {getInitials(
-                    annotation.author?.name,
-                    annotation.author?.email
-                  )}
-                </AvatarFallback>
-              </Avatar>
-              <div className="min-w-0">
-                <p className="truncate text-xs font-medium text-foreground">
-                  {getDisplayName(
-                    annotation.author?.name,
-                    annotation.author?.email
-                  )}
-                </p>
-                <p className="text-[11px] text-muted-foreground">
-                  Created {new Date(annotation.createdAt).toLocaleString()}
-                </p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <label className="space-y-1">
-                <span className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-                  Status
-                </span>
-                <select
-                  value={annotation.status}
-                  onChange={(event) =>
-                    void handleStatusChange(
-                      event.target.value as AnnotationStatus
-                    )
-                  }
-                  className="h-9 w-full rounded-md border border-input bg-background px-2 text-xs text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                  disabled={!canEdit}
+             </div>
+             {canRelocate && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-[10px] font-bold border-amber-500/20 hover:bg-amber-500/5 text-amber-600"
+                  onClick={() => {
+                    startRelocatingAnnotation(annotation.id)
+                    const tool = ANNOTATION_TYPE_TO_TOOL[annotation.type]
+                    if (tool) setTool(tool)
+                    toast.message("Select text to relocate.")
+                  }}
                 >
-                  {STATUS_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="space-y-1">
-                <span className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-                  Assignee
-                </span>
-                <select
-                  value={annotation.assignee?.id ?? ""}
-                  onChange={(event) =>
-                    void handleAssigneeChange(event.target.value)
-                  }
-                  className="h-9 w-full rounded-md border border-input bg-background px-2 text-xs text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
-                  disabled={!canEdit}
-                >
-                  <option value="">Unassigned</option>
-                  {assignableCollaborators.map((collaborator) => (
-                    <option key={collaborator.id} value={collaborator.id}>
-                      {getDisplayName(collaborator.name, collaborator.email)}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </div>
-
-            <div className="flex flex-wrap gap-1.5">
-              <Badge variant="outline">
-                {annotation.status.replaceAll("_", " ")}
-              </Badge>
-              {annotation.assignee ? (
-                <Badge variant="secondary">
-                  Assigned to{" "}
-                  {getDisplayName(
-                    annotation.assignee.name,
-                    annotation.assignee.email
-                  )}
-                </Badge>
-              ) : (
-                <Badge variant="outline">Unassigned</Badge>
-              )}
-            </div>
-
-            {currentUser ? (
-              <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                <span>Signed in as</span>
-                <Badge variant="outline">
-                  {currentUser.name || currentUser.email || "You"}
-                </Badge>
-              </div>
-            ) : null}
-
-            {collaborators.length > 0 ? (
-              <div className="space-y-1">
-                <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-                  Collaborators
-                </p>
-                <AvatarGroup>
-                  {collaborators.slice(0, 5).map((collaborator) => (
-                    <Avatar
-                      key={collaborator.id}
-                      size="sm"
-                      title={
-                        collaborator.name ||
-                        collaborator.email ||
-                        "Collaborator"
-                      }
-                    >
-                      <AvatarImage
-                        src={collaborator.image ?? undefined}
-                        alt={collaborator.name ?? "Collaborator"}
-                      />
-                      <AvatarFallback>
-                        {getInitials(collaborator.name, collaborator.email)}
-                      </AvatarFallback>
-                    </Avatar>
-                  ))}
-                </AvatarGroup>
-              </div>
-            ) : null}
+                  Relocate
+                </Button>
+             )}
           </div>
 
-          {canRelocate ? (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="w-full"
-              onClick={() => {
-                startRelocatingAnnotation(annotation.id)
-                const tool = ANNOTATION_TYPE_TO_TOOL[annotation.type]
-                if (tool) {
-                  setTool(tool)
-                }
-                toast.message(
-                  "Select the text again to relocate this annotation."
-                )
-              }}
-            >
-              Relocate annotation
-            </Button>
-          ) : null}
+          <Separator className="opacity-30" />
 
-          <div>
-            <p className="mb-1.5 text-xs font-medium text-muted-foreground">
-              Color
-            </p>
-            <ColorPicker
-              value={annotation.color}
-              onChange={handleColorChange}
-            />
-          </div>
-
-          <Separator />
-
-          {/* Annotation Description */}
+          {/* Description */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <p className="text-xs font-medium text-muted-foreground">
+              <span className="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60">
                 {contentLabel}
-              </p>
+              </span>
               {canEdit && !isEditingDescription && (
                 <button
                   type="button"
                   onClick={() => setIsEditingDescription(true)}
-                  className="rounded px-1.5 py-0.5 text-[11px] text-primary hover:bg-accent"
+                  className="text-[10px] font-bold text-primary hover:underline"
                 >
                   Edit
                 </button>
               )}
             </div>
+            
             {isEditingDescription ? (
-              <div className="space-y-2">
+              <div className="space-y-2.5">
                 <Textarea
                   value={comment}
                   ref={textareaRef}
-                  onChange={(event) => setComment(event.target.value)}
+                  onChange={(e) => setComment(e.target.value)}
                   placeholder={contentPlaceholder}
-                  rows={4}
-                  className="min-h-[96px] resize-y"
+                  className="min-h-[100px] text-xs font-medium bg-background/50 border-border/40 rounded-xl resize-none focus-visible:ring-1"
                   autoFocus
                 />
                 <div className="flex gap-2">
-                  <Button
-                    size="sm"
-                    className="h-7 text-xs"
-                    onClick={() => {
-                      void triggerCommentSave(comment)
-                      setIsEditingDescription(false)
-                    }}
-                    disabled={!comment.trim()}
-                  >
+                  <Button size="sm" className="h-7 px-3 text-[10px] font-bold rounded-lg" onClick={() => { void triggerCommentSave(comment); setIsEditingDescription(false); }}>
                     Save
                   </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-7 text-xs"
-                    onClick={() => {
-                      setComment(annotation?.content ?? "")
-                      setIsEditingDescription(false)
-                    }}
-                  >
+                  <Button size="sm" variant="ghost" className="h-7 px-3 text-[10px] font-bold rounded-lg" onClick={() => { setComment(annotation?.content ?? ""); setIsEditingDescription(false); }}>
                     Cancel
                   </Button>
                 </div>
               </div>
             ) : comment ? (
-              <div className="rounded-lg border border-border/60 bg-muted/30 p-2.5">
-                <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">
+              <div className="rounded-xl bg-muted/20 p-3 ring-1 ring-border/20">
+                <p className="text-[11px] leading-relaxed break-words whitespace-pre-wrap font-medium text-foreground/80">
                   {comment}
                 </p>
               </div>
             ) : (
-              <div className="rounded-lg border border-dashed border-border/40 bg-muted/20 p-2.5">
-                <p className="text-xs text-muted-foreground italic">
-                  No description yet. Click &quot;Edit&quot; to add one.
-                </p>
+              <div className="rounded-xl border border-dashed border-border/40 bg-muted/5 p-3 flex items-center justify-center">
+                <p className="text-[10px] text-muted-foreground italic font-medium">No description added yet.</p>
               </div>
             )}
           </div>
 
-          <Separator />
+          <Separator className="opacity-30" />
 
-          <div>
-            <p className="mb-1.5 text-xs font-medium text-muted-foreground">
-              Tags
-            </p>
+          {/* Tags */}
+          <div className="space-y-2">
+            <span className="text-[9px] font-black uppercase tracking-wider text-muted-foreground/60">Tags</span>
             <TagInput
               tags={annotation.tags}
               onAdd={handleAddTag}
@@ -804,29 +695,32 @@ export function AnnotationPanel({ documentId }: AnnotationPanelProps) {
             />
           </div>
 
-          <Separator />
+          <Separator className="opacity-30" />
 
           <CommentThread
             annotationId={annotation.id}
             collaborators={collaborators}
           />
 
-          <Separator />
+          <Separator className="opacity-30" />
 
-          {canEdit ? (
-            <Button
-              type="button"
-              variant={deleteConfirm ? "destructive" : "outline"}
-              size="sm"
-              className="w-full gap-1.5"
-              onClick={() => void handleDelete()}
-            >
-              <Trash2 className="size-3.5" />
-              {deleteConfirm ? "Click again to confirm" : "Delete annotation"}
-            </Button>
-          ) : null}
-
-          <p className="text-center text-[10px] text-muted-foreground/60">
+          {/* Footer Actions */}
+          <div className="pt-2">
+             <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "w-full h-8 text-[10px] font-bold text-muted-foreground hover:bg-destructive/5 hover:text-destructive transition-all",
+                  deleteConfirm && "bg-destructive text-destructive-foreground hover:bg-destructive hover:text-white"
+                )}
+                onClick={handleDelete}
+             >
+                <Trash2 className="mr-2 size-3" />
+                {deleteConfirm ? "Click again to confirm delete" : "Delete Annotation"}
+             </Button>
+          </div>
+          
+          <p className="text-center text-[9px] text-muted-foreground/40 font-medium">
             Page {annotation.pageNumber}
           </p>
         </div>

@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
 }
 
 /** PATCH /api/notifications — mark all as read */
-export async function PATCH(req: NextRequest) {
+export async function PATCH() {
   const session = await auth()
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })

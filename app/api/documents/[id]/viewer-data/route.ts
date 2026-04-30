@@ -32,20 +32,31 @@ async function getHandler(
     }
   }
 
-  const [outline, bookmarks, readingProgress, collaborators] = await Promise.all([
+  // Fetch data with safe defaults for objects metadata
+  const [outline, bookmarks, readingProgress, collaborators, pagesDataRaw] = await Promise.all([
     prisma.documentOutline.findUnique({
       where: { documentId: id },
       select: { entries: true },
-    }),
+    }).catch(() => null),
     prisma.bookmark.findMany({
       where: { documentId: id, userId: identity.userId },
       orderBy: { pageNumber: "asc" },
-    }),
+    }).catch(() => []),
     prisma.readingProgress.findUnique({
       where: { userId_documentId: { userId: identity.userId, documentId: id } },
-    }),
-    listDocumentCollaborators(id),
+    }).catch(() => null),
+    listDocumentCollaborators(id).catch(() => []),
+    prisma.documentText.findMany({
+      where: { documentId: id },
+      select: { pageNumber: true, objects: true },
+    }).catch(() => [])
   ])
+
+  // Sanitize pagesData to ensure objects is always an array
+  const pagesData = pagesDataRaw.map(p => ({
+    ...p,
+    objects: Array.isArray(p.objects) ? p.objects : []
+  }))
 
   // Update lastOpenedAt
   void prisma.document.update({
@@ -75,6 +86,7 @@ async function getHandler(
       outline: outline?.entries ?? null,
       bookmarks,
       readingProgress,
+      pagesData,
     },
   })
 }

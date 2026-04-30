@@ -27,12 +27,14 @@ import {
 } from "@/features/annotations/types"
 import type {
   AnnotationWithTags,
+  AnnotationType,
   PositionData,
+  TextboxPositionData,
   TextAnchor,
   TextRect,
 } from "@/features/annotations/types"
 import { useAnnotationManager } from "@/features/annotations/use-annotation-manager"
-import { useViewer } from "@/features/viewer/provider"
+import { useViewer, useViewerStore } from "@/features/viewer/provider"
 import { cn } from "@/lib/utils"
 import { useAppSelector } from "@/store/hooks"
 
@@ -137,6 +139,9 @@ export function AnnotationOverlay({
   const activeFont = useViewer((state) => state.activeFont)
   const activeFontSize = useViewer((state) => state.activeFontSize)
   const activeAlign = useViewer((state) => state.activeAlign)
+  const draft = useViewer((state) => state.draft)
+  const discardDraft = useViewer((state) => state.discardDraft)
+  const store = useViewerStore()
   const currentUser = useAppSelector((state) => state.auth.user)
 
   const coarsePointer = useCoarsePointer()
@@ -567,7 +572,12 @@ export function AnnotationOverlay({
       }
     }
 
-    if (positionData.kind === "RECT" || positionData.kind === "TEXT_BOX") {
+    if (
+      positionData.kind === "RECT" || 
+      positionData.kind === "TEXT_BOX" ||
+      positionData.kind === "SIGNATURE" ||
+      positionData.kind === "IMAGE"
+    ) {
       const topLeft = srcToScreen(
         positionData.x,
         positionData.y,
@@ -609,7 +619,8 @@ export function AnnotationOverlay({
       }
     }
 
-    const from = srcToScreen(
+    if (positionData.kind === "ARROW") {
+      const from = srcToScreen(
       positionData.from.x,
       positionData.from.y,
       srcW,
@@ -633,6 +644,9 @@ export function AnnotationOverlay({
       width: Math.abs(to.x - from.x) + padding * 2,
       height: Math.abs(to.y - from.y) + padding * 2,
     }
+    }
+
+    return { x: 0, y: 0, width: 0, height: 0 }
   }
 
   function segmentTouchesBounds(
@@ -1060,7 +1074,7 @@ export function AnnotationOverlay({
       addAnnotation({
         documentId,
         pageNumber,
-        type: (activeTool === "checkmark" ? "CHECKMARK" : activeTool === "cross" ? "CROSS" : "STAMP") as any,
+        type: (activeTool === "checkmark" ? "CHECKMARK" : activeTool === "cross" ? "CROSS" : "STAMP") as AnnotationType,
         color: selectedColor,
         positionData: {
           kind: "POINT",
@@ -1079,9 +1093,31 @@ export function AnnotationOverlay({
       return
     }
 
-    if (activeTool === "note") {
+    if (activeTool === "note" || activeTool === "textbox") {
       const srcPos = getSrcPos(rel)
-      // Use new annotation manager
+      
+      if (activeTool === "textbox") {
+         store.getState().startDraft({
+            type: "textbox",
+            color: selectedColor,
+            pageNumber,
+            isDirect: true,
+            positionData: {
+               kind: "TEXT_BOX",
+               pageNumber,
+               x: srcPos.x,
+               y: srcPos.y,
+               width: 150 / zoom,
+               height: 40 / zoom,
+               fontSize: 14,
+            },
+            content: ""
+         })
+         drawingRef.current = false
+         startPosRef.current = null
+         return
+      }
+
       const clientId = addAnnotation({
         documentId,
         pageNumber,
@@ -1093,47 +1129,45 @@ export function AnnotationOverlay({
           x: srcPos.x,
           y: srcPos.y,
         },
-        content: "",
       })
-      
-      // Open panel for note editing
-      setTimeout(() => openAnnotation(clientId), 100)
       
       drawingRef.current = false
       startPosRef.current = null
+
+      setTimeout(() => {
+        const latest = allAnnotations.find((a) => a.clientId === clientId)
+        if (latest) openAnnotation(latest.id)
+      }, 100)
       return
     }
 
-    if (activeTool === "textbox") {
-      const srcPos = getSrcPos(rel)
-      // Use new annotation manager
-      addAnnotation({
-        documentId,
-        pageNumber,
-        type: "TEXTBOX",
-        color: selectedColor,
-        positionData: {
-          kind: "TEXT_BOX",
+    if (activeTool === "editText") {
+       const srcPos = getSrcPos(rel)
+       store.getState().startDraft({
+          type: "editText",
+          color: "#000000",
           pageNumber,
-          x: srcPos.x,
-          y: srcPos.y,
-          width: 200 / zoom,
-          height: 100 / zoom,
-          fontSize: activeFontSize,
-          fontFamily: activeFont,
-          textAlign: activeAlign,
-        },
-        content: "",
-      })
-      drawingRef.current = false
-      startPosRef.current = null
+          isDirect: true,
+          positionData: {
+             kind: "TEXT_BOX",
+             pageNumber,
+             x: srcPos.x,
+             y: srcPos.y - 10,
+             width: 200 / zoom,
+             height: 30 / zoom,
+             fontSize: 14,
+          },
+          content: ""
+       })
+       drawingRef.current = false
+       startPosRef.current = null
+       return
     }
   }
 
   function handleSvgMouseMove(event: React.MouseEvent<SVGSVGElement>) {
     if (!drawingRef.current || !startPosRef.current) return
     const rel = getRelPos(event)
-
     if (activeTool === "freehand" || activeTool === "freehandHighlight") {
       setDrawPath((previous) => [...previous, rel])
       return
@@ -1240,7 +1274,7 @@ export function AnnotationOverlay({
       const nextShape = {
         documentId,
         pageNumber,
-        type: (activeTool === "rectangle" ? "RECTANGLE" : activeTool === "circle" ? "CIRCLE" : "REDACTION") as any,
+        type: (activeTool === "rectangle" ? "RECTANGLE" : activeTool === "circle" ? "CIRCLE" : "REDACTION") as AnnotationType,
         color: activeTool === "redact" ? "#000000" : selectedColor,
         positionData: {
           kind: "RECT" as const,
@@ -1257,7 +1291,7 @@ export function AnnotationOverlay({
       addAnnotation({
         documentId,
         pageNumber,
-        type: "LINE" as any,
+        type: "LINE" as AnnotationType,
         color: selectedColor,
         positionData: {
           kind: "ARROW" as const,
@@ -1815,7 +1849,7 @@ export function AnnotationOverlay({
               y={y + TEXTBOX_PADDING}
               width={Math.max(width - TEXTBOX_PADDING * 2, 1)}
               height={Math.max(height - TEXTBOX_PADDING * 2, 1)}
-              style={{ pointerEvents: "none" }}
+              style={{ pointerEvents: activeTool === "select" ? "auto" : "none" }}
             >
               <div
                 className={cn(
@@ -1827,6 +1861,7 @@ export function AnnotationOverlay({
                   fontSize: resolvedPosition.fontSize ? `${resolvedPosition.fontSize * zoom}px` : undefined,
                   textAlign: resolvedPosition.textAlign ?? "left",
                   opacity: resolvedPosition.opacity ?? 1,
+                  overflowWrap: "anywhere",
                 }}
               >
                 {annotation.content}
@@ -2151,8 +2186,6 @@ export function AnnotationOverlay({
       : activeTool === "note" || activeTool === "textbox" || isDrawingTool
         ? "crosshair"
         : "default"
-  const overlayInteractive =
-    activeTool === "select" || isDrawingTool || activeTool === "eraser"
 
   return (
     <div
@@ -2169,7 +2202,7 @@ export function AnnotationOverlay({
         className="absolute inset-0 size-full"
         style={{
           cursor,
-          pointerEvents: overlayInteractive ? "auto" : "none",
+          pointerEvents: (isDrawingTool || activeTool === "eraser") ? "auto" : "none",
           overflow: "visible",
         }}
         onMouseDown={
@@ -2207,13 +2240,80 @@ export function AnnotationOverlay({
       >
         <g style={{ pointerEvents: "none" }}>
           {pageAnnotations.map((annotation) => (
-            <g key={annotation.id} style={{ pointerEvents: "auto" }}>
+            <g key={annotation.id} style={{ pointerEvents: (activeTool === "select" || activeTool === "editText") ? "auto" : "none" }}>
               {renderAnnotation(annotation)}
             </g>
           ))}
         </g>
         {renderDrawPreview()}
       </svg>
+
+      {draft && draft.pageNumber === pageNumber && draft.isDirect && (
+        <div 
+          className="absolute z-50 bg-card/95 shadow-2xl ring-2 ring-primary/50 rounded-sm pointer-events-auto"
+          style={{
+            left: ((draft.positionData as Partial<TextboxPositionData>)?.x ?? 0) * zoom,
+            top: ((draft.positionData as Partial<TextboxPositionData>)?.y ?? 0) * zoom,
+            width: ((draft.positionData as Partial<TextboxPositionData>)?.width ?? 0) * zoom,
+            height: ((draft.positionData as Partial<TextboxPositionData>)?.height ?? 0) * zoom,
+          }}
+        >
+          <textarea
+            autoFocus
+            className="size-full bg-transparent border-none outline-none resize-none p-0 overflow-hidden leading-tight"
+            style={{
+              fontSize: ((draft.positionData as Partial<TextboxPositionData>)?.fontSize ?? 16) * zoom,
+              fontFamily: (draft.positionData as Partial<TextboxPositionData>)?.fontFamily ?? "Inter",
+              textAlign: ((draft.positionData as Partial<TextboxPositionData>)?.textAlign as "left" | "center" | "right") ?? "left",
+              color: draft.color,
+              overflowWrap: "anywhere",
+            }}
+            defaultValue={draft.content}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault()
+                e.currentTarget.blur()
+              }
+              if (e.key === "Escape") {
+                discardDraft()
+              }
+            }}
+            onBlur={async (e) => {
+              const newText = e.target.value
+              if (newText === draft.content) {
+                discardDraft()
+                return
+              }
+              
+              toast.promise(async () => {
+                const res = await fetch(`/api/documents/${documentId}/edit`, {
+                  method: "POST",
+                  body: JSON.stringify({
+                    edits: [{
+                      pageNumber,
+                      x: (draft.positionData as Partial<TextboxPositionData>)?.x,
+                      y: (draft.positionData as Partial<TextboxPositionData>)?.y,
+                      width: (draft.positionData as Partial<TextboxPositionData>)?.width,
+                      height: (draft.positionData as Partial<TextboxPositionData>)?.height,
+                      text: newText,
+                      fontSize: (draft.positionData as Partial<TextboxPositionData>)?.fontSize,
+                      fontFamily: (draft.positionData as Partial<TextboxPositionData>)?.fontFamily,
+                      color: draft.color,
+                    }]
+                  })
+                })
+                if (!res.ok) throw new Error("Failed to save edit")
+                discardDraft()
+                // The re-process will update the view
+              }, {
+                loading: "Saving edit to PDF...",
+                success: "PDF updated successfully",
+                error: "Failed to save PDF edit",
+              })
+            }}
+          />
+        </div>
+      )}
 
       {hoveredAnnotation && hoverPos ? (
         <AnnotationHoverCard

@@ -34,6 +34,7 @@ export interface ViewerData {
   outline: DocumentOutlineEntry[] | null
   bookmarks: Bookmark[]
   readingProgress: ReadingProgress | null
+  pagesData: Array<{ pageNumber: number; objects: any[] }>
 }
 
 export const viewerApi = api.injectEndpoints({

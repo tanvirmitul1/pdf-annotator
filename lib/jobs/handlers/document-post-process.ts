@@ -1,4 +1,4 @@
-import type { Document } from "@prisma/client"
+import { type Document, Prisma } from "@prisma/client"
 import type { StorageAdapter } from "@/lib/storage"
 import { prisma } from "@/lib/db/prisma"
 import { createStorageAdapter } from "@/lib/storage"
@@ -75,11 +75,12 @@ export async function processDocumentPostProcess({ documentId }: DocumentPostPro
 }
 
 type PdfDocumentRecord = Pick<Document, "id" | "userId" | "name" | "fileSize" | "storageKey">
+type ProgressFn = (percent: number) => Promise<unknown>
+
+import { createWorker } from "tesseract.js"
 
 /** Process pages in parallel batches to avoid overwhelming memory. */
-const PAGE_CONCURRENCY = 5
-
-type ProgressFn = (progress: number) => Promise<unknown>
+const PAGE_CONCURRENCY = 15
 
 async function processPdf(document: PdfDocumentRecord, storage: StorageAdapter, setProgress: ProgressFn) {
   const t0 = Date.now()
@@ -93,9 +94,8 @@ async function processPdf(document: PdfDocumentRecord, storage: StorageAdapter, 
     data: new Uint8Array(buffer),
     standardFontDataUrl: STANDARD_FONT_DATA_URL,
     wasmUrl: WASM_URL,
-    password: "", // Empty password for non-protected PDFs
+    password: "", 
   }).promise.catch(async (err) => {
-    // If password required, mark as failed and skip processing
     if (err.name === "PasswordException") {
       await prisma.document.update({
         where: { id: document.id },
@@ -115,21 +115,29 @@ async function processPdf(document: PdfDocumentRecord, storage: StorageAdapter, 
   console.log(`[${document.id}] Thumbnail generated in ${Date.now() - tThumb}ms`)
   await setProgress(35)
 
-  // Extract text (batched) and outline concurrently
+  // Extract objects and outline concurrently
   const tExtract = Date.now()
-  const [textEntries, outlineEntries] = await Promise.all([
-    extractTextBatched(pdf, document.id, numPages),
+  const [{ textEntries }, outlineEntries] = await Promise.all([
+    extractObjectMetadata(pdf, document.id, numPages, (p) => setProgress(35 + (p * 45))),
     pdf.getOutline().then((outline) =>
       outline ? extractOutline(outline as unknown as OutlineItem[]) : []
     ),
   ])
-  console.log(`[${document.id}] Text + outline extracted in ${Date.now() - tExtract}ms`)
-  await setProgress(80)
+  console.log(`[${document.id}] Objects + outline extracted in ${Date.now() - tExtract}ms`)
+  await setProgress(85)
 
   // Single transaction for all DB writes
   const tDb = Date.now()
   await prisma.$transaction([
-    prisma.documentText.createMany({ data: textEntries, skipDuplicates: true }),
+    prisma.documentText.deleteMany({ where: { documentId: document.id } }),
+    prisma.documentText.createMany({ 
+      data: textEntries.map((e) => ({
+        documentId: e.documentId,
+        pageNumber: e.pageNumber,
+        text: e.text,
+        objects: e.objects as unknown as Prisma.InputJsonValue,
+      })) 
+    }),
     prisma.documentOutline.upsert({
       where: { documentId: document.id },
       update: { entries: outlineEntries },
@@ -141,36 +149,85 @@ async function processPdf(document: PdfDocumentRecord, storage: StorageAdapter, 
     }),
   ])
   console.log(`[${document.id}] DB writes in ${Date.now() - tDb}ms (total: ${Date.now() - t0}ms)`)
-  await setProgress(95)
+  await setProgress(98)
 }
 
-async function extractTextBatched(
+import { PdfAnalyzer, type PdfObject } from "@/lib/pdf/analyzer"
+
+async function extractObjectMetadata(
   pdf: pdfjs.PDFDocumentProxy,
   documentId: string,
   numPages: number,
-): Promise<Array<{ documentId: string; pageNumber: number; text: string }>> {
-  const results: Array<{ documentId: string; pageNumber: number; text: string }> = []
+  onProgress: (p: number) => void
+): Promise<{
+  textEntries: Array<{ documentId: string; pageNumber: number; text: string; objects: PdfObject[] }>
+}> {
+  const textEntries: Array<{ documentId: string; pageNumber: number; text: string; objects: PdfObject[] }> = []
+  const pages = Array.from({ length: numPages }, (_, i) => i + 1)
+  let completed = 0
 
-  for (let start = 1; start <= numPages; start += PAGE_CONCURRENCY) {
-    const end = Math.min(start + PAGE_CONCURRENCY - 1, numPages)
-    const batch = Array.from({ length: end - start + 1 }, (_, i) => start + i)
+  const processPage = async (pageNum: number) => {
+    const page = await pdf.getPage(pageNum)
+    const objects = await PdfAnalyzer.analyzePage(page, pageNum)
+    
+    // Aggregate full text for search
+    let fullText = objects
+      .filter(o => o.type === "text")
+      .map(o => o.content)
+      .join(" ")
+      .trim()
 
-    const batchResults = await Promise.all(
-      batch.map(async (pageNum) => {
-        const page = await pdf.getPage(pageNum)
-        const textContent = await page.getTextContent()
-        // Strip null bytes — PostgreSQL rejects 0x00 in text columns
-        const text = textContent.items
-          .map((item) => ((item as { str?: string }).str ?? ""))
-          .join(" ")
-          .replace(/\0/g, "")
-        return { documentId, pageNumber: pageNum, text }
-      }),
-    )
-    results.push(...batchResults)
+    // OCR Fallback if page has objects but no text (e.g., scanned image)
+    if (fullText.length < 20) {
+      console.log(`[${documentId}] Page ${pageNum} lacks text layer, running OCR...`)
+      const ocrText = await performOcrOnPage(page)
+      if (ocrText) {
+        fullText = ocrText
+        // For OCR, we might want to create a giant text object or many small ones.
+        // For now, let's just update fullText so it's searchable.
+      }
+    }
+
+    completed++
+    onProgress(completed / numPages)
+    
+    textEntries.push({ 
+      documentId, 
+      pageNumber: pageNum, 
+      text: fullText, 
+      objects 
+    })
   }
 
-  return results
+  // Batch for performance
+  for (let i = 0; i < numPages; i += PAGE_CONCURRENCY) {
+    const batch = pages.slice(i, i + PAGE_CONCURRENCY)
+    await Promise.all(batch.map(processPage))
+  }
+
+  return { textEntries }
+}
+
+async function performOcrOnPage(page: pdfjs.PDFPageProxy): Promise<string> {
+  const viewport = page.getViewport({ scale: 2.0 }) // Higher scale for better OCR
+  const { createCanvas } = await import("@napi-rs/canvas")
+  const canvas = createCanvas(viewport.width, viewport.height)
+  const context = canvas.getContext("2d")
+
+  await page.render({ 
+    canvas: canvas as unknown as HTMLCanvasElement, 
+    canvasContext: context as unknown as CanvasRenderingContext2D, 
+    viewport 
+  }).promise
+  const imageBuffer = await canvas.encode("png")
+
+  // Use a fresh worker for now to avoid state issues between pages in a single job
+  // In a production environment, you'd use a pool or a single long-lived worker
+  const worker = await createWorker(["eng", "ben"]) // Support English and Bangla
+  const { data: { text } } = await worker.recognize(imageBuffer)
+  await worker.terminate()
+
+  return text.replace(/\0/g, "")
 }
 
 async function generatePdfThumbnail(
@@ -190,8 +247,11 @@ async function generatePdfThumbnail(
   const context = canvas.getContext("2d")
 
   // @napi-rs/canvas is not typed as HTMLCanvasElement but is API-compatible
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await page.render({ canvas: canvas as any, canvasContext: context as any, viewport }).promise
+  await page.render({ 
+    canvas: canvas as unknown as HTMLCanvasElement, 
+    canvasContext: context as unknown as CanvasRenderingContext2D, 
+    viewport 
+  }).promise
 
   const thumbnailBuffer = await sharp(await canvas.encode("png"))
     .resize(400, 520, { fit: "inside" })

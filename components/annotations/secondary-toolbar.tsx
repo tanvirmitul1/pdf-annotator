@@ -1,14 +1,11 @@
 "use client"
 
 import { motion, AnimatePresence } from "framer-motion"
-import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, Type } from "lucide-react"
+import { AlignCenter, AlignLeft, AlignRight } from "lucide-react"
 
 import { Separator } from "@/components/ui/separator"
 import {
-  Tooltip,
-  TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { useViewer } from "@/features/viewer/provider"
 import { cn } from "@/lib/utils"
@@ -34,7 +31,6 @@ export function SecondaryToolbar() {
   const toolThickness = useViewer((state) => state.toolThickness)
   const setToolThickness = useViewer((state) => state.setToolThickness)
   
-  // These would need to be added to the viewer store:
   const activeFont = useViewer((state) => state.activeFont)
   const setFont = useViewer((state) => state.setFont)
   const activeFontSize = useViewer((state) => state.activeFontSize)
@@ -50,101 +46,109 @@ export function SecondaryToolbar() {
 
   return (
     <TooltipProvider delayDuration={400}>
-      <motion.div
-        initial={{ y: -10, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={{ y: -10, opacity: 0 }}
-        className="flex h-12 items-center gap-2 rounded-full border border-border/40 bg-card/80 px-4 shadow-xl backdrop-blur-2xl"
-      >
-        {hasColor && (
-          <div className="flex items-center gap-2">
-            <ColorPicker
-              value={selectedColor}
-              onChange={setSelectedColor}
-              size="sm"
-            />
-            <Separator orientation="vertical" className="h-6" />
-          </div>
-        )}
-
-        {hasThickness && (
-          <div className="flex items-center gap-3 px-1">
-            <div className="flex items-center gap-2">
-               <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Size</span>
-               <input
-                  type="range"
-                  min={activeTool === "eraser" ? 8 : 2}
-                  max={activeTool === "freehandHighlight" ? 40 : activeTool === "eraser" ? 64 : 20}
-                  value={toolThickness}
-                  onChange={(e) => setToolThickness(Number(e.target.value))}
-                  className="w-24 h-1 bg-accent/50 rounded-full appearance-none cursor-pointer accent-primary"
-               />
-               <span className="text-[10px] font-mono tabular-nums w-4">{toolThickness}</span>
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={activeTool}
+          initial={{ y: -20, opacity: 0, scale: 0.95 }}
+          animate={{ y: 0, opacity: 1, scale: 1 }}
+          exit={{ y: -20, opacity: 0, scale: 0.95 }}
+          transition={{ type: "spring", damping: 20, stiffness: 300 }}
+          className="flex h-12 max-w-[calc(100vw-2rem)] items-center gap-2 overflow-x-auto no-scrollbar rounded-full border border-border/40 bg-card/60 px-3 md:px-4 shadow-[0_8px_32px_-12px_rgba(0,0,0,0.3)] backdrop-blur-3xl ring-1 ring-border/20"
+        >
+          {hasColor && (
+            <div className="flex items-center gap-2 md:gap-3">
+              <ColorPicker
+                value={selectedColor}
+                onChange={setSelectedColor}
+                size="sm"
+              />
+              <Separator orientation="vertical" className="h-5 opacity-40" />
             </div>
-            <Separator orientation="vertical" className="h-6" />
-          </div>
-        )}
+          )}
 
-        {hasTextOptions && (
-          <div className="flex items-center gap-2">
-            {/* Font Family */}
-            <div className="flex items-center gap-1">
-              {FONTS.map((font) => (
-                <button
-                  key={font.value}
-                  onClick={() => setFont?.(font.value)}
-                  className={cn(
-                    "px-2 py-1 text-xs rounded-md transition-colors",
-                    activeFont === font.value ? "bg-primary text-primary-foreground" : "hover:bg-accent text-muted-foreground"
-                  )}
+          {hasThickness && (
+            <div className="flex items-center gap-2 md:gap-3 px-1 shrink-0">
+              <div className="flex items-center gap-2 md:gap-3">
+                 <span className="hidden md:block text-[10px] font-bold text-muted-foreground uppercase tracking-[0.1em] opacity-70">Thickness</span>
+                 <div className="group relative flex items-center">
+                    <input
+                      type="range"
+                      min={activeTool === "eraser" ? 8 : 2}
+                      max={activeTool === "freehandHighlight" ? 40 : activeTool === "eraser" ? 64 : 20}
+                      value={toolThickness}
+                      onChange={(e) => setToolThickness(Number(e.target.value))}
+                      className="w-24 h-1 bg-primary/10 rounded-full appearance-none cursor-pointer accent-primary transition-all group-hover:bg-primary/20"
+                    />
+                 </div>
+                 <span className="text-[10px] font-mono font-bold tabular-nums w-5 text-primary/80 text-center">{toolThickness}</span>
+              </div>
+              <Separator orientation="vertical" className="h-5 opacity-40" />
+            </div>
+          )}
+
+          {hasTextOptions && (
+            <div className="flex items-center gap-3">
+              {/* Font Family */}
+              <div className="flex items-center gap-1 bg-accent/20 p-1 rounded-lg">
+                {FONTS.map((font) => (
+                  <button
+                    key={font.value}
+                    onClick={() => setFont?.(font.value)}
+                    className={cn(
+                      "px-2.5 py-1 text-[11px] font-medium rounded-md transition-all duration-200",
+                      activeFont === font.value 
+                        ? "bg-background text-foreground shadow-sm ring-1 ring-border/50" 
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {font.name}
+                  </button>
+                ))}
+              </div>
+              
+              {/* Font Size */}
+              <div className="flex items-center gap-1 bg-accent/20 p-1 rounded-lg">
+                {FONT_SIZES.map((size) => (
+                  <button
+                    key={size.value}
+                    onClick={() => setFontSize?.(size.value)}
+                    className={cn(
+                      "size-7 flex items-center justify-center text-[10px] font-bold rounded-md transition-all duration-200",
+                      activeFontSize === size.value 
+                        ? "bg-background text-foreground shadow-sm ring-1 ring-border/50" 
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {size.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Alignment */}
+              <div className="flex items-center gap-1 bg-accent/20 p-1 rounded-lg">
+                <button 
+                  onClick={() => setAlign?.("left")}
+                  className={cn("p-1.5 rounded-md transition-all", activeAlign === "left" ? "bg-background text-foreground shadow-sm ring-1 ring-border/50" : "text-muted-foreground hover:text-foreground")}
                 >
-                  {font.name}
+                  <AlignLeft className="size-3.5" />
                 </button>
-              ))}
-            </div>
-            <Separator orientation="vertical" className="h-6" />
-            
-            {/* Font Size */}
-            <div className="flex items-center gap-1">
-              {FONT_SIZES.map((size) => (
-                <button
-                  key={size.value}
-                  onClick={() => setFontSize?.(size.value)}
-                  className={cn(
-                    "size-7 flex items-center justify-center text-[10px] font-bold rounded-md transition-colors",
-                    activeFontSize === size.value ? "bg-primary text-primary-foreground" : "hover:bg-accent text-muted-foreground"
-                  )}
+                <button 
+                  onClick={() => setAlign?.("center")}
+                  className={cn("p-1.5 rounded-md transition-all", activeAlign === "center" ? "bg-background text-foreground shadow-sm ring-1 ring-border/50" : "text-muted-foreground hover:text-foreground")}
                 >
-                  {size.label}
+                  <AlignCenter className="size-3.5" />
                 </button>
-              ))}
+                <button 
+                  onClick={() => setAlign?.("right")}
+                  className={cn("p-1.5 rounded-md transition-all", activeAlign === "right" ? "bg-background text-foreground shadow-sm ring-1 ring-border/50" : "text-muted-foreground hover:text-foreground")}
+                >
+                  <AlignRight className="size-3.5" />
+                </button>
+              </div>
             </div>
-            <Separator orientation="vertical" className="h-6" />
-
-            {/* Alignment */}
-            <div className="flex items-center gap-1">
-              <button 
-                onClick={() => setAlign?.("left")}
-                className={cn("p-1.5 rounded-md", activeAlign === "left" ? "bg-primary text-primary-foreground" : "hover:bg-accent text-muted-foreground")}
-              >
-                <AlignLeft className="size-4" />
-              </button>
-              <button 
-                onClick={() => setAlign?.("center")}
-                className={cn("p-1.5 rounded-md", activeAlign === "center" ? "bg-primary text-primary-foreground" : "hover:bg-accent text-muted-foreground")}
-              >
-                <AlignCenter className="size-4" />
-              </button>
-              <button 
-                onClick={() => setAlign?.("right")}
-                className={cn("p-1.5 rounded-md", activeAlign === "right" ? "bg-primary text-primary-foreground" : "hover:bg-accent text-muted-foreground")}
-              >
-                <AlignRight className="size-4" />
-              </button>
-            </div>
-          </div>
-        )}
-      </motion.div>
+          )}
+        </motion.div>
+      </AnimatePresence>
     </TooltipProvider>
   )
 }

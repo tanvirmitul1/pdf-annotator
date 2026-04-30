@@ -397,6 +397,7 @@ model DocumentText {
   documentId String
   pageNumber Int
   text       String
+  objects    Json?                   // Array of { type: 'text'|'image', x, y, width, height, id, ... }
   tsv        Unsupported("tsvector")?
   createdAt  DateTime                @default(now())
   updatedAt  DateTime                @updatedAt

@@ -234,6 +234,7 @@ export interface AnnotationDraft {
   pageNumber?: number
   positionData?: Partial<PositionData>
   content?: string
+  isDirect?: boolean
 }
 
 // ─── Undo/redo ───────────────────────────────────────────────────────────────

@@ -48,7 +48,6 @@ interface DocumentListProps {
   showDeleted?: boolean
 }
 
-type SelectionMode = "none" | "some" | "all"
 
 interface BulkDeleteState {
   isOpen: boolean
@@ -291,14 +290,12 @@ export function DocumentList({ showDeleted = false }: DocumentListProps) {
     }
   }
 
-  const documents = data?.items ?? []
+  const documents = useMemo(() => data?.items ?? [], [data?.items])
 
   // Selection helpers
-  const allIds = useMemo(() => documents.map((d) => d.id), [documents])
   const visibleIds = useMemo(() => documents.map((d) => d.id), [documents])
 
   const isAllSelected = visibleIds.length > 0 && visibleIds.every((id) => selectedIds.has(id))
-  const isIndeterminate = visibleIds.some((id) => selectedIds.has(id)) && !isAllSelected
 
   const toggleSelection = useCallback((id: string, checked: boolean) => {
     setSelectedIds((prev) => {

@@ -1,8 +1,7 @@
 "use client"
 
 import { useRef, useState, useEffect } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import { X, Eraser, Type, PenLine, Check } from "lucide-react"
+import { Eraser, Type, PenLine } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
 import {

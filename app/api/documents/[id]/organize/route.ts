@@ -3,7 +3,7 @@ import { z } from "zod"
 import { PDFDocument, degrees } from "pdf-lib"
 import { Readable } from "stream"
 
-import { auth } from "@/auth"
+import { Prisma } from "@prisma/client"
 import { prisma } from "@/lib/db/prisma"
 import { withErrorHandling } from "@/lib/api/handler"
 import { requireUser } from "@/lib/auth/require"
@@ -100,7 +100,7 @@ async function organizeHandler(
         pageCount: newDoc.getPageCount(),
         fileSize: newSize,
         storageKey: newKey,
-        pageOrder: pageOrder as any,
+        pageOrder: pageOrder as unknown as Prisma.InputJsonValue,
         updatedAt: new Date(),
       },
     })

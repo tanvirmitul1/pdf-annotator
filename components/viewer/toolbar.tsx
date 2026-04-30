@@ -16,6 +16,7 @@ import {
   ArrowLeft,
   Bookmark,
   BookmarkCheck,
+  MoreVertical,
 } from "lucide-react"
 import type { DocumentMemberRole } from "@prisma/client"
 import type { SessionUser } from "@/features/auth/slice"
@@ -29,21 +30,23 @@ import {
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import {
-  Avatar,
-  AvatarFallback,
-  AvatarGroup,
-  AvatarImage,
-} from "@/components/ui/avatar"
-import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu"
 import { NotificationBell } from "@/components/notifications/notification-bell"
 import { DocumentShareDialog } from "./document-share-dialog"
 import { UserMenu } from "@/components/common/user-menu"
 import { ThemeToggle } from "@/components/common/theme-toggle"
+import { cn } from "@/lib/utils"
 
 const ZOOM_STEPS = [0.25, 0.33, 0.5, 0.67, 0.75, 1, 1.25, 1.5, 2, 3, 4]
 
@@ -65,10 +68,6 @@ interface ToolbarProps {
   user?: SessionUser | null
 }
 
-function initials(name: string | null, email: string | null) {
-  return (name || email || "?").slice(0, 2).toUpperCase()
-}
-
 function Tip({
   children,
   label,
@@ -88,8 +87,8 @@ function Tip({
   )
 }
 
-function Divider() {
-  return <div className="mx-1 h-5 w-px bg-border" aria-hidden />
+function Divider({ className }: { className?: string }) {
+  return <div className={cn("mx-1 h-5 w-px bg-border", className)} aria-hidden />
 }
 
 export function Toolbar({
@@ -119,7 +118,6 @@ export function Toolbar({
   const inputRef = useRef<HTMLInputElement>(null)
 
   const { data: bookmarksRaw } = useListBookmarksQuery(documentId)
-  // Guard against stale cache returning the raw { data: [] } wrapper shape
   const bookmarks = Array.isArray(bookmarksRaw) ? bookmarksRaw : []
   const [createBookmark] = useCreateBookmarkMutation()
   const [deleteBookmark] = useDeleteBookmarkMutation()
@@ -155,290 +153,212 @@ export function Toolbar({
 
   return (
     <header
-      className="flex h-12 shrink-0 items-center gap-1 border-b border-border/60 bg-card/90 px-2 backdrop-blur-xl"
+      className="flex h-14 shrink-0 items-center gap-1 border-b border-border/60 bg-card/90 px-3 backdrop-blur-xl"
       role="toolbar"
       aria-label="PDF viewer controls"
     >
-      {/* Back to library */}
-      <Tip label="Back to library">
-        <Button variant="ghost" size="icon" className="size-8 rounded-md" asChild>
-          <Link href="/app">
-            <ArrowLeft className="size-4" />
-          </Link>
-        </Button>
-      </Tip>
+      {/* Group: Navigation & Sidebar */}
+      <div className="flex items-center gap-0.5">
+        <Tip label="Back to library">
+          <Button variant="ghost" size="icon" className="size-9 rounded-xl" asChild>
+            <Link href="/app">
+              <ArrowLeft className="size-4" />
+            </Link>
+          </Button>
+        </Tip>
 
-      {/* Toggle sidebar */}
-      <Tip label={`${sidebarOpen ? "Hide" : "Show"} sidebar (T)`}>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-8 rounded-md"
-          onClick={toggleSidebar}
-          aria-pressed={sidebarOpen}
-          aria-label="Toggle sidebar"
-        >
-          <PanelLeft className="size-4" />
-        </Button>
-      </Tip>
-
-      <Divider />
-
-      {/* Page navigation */}
-      <Tip label="Previous page (←)">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-8 rounded-md"
-          onClick={() => setPage(currentPage - 1)}
-          disabled={currentPage <= 1}
-          aria-label="Previous page"
-        >
-          <ChevronLeft className="size-4" />
-        </Button>
-      </Tip>
-
-      <form onSubmit={handlePageSubmit} className="flex items-center gap-1">
-        <Input
-          ref={inputRef}
-          value={pageInput || String(currentPage)}
-          onChange={(e) => setPageInput(e.target.value)}
-          onFocus={() => setPageInput(String(currentPage))}
-          onBlur={() => setPageInput("")}
-          className="h-7 w-12 text-center text-sm"
-          aria-label="Current page"
-          onKeyDown={(e) => {
-            if (e.key === "ArrowUp") {
-              e.preventDefault()
-              setPage(currentPage + 1)
-            }
-            if (e.key === "ArrowDown") {
-              e.preventDefault()
-              setPage(currentPage - 1)
-            }
-          }}
-        />
-        <span className="text-xs text-muted-foreground">
-          of {totalPages || "—"}
-        </span>
-      </form>
-
-      <Tip label="Next page (→)">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-8 rounded-md"
-          onClick={() => setPage(currentPage + 1)}
-          disabled={currentPage >= totalPages}
-          aria-label="Next page"
-        >
-          <ChevronRight className="size-4" />
-        </Button>
-      </Tip>
-
-      <Divider />
-
-      {/* Zoom */}
-      <Tip label="Zoom out (-)">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-8 rounded-md"
-          onClick={zoomOut}
-          disabled={zoom <= 0.25}
-          aria-label="Zoom out"
-        >
-          <ZoomOut className="size-4" />
-        </Button>
-      </Tip>
-
-      <span className="min-w-[3rem] text-center text-xs tabular-nums text-muted-foreground">
-        {Math.round(zoom * 100)}%
-      </span>
-
-      <Tip label="Zoom in (+)">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-8 rounded-md"
-          onClick={zoomIn}
-          disabled={zoom >= 4}
-          aria-label="Zoom in"
-        >
-          <ZoomIn className="size-4" />
-        </Button>
-      </Tip>
-
-      <Tip label="Fit width (0)">
-        <Button
-          variant="ghost"
-          size="sm"
-          className="h-7 rounded-md px-2.5 text-xs"
-          onClick={() => setZoom(1)}
-          aria-label="Fit width"
-        >
-          Fit
-        </Button>
-      </Tip>
-
-      <Divider />
-
-      {/* Rotate */}
-      <Tip label="Rotate 90°">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="size-8 rounded-md"
-          onClick={rotate}
-          aria-label="Rotate 90 degrees"
-        >
-          <RotateCw className="size-4" />
-        </Button>
-      </Tip>
-
-      <Divider />
-
-      {/* Document title */}
-      <div className="hidden min-w-0 items-center gap-3 md:flex">
-        <span className="max-w-[200px] truncate text-sm font-medium text-foreground">
-          {documentName}
-        </span>
-        {collaborators.length > 0 ? (
-          <AvatarGroup>
-            {collaborators.slice(0, 4).map((collaborator) => (
-              <Avatar
-                key={collaborator.id}
-                size="sm"
-                title={`${collaborator.name || collaborator.email || "Collaborator"} (${collaborator.role})`}
-              >
-                <AvatarImage
-                  src={collaborator.image ?? undefined}
-                  alt={collaborator.name ?? "Collaborator"}
-                />
-                <AvatarFallback>
-                  {initials(collaborator.name, collaborator.email)}
-                </AvatarFallback>
-              </Avatar>
-            ))}
-          </AvatarGroup>
-        ) : null}
+        <Tip label={`${sidebarOpen ? "Hide" : "Show"} sidebar (T)`}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn("size-9 rounded-xl", sidebarOpen && "bg-accent")}
+            onClick={toggleSidebar}
+            aria-pressed={sidebarOpen}
+          >
+            <PanelLeft className="size-4" />
+          </Button>
+        </Tip>
       </div>
 
-      {/* Save status slot */}
-      {saveStatusSlot}
+      <Divider className="hidden sm:block" />
+
+      {/* Group: Page Control */}
+      <div className="flex items-center gap-0.5">
+        <Tip label="Previous page (←)">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-9 rounded-xl"
+            onClick={() => setPage(currentPage - 1)}
+            disabled={currentPage <= 1}
+          >
+            <ChevronLeft className="size-4" />
+          </Button>
+        </Tip>
+
+        <form onSubmit={handlePageSubmit} className="flex items-center gap-1.5 px-1">
+          <Input
+            ref={inputRef}
+            value={pageInput || String(currentPage)}
+            onChange={(e) => setPageInput(e.target.value)}
+            onFocus={() => setPageInput(String(currentPage))}
+            onBlur={() => setPageInput("")}
+            className="h-8 w-11 border-none bg-accent/50 text-center text-xs font-bold tabular-nums focus-visible:ring-1"
+          />
+          <span className="hidden text-[10px] font-bold uppercase tracking-wider text-muted-foreground opacity-60 sm:inline">
+            of {totalPages || "—"}
+          </span>
+        </form>
+
+        <Tip label="Next page (→)">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-9 rounded-xl"
+            onClick={() => setPage(currentPage + 1)}
+            disabled={currentPage >= totalPages}
+          >
+            <ChevronRight className="size-4" />
+          </Button>
+        </Tip>
+      </div>
+
+      <Divider className="hidden md:block" />
+
+      {/* Group: Zoom (Desktop only center) */}
+      <div className="hidden items-center gap-0.5 lg:flex">
+        <Button variant="ghost" size="icon" className="size-9 rounded-xl" onClick={zoomOut} disabled={zoom <= 0.25}>
+          <ZoomOut className="size-4" />
+        </Button>
+        
+        <Tip label="Fit width (0)">
+          <button 
+            onClick={() => setZoom(1)}
+            className="min-w-[4rem] text-center text-[11px] font-bold tabular-nums hover:text-primary transition-colors"
+          >
+            {Math.round(zoom * 100)}%
+          </button>
+        </Tip>
+
+        <Button variant="ghost" size="icon" className="size-9 rounded-xl" onClick={zoomIn} disabled={zoom >= 4}>
+          <ZoomIn className="size-4" />
+        </Button>
+      </div>
+
+      {/* Group: Document Identity (Mobile: Hidden / Desktop: Centered or Right) */}
+      <div className="hidden flex-1 min-w-0 items-center justify-center gap-3 px-4 md:flex">
+        <div className="flex flex-col items-center min-w-0">
+          <span className="max-w-[240px] truncate text-sm font-bold tracking-tight text-foreground">
+            {documentName}
+          </span>
+          <div className="flex items-center gap-2">
+            {saveStatusSlot}
+            {collaborators.length > 1 && (
+              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest opacity-50">
+                {collaborators.length} collaborators
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Right-side actions */}
       <div className="ml-auto flex items-center gap-0.5">
-        {/* Bookmark toggle */}
-        <Tip
-          label={currentBookmark ? "Remove bookmark (B)" : "Bookmark page (B)"}
-        >
+        <div className="hidden items-center gap-0.5 sm:flex">
+           <Tip label={currentBookmark ? "Remove bookmark (B)" : "Bookmark page (B)"}>
+             <Button
+               variant="ghost"
+               size="icon"
+               className="size-9 rounded-xl"
+               onClick={toggleBookmark}
+             >
+               {currentBookmark ? <BookmarkCheck className="size-4 text-primary" /> : <Bookmark className="size-4" />}
+             </Button>
+           </Tip>
+
+           <Tip label="Search (Ctrl+F)">
+             <Button
+               variant="ghost"
+               size="icon"
+               className={cn("size-9 rounded-xl", searchOpen && "bg-accent")}
+               onClick={openSearch}
+             >
+               <Search className="size-4" />
+             </Button>
+           </Tip>
+        </div>
+
+        <Divider className="hidden sm:block" />
+
+        <div className="flex items-center gap-1.5 px-1">
           <Button
-            variant="ghost"
-            size="icon"
-            className="size-8 rounded-md"
-            onClick={toggleBookmark}
-            aria-label={
-              currentBookmark ? "Remove bookmark" : "Bookmark this page"
-            }
-            aria-pressed={!!currentBookmark}
-          >
-            {currentBookmark ? (
-              <BookmarkCheck className="size-4 text-primary" />
-            ) : (
-              <Bookmark className="size-4" />
-            )}
-          </Button>
-        </Tip>
-
-        {/* Search */}
-        <Tip label="Search in document (Ctrl+F)">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-8 rounded-md"
-            onClick={openSearch}
-            aria-pressed={searchOpen}
-            aria-label="Search in document"
-          >
-            <Search className="size-4" />
-          </Button>
-        </Tip>
-
-        {/* Print */}
-        <Tip label="Print">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-8 rounded-md"
-            onClick={() => window.print()}
-            aria-label="Print document"
-          >
-            <Printer className="size-4" />
-          </Button>
-        </Tip>
-
-        {/* Download */}
-        {downloadUrl && (
-          <Tip label="Download original PDF">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="size-8 rounded-md"
-              asChild
-              aria-label="Download document"
-            >
-              <a href={downloadUrl} download>
-                <Download className="size-4" />
-              </a>
-            </Button>
-          </Tip>
-        )}
-
-        <Divider />
-
-        {/* Share Button */}
-        <Tip label="Share document">
-          <Button
-            variant="ghost"
+            variant="default"
             size="sm"
-            className="h-7 gap-1.5 rounded-md px-2.5 text-xs"
+            className="h-9 gap-2 rounded-xl px-4 text-xs font-bold shadow-lg shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
             onClick={() => setShowShareDialog(true)}
-            aria-label="Share document"
           >
             <Share2 className="size-3.5" />
-            Share
+            <span className="hidden sm:inline">Share</span>
           </Button>
-        </Tip>
 
-        {/* Share Dialog */}
-        <DocumentShareDialog
-          documentId={documentId}
-          open={showShareDialog}
-          onOpenChange={setShowShareDialog}
-          canInviteMembers={canInviteMembers}
-          canManageMembers={canManageMembers}
-        />
+          {/* More Actions Dropdown */}
+          <DropdownMenu>
+             <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="size-9 rounded-xl">
+                   <MoreVertical className="size-4" />
+                </Button>
+             </DropdownMenuTrigger>
+             <DropdownMenuContent align="end" className="w-52 rounded-xl p-1.5">
+                <DropdownMenuItem onClick={() => window.print()} className="gap-2 rounded-lg">
+                   <Printer className="size-4" />
+                   <span>Print Document</span>
+                </DropdownMenuItem>
+                {downloadUrl && (
+                  <DropdownMenuItem asChild className="gap-2 rounded-lg">
+                    <a href={downloadUrl} download>
+                      <Download className="size-4" />
+                      <span>Download PDF</span>
+                    </a>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem onClick={rotate} className="gap-2 rounded-lg">
+                   <RotateCw className="size-4" />
+                   <span>Rotate View</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <div className="flex items-center justify-between px-2 py-1.5">
+                   <span className="text-xs font-medium">Dark Mode</span>
+                   <ThemeToggle />
+                </div>
+             </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
 
         <Divider />
 
-        {/* Theme toggle */}
-        <ThemeToggle />
-        <NotificationBell />
-
-
-        {/* User menu - always show when authenticated */}
-        {user && (
-          <UserMenu
-            name={user.name}
-            email={user.email}
-            image={user.image}
-            planId={user.planId}
-            role={user.role}
-          />
-        )}
-
+        {/* User Group */}
+        <div className="flex items-center gap-2 pl-1">
+           <NotificationBell />
+           {user && (
+             <UserMenu
+               name={user.name}
+               email={user.email}
+               image={user.image}
+               planId={user.planId}
+               role={user.role}
+             />
+           )}
+        </div>
       </div>
+
+      <DocumentShareDialog
+        documentId={documentId}
+        open={showShareDialog}
+        onOpenChange={setShowShareDialog}
+        canInviteMembers={canInviteMembers}
+        canManageMembers={canManageMembers}
+      />
     </header>
   )
 }
+
