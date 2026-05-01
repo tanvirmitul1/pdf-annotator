@@ -82,6 +82,7 @@ export function AnnotationItem({
       "cursor-pointer transition-opacity duration-100",
       isHovered && "opacity-80"
     ),
+    style: { pointerEvents: "auto" } as React.CSSProperties,
     onMouseEnter,
     onMouseLeave,
     onFocus,

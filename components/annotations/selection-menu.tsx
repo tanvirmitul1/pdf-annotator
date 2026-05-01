@@ -27,7 +27,7 @@ export function SelectionMenu({
       initial={{ opacity: 0, scale: 0.9, y: 10 }}
       animate={{ opacity: 1, scale: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.9, y: 10 }}
-      className="absolute z-50 flex flex-col gap-2 rounded-xl border border-border/40 bg-card/80 p-2 shadow-2xl backdrop-blur-2xl ring-1 ring-border/20"
+      className="absolute z-50 flex flex-col gap-2 rounded-xl border border-border/40 bg-card/80 p-2 shadow-2xl backdrop-blur-2xl ring-1 ring-border/20 pointer-events-auto"
       style={{ top: position.y - 10, left: position.x, transform: "translate(-50%, -100%)" }}
     >
       <div className="flex items-center gap-1">

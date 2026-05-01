@@ -42,6 +42,7 @@ export function AnnotationOverlay(props: AnnotationOverlayProps) {
     arrowDraw,
     contextMenu,
     activeTool,
+    selectedColor,
     selectedAnnotationId,
     draft,
     coarsePointer,
@@ -59,7 +60,9 @@ export function AnnotationOverlay(props: AnnotationOverlayProps) {
     updateAnnotation,
     openAnnotation,
     addAnnotation,
-    selectedColor
+    isDrawingMode,
+    isDrawing,
+    isManipulating,
   } = logic
 
   const ringColor = "hsl(var(--primary))"
@@ -69,6 +72,7 @@ export function AnnotationOverlay(props: AnnotationOverlayProps) {
       ref={overlayRef}
       className={cn(
         "absolute inset-0 z-10 overflow-visible touch-none",
+        isDrawingMode || isDrawing || isManipulating ? "pointer-events-auto" : "pointer-events-none",
         activeTool === "hand" ? "cursor-grab active:cursor-grabbing" : 
         activeTool === "select" ? "cursor-default" : 
         activeTool === "eraser" ? "cursor-crosshair" : "cursor-crosshair"
@@ -76,10 +80,6 @@ export function AnnotationOverlay(props: AnnotationOverlayProps) {
       onPointerMove={handlePointerMove}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
-      onContextMenu={(e) => {
-        e.preventDefault()
-        // Context menu logic could be added here if needed
-      }}
     >
       <svg
         className="pointer-events-none absolute inset-0 overflow-visible"
@@ -115,7 +115,7 @@ export function AnnotationOverlay(props: AnnotationOverlayProps) {
               handleRadius={HANDLE_RADIUS}
               textboxPadding={TEXTBOX_PADDING}
               draftId={draft?.id ?? null}
-              onMouseEnter={() => {}} // Handled by pointerMove in logic
+              onMouseEnter={() => {}} 
               onMouseLeave={() => {}} 
               onFocus={() => {}}
               onBlur={() => {}}

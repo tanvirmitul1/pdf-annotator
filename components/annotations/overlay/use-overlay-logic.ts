@@ -365,6 +365,20 @@ export function useOverlayLogic(props: AnnotationOverlayProps) {
       if (rects.length === 0 || !overlayRef.current) return
 
       const overlayRect = overlayRef.current.getBoundingClientRect()
+      const firstRect = rects[0]
+
+      // Determine if this selection actually belongs to this page's overlay
+      const isIntersecting = !(
+        firstRect.bottom < overlayRect.top ||
+        firstRect.top > overlayRect.bottom ||
+        firstRect.right < overlayRect.left ||
+        firstRect.left > overlayRect.right
+      )
+
+      if (!isIntersecting) {
+        return // Selection is on another page
+      }
+
       const sourceRects: TextRect[] = rects.map((rect) => {
         const relX = rect.left - overlayRect.left
         const relY = rect.top - overlayRect.top
@@ -372,7 +386,6 @@ export function useOverlayLogic(props: AnnotationOverlayProps) {
         return { x: srcPoint.x, y: srcPoint.y, width: rect.width / zoom, height: rect.height / zoom }
       })
 
-      const firstRect = rects[0]
       const anchor = { rects: sourceRects, quotedText: selection.toString().slice(0, 5000), prefix: "", suffix: "" }
 
       if (relocatingAnnotationId) {
@@ -690,6 +703,9 @@ export function useOverlayLogic(props: AnnotationOverlayProps) {
     deleteAnnotationImmediate,
     updateAnnotation,
     openAnnotation,
-    addAnnotation
+    addAnnotation,
+    isDrawingMode: !["select", "hand", "highlight", "underline", "strikethrough", "squiggly"].includes(activeTool),
+    isDrawing: !!drawRect || drawPath.length > 0 || !!arrowDraw,
+    isManipulating: !!manipulationRef.current,
   }
 }

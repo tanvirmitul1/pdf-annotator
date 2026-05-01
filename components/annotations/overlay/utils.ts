@@ -206,6 +206,24 @@ export function generateCloudPath(x: number, y: number, width: number, height: n
     const y2 = y + (i - 1) * stepH
     d += ` Q ${x1} ${y1}, ${x2} ${y2}`
   }
-
   return d + " Z"
+}
+
+export function simplifyPath(points: { x: number; y: number }[], tolerance: number = 1) {
+  if (points.length < 3) return points
+
+  const result = [points[0]]
+  let lastPoint = points[0]
+
+  for (let i = 1; i < points.length - 1; i++) {
+    const point = points[i]
+    const dist = Math.hypot(point.x - lastPoint.x, point.y - lastPoint.y)
+    if (dist > tolerance) {
+      result.push(point)
+      lastPoint = point
+    }
+  }
+
+  result.push(points[points.length - 1])
+  return result
 }
