@@ -1,13 +1,21 @@
 "use client"
 
 import { motion, AnimatePresence } from "framer-motion"
-import { AlignCenter, AlignLeft, AlignRight } from "lucide-react"
+import { AlignCenter, AlignLeft, AlignRight, Copy, Trash2, Layers } from "lucide-react"
 
 import { Separator } from "@/components/ui/separator"
 import {
   TooltipProvider,
 } from "@/components/ui/tooltip"
-import { useViewer } from "@/features/viewer/provider"
+import { useViewer, useViewerStore } from "@/features/viewer/provider"
+import {
+  useUpdatePageOrderMutation,
+} from "@/features/viewer/api"
+import {
+  useDeleteAnnotationMutation,
+  useUpdateAnnotationMutation,
+  useListByDocumentQuery,
+} from "@/features/annotations/api"
 import { cn } from "@/lib/utils"
 import { ColorPicker } from "./color-picker"
 
@@ -38,11 +46,22 @@ export function SecondaryToolbar() {
   const activeAlign = useViewer((state) => state.activeAlign)
   const setAlign = useViewer((state) => state.setAlign)
 
-  const hasColor = ["highlight", "freehandHighlight", "underline", "strikethrough", "squiggly", "note", "freehand", "rectangle", "circle", "checkmark", "cross", "line", "arrow", "textbox", "signature"].includes(activeTool)
-  const hasThickness = ["freehandHighlight", "freehand", "rectangle", "circle", "line", "arrow", "eraser"].includes(activeTool)
-  const hasTextOptions = ["textbox", "editText"].includes(activeTool)
+  const selectedAnnotationId = useViewer((state) => (state as any).selectedAnnotationId)
+  const setSelectedAnnotation = useViewer((state) => (state as any).setSelectedAnnotation)
+  const documentId = useViewer((state) => state.documentId)
 
-  if (activeTool === "select" || activeTool === "hand") return null
+  const [deleteAnnotation] = useDeleteAnnotationMutation()
+  const [updateAnnotation] = useUpdateAnnotationMutation()
+  const { data: annotations } = useListByDocumentQuery(documentId)
+
+  const selectedAnnotation = annotations?.find(a => a.id === selectedAnnotationId)
+
+  const hasColor = ["highlight", "freehandHighlight", "underline", "strikethrough", "squiggly", "note", "freehand", "rectangle", "circle", "checkmark", "cross", "line", "arrow", "textbox", "signature"].includes(activeTool) || !!selectedAnnotationId
+  const hasThickness = ["freehandHighlight", "freehand", "rectangle", "circle", "line", "arrow", "eraser"].includes(activeTool) || !!selectedAnnotationId
+  const hasTextOptions = ["textbox", "editText"].includes(activeTool) || !!selectedAnnotationId
+  const isSelectionMode = activeTool === "select" || activeTool === "hand"
+
+  if (isSelectionMode && !selectedAnnotationId) return null
 
   return (
     <TooltipProvider delayDuration={400}>
@@ -58,8 +77,14 @@ export function SecondaryToolbar() {
           {hasColor && (
             <div className="flex items-center gap-2 md:gap-3">
               <ColorPicker
-                value={selectedColor}
-                onChange={setSelectedColor}
+                value={selectedAnnotation?.color ?? selectedColor}
+                onChange={(color) => {
+                  if (selectedAnnotationId) {
+                    updateAnnotation({ id: selectedAnnotationId, documentId, color })
+                  } else {
+                    setSelectedColor(color)
+                  }
+                }}
                 size="sm"
               />
               <Separator orientation="vertical" className="h-5 opacity-40" />
@@ -73,16 +98,69 @@ export function SecondaryToolbar() {
                  <div className="group relative flex items-center">
                     <input
                       type="range"
-                      min={activeTool === "eraser" ? 8 : 2}
+                      min={activeTool === "eraser" ? 8 : 1}
                       max={activeTool === "freehandHighlight" ? 40 : activeTool === "eraser" ? 64 : 20}
-                      value={toolThickness}
-                      onChange={(e) => setToolThickness(Number(e.target.value))}
-                      className="w-24 h-1 bg-primary/10 rounded-full appearance-none cursor-pointer accent-primary transition-all group-hover:bg-primary/20"
+                      value={selectedAnnotationId 
+                        ? ((selectedAnnotation?.positionData as any)?.strokeWidth ?? 2)
+                        : toolThickness}
+                      onChange={(e) => {
+                        const val = Number(e.target.value)
+                        if (selectedAnnotationId) {
+                          updateAnnotation({
+                            id: selectedAnnotationId,
+                            documentId,
+                            positionData: {
+                              ...selectedAnnotation?.positionData,
+                              strokeWidth: val
+                            } as any
+                          })
+                        } else {
+                          setToolThickness(val)
+                        }
+                      }}
+                      className="w-20 h-1 bg-primary/10 rounded-full appearance-none cursor-pointer accent-primary transition-all group-hover:bg-primary/20"
                     />
                  </div>
-                 <span className="text-[10px] font-mono font-bold tabular-nums w-5 text-primary/80 text-center">{toolThickness}</span>
+                 <span className="text-[10px] font-mono font-bold tabular-nums w-4 text-primary/80 text-center">
+                   {selectedAnnotationId 
+                     ? ((selectedAnnotation?.positionData as any)?.strokeWidth ?? 2)
+                     : toolThickness}
+                 </span>
               </div>
               <Separator orientation="vertical" className="h-5 opacity-40" />
+            </div>
+          )}
+
+          {selectedAnnotationId && (
+            <div className="flex items-center gap-2 md:gap-3 px-1 shrink-0">
+               <div className="flex items-center gap-2 md:gap-3">
+                  <span className="hidden md:block text-[10px] font-bold text-muted-foreground uppercase tracking-[0.1em] opacity-70">Opacity</span>
+                  <div className="group relative flex items-center">
+                     <input
+                       type="range"
+                       min={10}
+                       max={100}
+                       step={10}
+                       value={((selectedAnnotation?.positionData as any)?.opacity ?? 1) * 100}
+                       onChange={(e) => {
+                         const opacity = Number(e.target.value) / 100
+                         updateAnnotation({
+                           id: selectedAnnotationId,
+                           documentId,
+                           positionData: {
+                             ...selectedAnnotation?.positionData,
+                             opacity
+                           } as any
+                         })
+                       }}
+                       className="w-20 h-1 bg-primary/10 rounded-full appearance-none cursor-pointer accent-primary transition-all group-hover:bg-primary/20"
+                     />
+                  </div>
+                  <span className="text-[10px] font-mono font-bold tabular-nums w-4 text-primary/80 text-center">
+                    {Math.round(((selectedAnnotation?.positionData as any)?.opacity ?? 1) * 100)}
+                  </span>
+               </div>
+               <Separator orientation="vertical" className="h-5 opacity-40" />
             </div>
           )}
 
@@ -93,10 +171,23 @@ export function SecondaryToolbar() {
                 {FONTS.map((font) => (
                   <button
                     key={font.value}
-                    onClick={() => setFont?.(font.value)}
+                    onClick={() => {
+                      if (selectedAnnotationId) {
+                        updateAnnotation({
+                          id: selectedAnnotationId,
+                          documentId,
+                          positionData: {
+                            ...selectedAnnotation?.positionData,
+                            fontFamily: font.value
+                          } as any
+                        })
+                      } else {
+                        setFont?.(font.value)
+                      }
+                    }}
                     className={cn(
                       "px-2.5 py-1 text-[11px] font-medium rounded-md transition-all duration-200",
-                      activeFont === font.value 
+                      (selectedAnnotationId ? (selectedAnnotation?.positionData as any)?.fontFamily : activeFont) === font.value 
                         ? "bg-background text-foreground shadow-sm ring-1 ring-border/50" 
                         : "text-muted-foreground hover:text-foreground"
                     )}
@@ -111,10 +202,23 @@ export function SecondaryToolbar() {
                 {FONT_SIZES.map((size) => (
                   <button
                     key={size.value}
-                    onClick={() => setFontSize?.(size.value)}
+                    onClick={() => {
+                      if (selectedAnnotationId) {
+                        updateAnnotation({
+                          id: selectedAnnotationId,
+                          documentId,
+                          positionData: {
+                            ...selectedAnnotation?.positionData,
+                            fontSize: size.value
+                          } as any
+                        })
+                      } else {
+                        setFontSize?.(size.value)
+                      }
+                    }}
                     className={cn(
                       "size-7 flex items-center justify-center text-[10px] font-bold rounded-md transition-all duration-200",
-                      activeFontSize === size.value 
+                      (selectedAnnotationId ? (selectedAnnotation?.positionData as any)?.fontSize : activeFontSize) === size.value 
                         ? "bg-background text-foreground shadow-sm ring-1 ring-border/50" 
                         : "text-muted-foreground hover:text-foreground"
                     )}
@@ -127,25 +231,91 @@ export function SecondaryToolbar() {
               {/* Alignment */}
               <div className="flex items-center gap-1 bg-accent/20 p-1 rounded-lg">
                 <button 
-                  onClick={() => setAlign?.("left")}
-                  className={cn("p-1.5 rounded-md transition-all", activeAlign === "left" ? "bg-background text-foreground shadow-sm ring-1 ring-border/50" : "text-muted-foreground hover:text-foreground")}
+                  onClick={() => {
+                    if (selectedAnnotationId) {
+                      updateAnnotation({
+                        id: selectedAnnotationId,
+                        documentId,
+                        positionData: {
+                          ...selectedAnnotation?.positionData,
+                          textAlign: "left"
+                        } as any
+                      })
+                    } else {
+                      setAlign?.("left")
+                    }
+                  }}
+                  className={cn("p-1.5 rounded-md transition-all", (selectedAnnotationId ? (selectedAnnotation?.positionData as any)?.textAlign : activeAlign) === "left" ? "bg-background text-foreground shadow-sm ring-1 ring-border/50" : "text-muted-foreground hover:text-foreground")}
                 >
                   <AlignLeft className="size-3.5" />
                 </button>
                 <button 
-                  onClick={() => setAlign?.("center")}
-                  className={cn("p-1.5 rounded-md transition-all", activeAlign === "center" ? "bg-background text-foreground shadow-sm ring-1 ring-border/50" : "text-muted-foreground hover:text-foreground")}
+                  onClick={() => {
+                    if (selectedAnnotationId) {
+                      updateAnnotation({
+                        id: selectedAnnotationId,
+                        documentId,
+                        positionData: {
+                          ...selectedAnnotation?.positionData,
+                          textAlign: "center"
+                        } as any
+                      })
+                    } else {
+                      setAlign?.("center")
+                    }
+                  }}
+                  className={cn("p-1.5 rounded-md transition-all", (selectedAnnotationId ? (selectedAnnotation?.positionData as any)?.textAlign : activeAlign) === "center" ? "bg-background text-foreground shadow-sm ring-1 ring-border/50" : "text-muted-foreground hover:text-foreground")}
                 >
                   <AlignCenter className="size-3.5" />
                 </button>
                 <button 
-                  onClick={() => setAlign?.("right")}
-                  className={cn("p-1.5 rounded-md transition-all", activeAlign === "right" ? "bg-background text-foreground shadow-sm ring-1 ring-border/50" : "text-muted-foreground hover:text-foreground")}
+                  onClick={() => {
+                    if (selectedAnnotationId) {
+                      updateAnnotation({
+                        id: selectedAnnotationId,
+                        documentId,
+                        positionData: {
+                          ...selectedAnnotation?.positionData,
+                          textAlign: "right"
+                        } as any
+                      })
+                    } else {
+                      setAlign?.("right")
+                    }
+                  }}
+                  className={cn("p-1.5 rounded-md transition-all", (selectedAnnotationId ? (selectedAnnotation?.positionData as any)?.textAlign : activeAlign) === "right" ? "bg-background text-foreground shadow-sm ring-1 ring-border/50" : "text-muted-foreground hover:text-foreground")}
                 >
                   <AlignRight className="size-3.5" />
                 </button>
               </div>
             </div>
+          )}
+
+          {selectedAnnotationId && (
+            <>
+               <Separator orientation="vertical" className="h-5 opacity-40" />
+               <div className="flex items-center gap-2">
+                 <button 
+                   onClick={() => (useViewerStore as any).getState().duplicateAnnotation(selectedAnnotationId)}
+                   className="p-2 rounded-lg hover:bg-primary/10 text-muted-foreground hover:text-primary transition-all"
+                   title="Duplicate"
+                 >
+                   <Copy className="size-4" />
+                 </button>
+                 <button 
+                   onClick={async () => {
+                     if (selectedAnnotationId) {
+                       await deleteAnnotation({ id: selectedAnnotationId, documentId }).unwrap()
+                       setSelectedAnnotation(null)
+                     }
+                   }}
+                   className="p-2 rounded-lg hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-all"
+                   title="Delete"
+                 >
+                   <Trash2 className="size-4" />
+                 </button>
+               </div>
+            </>
           )}
         </motion.div>
       </AnimatePresence>

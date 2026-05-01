@@ -22,6 +22,8 @@ import {
   X,
   ShieldAlert,
   ChevronDown,
+  Cloud,
+  Spline,
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { toast } from "sonner"
@@ -92,6 +94,7 @@ const TOOL_GROUPS: ToolGroupDef[] = [
       { id: "circle", label: "Circle", shortcut: "O", icon: <Circle className="size-4" />, hasColor: true, hasThickness: true, desktopOnly: true },
       { id: "line", label: "Line", shortcut: "L", icon: <Minus className="size-4" />, hasColor: true, hasThickness: true },
       { id: "arrow", label: "Arrow", shortcut: "A", icon: <MoveRight className="size-4" />, hasColor: true, hasThickness: true, desktopOnly: true },
+      { id: "cloud", label: "Cloud", shortcut: "C", icon: <Cloud className="size-4" />, hasColor: true, hasThickness: true },
     ],
   },
   {
