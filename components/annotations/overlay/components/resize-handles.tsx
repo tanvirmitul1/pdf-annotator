@@ -65,6 +65,7 @@ export function ResizeHandles({
       onPointerDown={(event) => {
         event.preventDefault()
         event.stopPropagation()
+        event.currentTarget.setPointerCapture(event.pointerId)
         onBeginManipulation(
           annotation,
           "resize",

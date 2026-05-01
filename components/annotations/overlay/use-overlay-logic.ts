@@ -120,7 +120,7 @@ export function useOverlayLogic(props: AnnotationOverlayProps) {
   const [drawPath, setDrawPath] = useState<Array<{ x: number; y: number }>>([])
   const [arrowDraw, setArrowDraw] = useState<ArrowDraw | null>(null)
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null)
-  const [, setLivePositions] = useState<Record<string, PositionData>>({})
+  const [livePositions, setLivePositions] = useState<Record<string, PositionData>>({})
 
   const drawingRef = useRef(false)
   const startPosRef = useRef<{ x: number; y: number } | null>(null)
@@ -704,6 +704,8 @@ export function useOverlayLogic(props: AnnotationOverlayProps) {
     updateAnnotation,
     openAnnotation,
     addAnnotation,
+    livePositions,
+    toolThickness,
     isDrawingMode: !["select", "hand", "highlight", "underline", "strikethrough", "squiggly"].includes(activeTool),
     isDrawing: !!drawRect || drawPath.length > 0 || !!arrowDraw,
     isManipulating: !!manipulationRef.current,

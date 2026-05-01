@@ -63,6 +63,8 @@ export function AnnotationOverlay(props: AnnotationOverlayProps) {
     isDrawingMode,
     isDrawing,
     isManipulating,
+    livePositions,
+    toolThickness,
   } = logic
 
   const ringColor = "hsl(var(--primary))"
@@ -78,8 +80,16 @@ export function AnnotationOverlay(props: AnnotationOverlayProps) {
         activeTool === "eraser" ? "cursor-crosshair" : "cursor-crosshair"
       )}
       onPointerMove={handlePointerMove}
-      onPointerDown={handlePointerDown}
-      onPointerUp={handlePointerUp}
+      onPointerDown={(e) => {
+        if (isDrawingMode || isManipulating) {
+          e.currentTarget.setPointerCapture(e.pointerId)
+        }
+        handlePointerDown(e)
+      }}
+      onPointerUp={(e) => {
+        e.currentTarget.releasePointerCapture(e.pointerId)
+        handlePointerUp(e)
+      }}
     >
       <svg
         className="pointer-events-none absolute inset-0 overflow-visible"
@@ -95,16 +105,18 @@ export function AnnotationOverlay(props: AnnotationOverlayProps) {
           const isHovered = !coarsePointer && hoveredAnnotation?.id === annotation.id
           const isEraser = activeTool === "eraser"
           
+          const effectivePosition = livePositions[annotation.id] ?? resolved.positionData
+
           return (
             <AnnotationItem
               key={annotation.id}
               annotation={annotation}
-              resolvedPosition={resolved.positionData}
+              resolvedPosition={effectivePosition}
               isSelected={isSelected}
               isHovered={isHovered}
               isEraser={isEraser}
               ringColor={ringColor}
-              opacity={resolved.positionData.kind === "TEXT" ? 1 : (resolved.positionData as any).opacity ?? 1}
+              opacity={effectivePosition.kind === "TEXT" ? 1 : (effectivePosition as any).opacity ?? 1}
               zoom={zoom}
               rotation={rotation}
               srcW={srcW}
@@ -134,6 +146,7 @@ export function AnnotationOverlay(props: AnnotationOverlayProps) {
               onPointerDown={(e) => {
                 if (activeTool === "select" || activeTool === "hand") {
                   e.stopPropagation()
+                  e.currentTarget.setPointerCapture(e.pointerId)
                   beginManipulation(annotation, "move", e.clientX, e.clientY)
                 }
               }}
@@ -171,9 +184,12 @@ export function AnnotationOverlay(props: AnnotationOverlayProps) {
               return `${i === 0 ? "M" : "L"} ${s.x} ${s.y}`
             }).join(" ")}
             fill="none"
-            stroke="hsl(var(--primary))"
-            strokeWidth={2}
-            strokeDasharray="4 2"
+            stroke={selectedColor as string}
+            strokeWidth={Math.max(2, toolThickness * zoom)}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            opacity={activeTool === "freehandHighlight" ? 0.35 : 1}
+            style={activeTool === "freehandHighlight" ? { mixBlendMode: "multiply" } : undefined}
           />
         )}
 
