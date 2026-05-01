@@ -156,6 +156,26 @@ export function PdfViewer({
     }
   }, [totalPages, getItemSize, setPage, onProgressUpdate, displayPages])
 
+  // Ctrl+Scroll → PDF zoom (prevent browser zoom)
+  const setZoom = useViewer((s) => s.setZoom)
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el) return
+
+    const handleWheel = (e: WheelEvent) => {
+      if (!e.ctrlKey && !e.metaKey) return
+      e.preventDefault()
+      
+      const currentZoom = store.getState().zoom
+      const delta = e.deltaY > 0 ? -0.1 : 0.1
+      const newZoom = Math.round(Math.max(0.25, Math.min(4, currentZoom + delta)) * 100) / 100
+      setZoom(newZoom)
+    }
+
+    el.addEventListener("wheel", handleWheel, { passive: false })
+    return () => el.removeEventListener("wheel", handleWheel)
+  }, [setZoom, store])
+
 
   const handleTextClick = useCallback((text: string, rect: DOMRect, pageNum: number) => {
     const pageContainer = scrollRef.current?.querySelector(`[data-testid="pdf-page-${pageNum}"]`)
