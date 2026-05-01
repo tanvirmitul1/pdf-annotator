@@ -5,7 +5,7 @@ import type { AppDispatch, RootState } from "@/store"
 import { useAppSelector } from "@/store/hooks"
 import { annotationsApi } from "./api"
 import type { CreateAnnotationArg } from "./api"
-import type { AnnotationWithTags } from "./types"
+import type { AnnotationWithTags, PositionData } from "./types"
 import { addLocalAnnotation, markSynced, markFailed } from "./local-slice"
 
 const FLUSH_DELAY_MS = 5_000
@@ -182,7 +182,7 @@ export function useAnnotationManager(documentId: string) {
               type: annotation.type,
               status: annotation.status ?? "OPEN",
               color: annotation.color,
-              positionData: annotation.positionData,
+              positionData: annotation.positionData as PositionData,
               content: annotation.content ?? null,
               deletedAt: null,
               createdAt: new Date().toISOString(),

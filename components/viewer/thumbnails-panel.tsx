@@ -3,9 +3,9 @@
 import { useRef, useEffect } from "react"
 import { useVirtualizer } from "@tanstack/react-virtual"
 import type { PDFDocumentProxy } from "pdfjs-dist"
-import { Trash2, Copy, Plus, MoreVertical } from "lucide-react"
+import { Trash2, Copy, Plus, RotateCw, Check, FileUp, MoreVertical } from "lucide-react"
 
-import { useViewer } from "@/features/viewer/provider"
+import { useViewer, useViewerStore } from "@/features/viewer/provider"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import {
@@ -40,6 +40,13 @@ export function ThumbnailsPanel({
   const deletePage = useViewer((s) => s.deletePage)
   const duplicatePage = useViewer((s) => s.duplicatePage)
   const addBlankPage = useViewer((s) => s.addBlankPage)
+  const rotatePage = useViewer((s) => s.rotatePage)
+  const documentId = useViewer((s) => s.documentId)
+  
+  const selectedPageIndices = useViewer((s) => s.selectedPageIndices || [])
+  const togglePageSelection = useViewer((s) => (s as any).togglePageSelection)
+  const clearPageSelection = useViewer((s) => (s as any).clearPageSelection)
+
   const containerRef = useRef<HTMLDivElement>(null)
 
   const visiblePages = pageOrder.filter(p => !p.deleted)
@@ -48,7 +55,7 @@ export function ThumbnailsPanel({
   const virtualizer = useVirtualizer({
     count: displayPages.length,
     getScrollElement: () => containerRef.current,
-    estimateSize: () => THUMB_HEIGHT + 12,
+    estimateSize: () => THUMB_HEIGHT + 40, // Increased for spacing and footer
     overscan: 3,
   })
 
@@ -95,10 +102,10 @@ export function ThumbnailsPanel({
       </div>
 
       {/* Thumbnails List */}
-      <div ref={containerRef} className="flex-1 overflow-y-auto py-6 custom-scrollbar px-4">
+      <div ref={containerRef} className="flex-1 overflow-y-auto py-6 px-4 no-scrollbar">
         <div
           style={{
-            height: `${virtualizer.getTotalSize()}px`,
+            height: `${virtualizer.getTotalSize() + 100}px`, // Extra space for Add Files zone
             position: "relative",
           }}
         >
@@ -107,6 +114,7 @@ export function ThumbnailsPanel({
             if (!pageRecord || pageRecord.originalIndex === undefined) return null
             const pageNum = pageRecord.originalIndex
             const isCurrent = pageNum === currentPage
+            const isSelected = selectedPageIndices.includes(vi.index)
 
             return (
               <div
@@ -117,79 +125,211 @@ export function ThumbnailsPanel({
                   left: 0,
                   width: "100%",
                   transform: `translateY(${vi.start}px)`,
-                  padding: "10px 0",
+                  padding: "12px 0",
                 }}
               >
-                <div className="group relative flex flex-col gap-2">
-                  <div className="flex items-center justify-between px-1">
-                     <span className={cn(
-                        "text-[10px] font-black tracking-widest transition-colors",
-                        isCurrent ? "text-primary" : "text-muted-foreground/40"
-                     )}>
-                        PAGE {pageNum}
-                     </span>
-                     {isCurrent && (
-                        <div className="h-1 w-8 rounded-full bg-primary/40 animate-pulse" />
-                     )}
+                <div className="group relative flex flex-col items-center">
+                  {/* Top Insertion Point */}
+                  <div className="absolute -top-4 left-0 right-0 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                    <button 
+                      onClick={() => addBlankPage(vi.index - 1)}
+                      className="size-6 rounded-full bg-primary text-white shadow-lg flex items-center justify-center hover:scale-110 active:scale-95 transition-transform"
+                    >
+                      <Plus className="size-4" />
+                    </button>
                   </div>
 
-                  <div className="relative">
+                  <div className="relative w-full max-w-[140px]">
                     <button
                       type="button"
-                      onClick={() => setPage(pageNum)}
+                      onClick={() => {
+                        if (selectedPageIndices.length > 0) {
+                          togglePageSelection?.(vi.index)
+                        } else {
+                          setPage(pageNum)
+                        }
+                      }}
                       className={cn(
                         "relative w-full cursor-pointer overflow-hidden rounded-[14px] border-2 bg-card transition-all duration-300 shadow-sm",
                         "focus-visible:ring-2 focus-visible:ring-primary focus-visible:outline-none",
                         "hover:border-primary/40 hover:shadow-xl hover:-translate-y-0.5",
-                        isCurrent
+                        isCurrent && !isSelected
                           ? "border-primary ring-4 ring-primary/5 shadow-primary/10"
-                          : "border-border/40"
+                          : isSelected
+                            ? "border-primary bg-primary/5"
+                            : "border-border/40"
                       )}
                     >
-                      <div className="aspect-[3/4] w-full bg-white dark:bg-zinc-900/50" style={{ transform: `rotate(${pageRecord.rotation}deg)` }}>
+                      <div 
+                        className="aspect-[3/4] w-full bg-white dark:bg-zinc-900/50 origin-center transition-transform duration-300" 
+                        style={{ transform: `rotate(${pageRecord.rotation}deg)` }}
+                      >
                         <ThumbnailCanvas
                           pdfDocument={pdfDocument}
                           pageNum={pageNum}
                           active={Math.abs(pageNum - currentPage) <= 8}
                         />
                       </div>
+
+                      {/* Checkbox for selection */}
+                      {(isSelected || selectedPageIndices.length > 0) && (
+                        <div className="absolute top-2 left-2 z-10">
+                          <div className={cn(
+                            "size-5 rounded-full border-2 flex items-center justify-center transition-colors",
+                            isSelected ? "bg-primary border-primary text-white" : "bg-background/80 border-border"
+                          )}>
+                            {isSelected && <Check className="size-3 stroke-[3]" />}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Page Actions Overlay (Floating) */}
+                      <div className="absolute inset-x-0 bottom-2 flex justify-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all duration-200 translate-y-2 group-hover:translate-y-0 z-10 px-2">
+                        <TooltipProvider>
+                           <div className="flex gap-1.5 bg-background/90 backdrop-blur-md p-1 rounded-full border border-border/40 shadow-2xl">
+                             <Tooltip>
+                                <TooltipTrigger asChild>
+                                   <Button 
+                                      variant="ghost" 
+                                      size="icon" 
+                                      className="size-7 rounded-full hover:bg-primary/10 hover:text-primary transition-all"
+                                      onClick={(e) => { e.stopPropagation(); rotatePage(vi.index, 90); }}
+                                   >
+                                      <RotateCw className="size-3.5" />
+                                   </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="text-[10px] font-bold">Rotate</TooltipContent>
+                             </Tooltip>
+                             
+                             <Tooltip>
+                                <TooltipTrigger asChild>
+                                   <Button 
+                                      variant="ghost" 
+                                      size="icon" 
+                                      className="size-7 rounded-full hover:bg-destructive/10 hover:text-destructive transition-all"
+                                      onClick={(e) => { e.stopPropagation(); deletePage(vi.index); }}
+                                   >
+                                      <Trash2 className="size-3.5" />
+                                   </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="text-[10px] font-bold">Delete</TooltipContent>
+                             </Tooltip>
+
+                             <Tooltip>
+                                <TooltipTrigger asChild>
+                                   <Button 
+                                      variant="ghost" 
+                                      size="icon" 
+                                      className={cn(
+                                        "size-7 rounded-full transition-all",
+                                        isSelected ? "bg-primary text-white hover:bg-primary/90" : "hover:bg-primary/10 hover:text-primary"
+                                      )}
+                                      onClick={(e) => { e.stopPropagation(); togglePageSelection?.(vi.index); }}
+                                   >
+                                      <Check className="size-3.5" />
+                                   </Button>
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="text-[10px] font-bold">Select</TooltipContent>
+                             </Tooltip>
+                           </div>
+                        </TooltipProvider>
+                      </div>
                     </button>
                     
-                    {/* Page Actions Overlay (Floating) */}
-                    <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-all duration-200 translate-y-1 group-hover:translate-y-0 z-10">
-                       <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                             <Button variant="secondary" size="icon" className="size-7 rounded-xl shadow-2xl bg-background/90 backdrop-blur-md border border-border/40 hover:scale-105 active:scale-95">
-                                <MoreVertical className="size-3.5" />
-                             </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-36 rounded-xl p-1.5 border-border/40 shadow-2xl backdrop-blur-2xl">
-                             <DropdownMenuItem onClick={() => duplicatePage(vi.index)} className="rounded-lg gap-2 text-[11px] font-bold">
-                                <Copy className="size-3.5 text-muted-foreground" />
-                                <span>Duplicate</span>
-                             </DropdownMenuItem>
-                             <DropdownMenuItem onClick={() => addBlankPage(vi.index)} className="rounded-lg gap-2 text-[11px] font-bold">
-                                <Plus className="size-3.5 text-muted-foreground" />
-                                <span>Insert Blank</span>
-                             </DropdownMenuItem>
-                             <DropdownMenuSeparator className="opacity-40" />
-                             <DropdownMenuItem 
-                                onClick={() => deletePage(vi.index)} 
-                                className="rounded-lg gap-2 text-[11px] font-black text-destructive focus:text-destructive focus:bg-destructive/10"
-                             >
-                                <Trash2 className="size-3.5" />
-                                <span>Remove Page</span>
-                             </DropdownMenuItem>
-                          </DropdownMenuContent>
-                       </DropdownMenu>
+                    {/* Centered Page Number */}
+                    <div className="mt-3 text-center">
+                       <span className={cn(
+                          "text-[11px] font-bold transition-colors",
+                          isCurrent ? "text-primary" : "text-muted-foreground/60"
+                       )}>
+                          {vi.index + 1}
+                       </span>
                     </div>
                   </div>
+
+                  {/* Bottom Insertion Point (for the last item) */}
+                  {vi.index === displayPages.length - 1 && (
+                    <div className="absolute -bottom-8 left-0 right-0 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20">
+                      <button 
+                        onClick={() => addBlankPage(vi.index)}
+                        className="size-6 rounded-full bg-primary text-white shadow-lg flex items-center justify-center hover:scale-110 active:scale-95 transition-transform"
+                      >
+                        <Plus className="size-4" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             )
           })}
+
+          {/* Add Files Zone */}
+          <div 
+            style={{
+              position: "absolute",
+              top: `${virtualizer.getTotalSize()}px`,
+              left: 0,
+              width: "100%",
+              padding: "20px 0 60px",
+            }}
+          >
+            <button className="w-full flex flex-col items-center justify-center py-8 rounded-2xl border-2 border-dashed border-border/60 bg-background/40 hover:bg-background/60 hover:border-primary/40 transition-all group">
+              <div className="size-10 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-3 group-hover:scale-110 transition-transform">
+                <FileUp className="size-5" />
+              </div>
+              <span className="text-[11px] font-bold text-foreground/70">Add PDF, image...</span>
+              <span className="text-[9px] font-medium text-muted-foreground mt-1">or drag & drop files here</span>
+            </button>
+          </div>
         </div>
       </div>
+      
+      {/* Batch Action Bar */}
+      {selectedPageIndices.length > 0 && (
+        <div className="absolute bottom-4 left-4 right-4 z-20 flex items-center justify-between rounded-xl border border-primary/20 bg-primary/10 p-2 shadow-2xl backdrop-blur-2xl ring-1 ring-primary/30">
+          <div className="flex items-center gap-2 px-2">
+            <div className="flex size-5 items-center justify-center rounded-full bg-primary text-[10px] font-black text-primary-foreground shadow-sm">
+              {selectedPageIndices.length}
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-tight text-primary/80">Selected</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8 rounded-lg hover:bg-primary/20 hover:text-primary transition-all"
+              onClick={() => {
+                selectedPageIndices.forEach(idx => rotatePage(idx, 90))
+              }}
+              title="Rotate Selected"
+            >
+              <RotateCw className="size-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8 rounded-lg hover:bg-destructive/10 hover:text-destructive transition-all"
+              onClick={() => {
+                selectedPageIndices.forEach(idx => deletePage(idx))
+                clearPageSelection()
+              }}
+              title="Delete Selected"
+            >
+              <Trash2 className="size-4" />
+            </Button>
+            <div className="mx-1 h-4 w-px bg-primary/20" />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="size-8 rounded-lg hover:bg-primary/20 transition-all"
+              onClick={clearPageSelection}
+              title="Clear Selection"
+            >
+              <Check className="size-4" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

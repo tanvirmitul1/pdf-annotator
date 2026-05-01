@@ -59,6 +59,9 @@ export interface ViewerState {
   searchOpen: boolean
   shortcutsOpen: boolean
   pageOrder: PageMetadata[]
+  selectedPageIndices: number[]
+  isMultiSelectMode: boolean
+  duplicationIntentId: string | null
 
   // ─── Annotation state ────────────────────────────────────────────────────
   /** The currently active annotation tool */
@@ -67,6 +70,8 @@ export interface ViewerState {
   rightPanelAnnotationId: string | null
   /** ID of the orphaned text annotation currently being relocated */
   relocatingAnnotationId: string | null
+  /** ID of the annotation currently selected for inline editing */
+  selectedAnnotationId: string | null
   /** ID of the annotation currently hovered */
   hoveredAnnotationId: string | null
   /** Annotations whose text anchor could not be re-resolved against the current text layer */
@@ -118,6 +123,9 @@ export interface ViewerState {
   deletePage: (pageIndex: number) => void
   duplicatePage: (pageIndex: number) => void
   addBlankPage: (afterIndex: number | null) => void
+  togglePageSelection: (index: number) => void
+  clearPageSelection: () => void
+  selectAllPages: () => void
 
   // ─── Annotation actions ───────────────────────────────────────────────────
   setTool: (t: ToolId) => void
@@ -126,6 +134,7 @@ export interface ViewerState {
   startRelocatingAnnotation: (id: string) => void
   cancelRelocatingAnnotation: () => void
   setHoveredAnnotation: (id: string | null) => void
+  setSelectedAnnotation: (id: string | null) => void
   setAnnotationOrphaned: (id: string, orphaned: boolean) => void
   startDraft: (d: AnnotationDraft) => void
   updateDraft: (patch: Partial<AnnotationDraft>) => void
@@ -140,6 +149,7 @@ export interface ViewerState {
   setFont: (font: string) => void
   setFontSize: (size: number) => void
   setAlign: (align: "left" | "center" | "right") => void
+  duplicateAnnotation: (id: string) => void
 }
 
 export const createViewerStore = (documentId: string, isAuthenticated = false, onAnnotationAttempt?: () => boolean) =>
@@ -162,11 +172,15 @@ export const createViewerStore = (documentId: string, isAuthenticated = false, o
       searchOpen: false,
       shortcutsOpen: false,
       pageOrder: [],
+      selectedPageIndices: [],
+      isMultiSelectMode: false,
+      duplicationIntentId: null,
 
       // ─── Annotation defaults ──────────────────────────────────────────────
       activeTool: "select" as ToolId,
       rightPanelAnnotationId: null,
       relocatingAnnotationId: null,
+      selectedAnnotationId: null,
       hoveredAnnotationId: null,
       orphanedAnnotationIds: {},
       draft: null,
@@ -265,6 +279,22 @@ export const createViewerStore = (documentId: string, isAuthenticated = false, o
           }
           return { pageOrder: next }
         }),
+      togglePageSelection: (index) =>
+        set((s) => {
+          const next = s.selectedPageIndices.includes(index)
+            ? s.selectedPageIndices.filter((i) => i !== index)
+            : [...s.selectedPageIndices, index]
+          return {
+            selectedPageIndices: next,
+            isMultiSelectMode: next.length > 0,
+          }
+        }),
+      clearPageSelection: () => set({ selectedPageIndices: [], isMultiSelectMode: false }),
+      selectAllPages: () =>
+        set((s) => ({
+          selectedPageIndices: s.pageOrder.map((_, i) => i),
+          isMultiSelectMode: true,
+        })),
 
       // ─── Annotation actions ───────────────────────────────────────────────
       setTool: (activeTool) => {
@@ -283,6 +313,7 @@ export const createViewerStore = (documentId: string, isAuthenticated = false, o
       startRelocatingAnnotation: (id) => set({ relocatingAnnotationId: id }),
       cancelRelocatingAnnotation: () => set({ relocatingAnnotationId: null }),
       setHoveredAnnotation: (id) => set({ hoveredAnnotationId: id }),
+      setSelectedAnnotation: (id) => set({ selectedAnnotationId: id, rightPanelAnnotationId: id }),
       setAnnotationOrphaned: (id, orphaned) =>
         set((state) => {
           if (orphaned) {
@@ -356,6 +387,7 @@ export const createViewerStore = (documentId: string, isAuthenticated = false, o
       setFont: (activeFont) => set({ activeFont }),
       setFontSize: (activeFontSize) => set({ activeFontSize }),
       setAlign: (activeAlign) => set({ activeAlign }),
+      duplicateAnnotation: (id) => set({ duplicationIntentId: id }),
     }))
   )
 

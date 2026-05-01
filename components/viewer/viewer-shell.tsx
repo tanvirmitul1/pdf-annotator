@@ -11,7 +11,9 @@ import { ViewerProvider, useViewer } from "@/features/viewer/provider"
 import {
   useGetDocumentViewerDataQuery,
   useUpdateReadingProgressMutation,
+  useUpdatePageOrderMutation,
 } from "@/features/viewer/api"
+import { useDebouncedMutation } from "@/hooks/use-debounced-mutation"
 import {
   useDeleteAnnotationMutation,
   useUpdateAnnotationMutation,
@@ -142,6 +144,7 @@ export function ViewerShellInner({
   const zoom = useViewer((s) => s.zoom)
   const setZoom = useViewer((s) => s.setZoom)
   const setPage = useViewer((s) => s.setPage)
+  const setTool = useViewer((s) => s.setTool)
   const setTotalPages = useViewer((s) => s.setTotalPages)
   const openSidebar = useViewer((s) => s.openSidebar)
   const openSearch = useViewer((s) => s.openSearch)
@@ -161,7 +164,36 @@ export function ViewerShellInner({
   const setSaveStatus = useViewer((s) => s.setSaveStatus)
 
   const { data, isLoading, refetch } = useGetDocumentViewerDataQuery(documentId)
+  const setPageOrder = useViewer((s) => s.setPageOrder)
+  const pageOrder = useViewer((s) => s.pageOrder)
+
   const [updateProgress] = useUpdateReadingProgressMutation()
+  const [updatePageOrder] = useUpdatePageOrderMutation()
+
+  const { call: debouncedUpdatePageOrder } = useDebouncedMutation(
+    (order: any[]) => updatePageOrder({ documentId, pageOrder: order }),
+    1000
+  )
+
+  // Sync pageOrder to store on load
+  useEffect(() => {
+    if (data?.pageOrder) {
+      setPageOrder(data.pageOrder)
+    }
+  }, [data?.pageOrder, setPageOrder])
+
+  // Watch for pageOrder changes and persist
+  const lastPersistedOrderRef = useRef<string>("")
+  useEffect(() => {
+    const orderStr = JSON.stringify(pageOrder)
+    if (pageOrder.length > 0 && orderStr !== lastPersistedOrderRef.current) {
+       // Only persist if it's not the initial load from server
+       if (lastPersistedOrderRef.current !== "") {
+         debouncedUpdatePageOrder(pageOrder)
+       }
+       lastPersistedOrderRef.current = orderStr
+    }
+  }, [pageOrder, debouncedUpdatePageOrder])
   const [deleteAnnotation] = useDeleteAnnotationMutation()
   const [updateAnnotation] = useUpdateAnnotationMutation()
   const [restoreAnnotation] = useRestoreAnnotationMutation()
@@ -432,6 +464,23 @@ export function ViewerShellInner({
       description: "Show shortcuts",
       handler: () => openShortcuts(),
     },
+    // Tools
+    { key: "v", label: "V", category: "Tools", description: "Select tool", handler: () => setTool("select") },
+    { key: "t", label: "T", category: "Tools", description: "Text tool", handler: () => setTool("textbox") },
+    { key: "r", label: "R", category: "Tools", description: "Rectangle", handler: () => setTool("rectangle") },
+    { key: "o", label: "O", category: "Tools", description: "Circle", handler: () => setTool("circle") },
+    { key: "l", label: "L", category: "Tools", description: "Line", handler: () => setTool("line") },
+    { key: "a", label: "A", category: "Tools", description: "Arrow", handler: () => setTool("arrow") },
+    { key: "c", label: "C", category: "Tools", description: "Cloud", handler: () => setTool("cloud") },
+    { key: "n", label: "N", category: "Tools", description: "Comment", handler: () => setTool("note") },
+    { key: "u", label: "U", category: "Tools", description: "Underline", handler: () => setTool("underline") },
+    { key: "s", label: "S", category: "Tools", description: "Strikethrough", handler: () => setTool("strikethrough") },
+    { key: "q", label: "Q", category: "Tools", description: "Squiggly", handler: () => setTool("squiggly") },
+    { key: "k", label: "K", category: "Tools", description: "Checkmark", handler: () => setTool("checkmark") },
+    { key: "x", label: "X", category: "Tools", description: "Cross", handler: () => setTool("cross") },
+    { key: "i", label: "I", category: "Tools", description: "Signature", handler: () => setTool("signature") },
+    { key: "d", label: "D", category: "Tools", description: "Redact", handler: () => setTool("redact") },
+    { key: "e", label: "E", category: "Tools", description: "Eraser", handler: () => setTool("eraser") },
   ])
 
   if (isLoading || !pdfDocument) {
