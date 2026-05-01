@@ -13,9 +13,9 @@ import {
   useUpdateReadingProgressMutation,
 } from "@/features/viewer/api"
 import {
-  useCreateAnnotationMutation,
   useDeleteAnnotationMutation,
   useUpdateAnnotationMutation,
+  useRestoreAnnotationMutation,
   useListByDocumentQuery,
 } from "@/features/annotations/api"
 import { cn } from "@/lib/utils"
@@ -125,19 +125,6 @@ export function ViewerShell({
   )
 }
 
-function toCreateAnnotationInput(
-  annotation: AnnotationWithTags,
-  documentId: string
-) {
-  return {
-    documentId,
-    pageNumber: annotation.pageNumber,
-    type: annotation.type,
-    color: annotation.color,
-    positionData: annotation.positionData,
-    ...(annotation.content ? { content: annotation.content } : {}),
-  }
-}
 
 export function ViewerShellInner({
   documentId,
@@ -175,9 +162,9 @@ export function ViewerShellInner({
 
   const { data, isLoading, refetch } = useGetDocumentViewerDataQuery(documentId)
   const [updateProgress] = useUpdateReadingProgressMutation()
-  const [createAnnotation] = useCreateAnnotationMutation()
   const [deleteAnnotation] = useDeleteAnnotationMutation()
   const [updateAnnotation] = useUpdateAnnotationMutation()
+  const [restoreAnnotation] = useRestoreAnnotationMutation()
 
   // Multi-user polling: poll every 10s when collaborators exist and user isn't drawing
   const hasCollaborators = (data?.collaborators?.length ?? 0) > 1
@@ -197,9 +184,7 @@ export function ViewerShellInner({
       if (entry.action === "create" && entry.after) {
         await deleteAnnotation({ id: entry.after.id, documentId }).unwrap()
       } else if (entry.action === "delete" && entry.before) {
-        await createAnnotation(
-          toCreateAnnotationInput(entry.before, documentId)
-        ).unwrap()
+        await restoreAnnotation({ id: entry.before.id, documentId }).unwrap()
       } else if (entry.action === "update" && entry.before) {
         const { content, color, positionData } = entry.before
         await updateAnnotation({
@@ -215,7 +200,7 @@ export function ViewerShellInner({
     } catch {
       setSaveStatus("offline")
     }
-  }, [undo, deleteAnnotation, createAnnotation, updateAnnotation, documentId, setSaveStatus])
+  }, [undo, deleteAnnotation, restoreAnnotation, updateAnnotation, documentId, setSaveStatus])
 
   // Redo handler
   const handleRedo = useCallback(async () => {
@@ -225,9 +210,7 @@ export function ViewerShellInner({
     try {
       setSaveStatus("saving")
       if (entry.action === "create" && entry.after) {
-        await createAnnotation(
-          toCreateAnnotationInput(entry.after, documentId)
-        ).unwrap()
+        await restoreAnnotation({ id: entry.after.id, documentId }).unwrap()
       } else if (entry.action === "delete" && entry.before) {
         await deleteAnnotation({ id: entry.before.id, documentId }).unwrap()
       } else if (entry.action === "update" && entry.after) {
@@ -245,10 +228,22 @@ export function ViewerShellInner({
     } catch {
       setSaveStatus("offline")
     }
-  }, [redo, deleteAnnotation, createAnnotation, updateAnnotation, documentId, setSaveStatus])
+  }, [redo, deleteAnnotation, restoreAnnotation, updateAnnotation, documentId, setSaveStatus])
+  const handleDeleteSelected = useCallback(async () => {
+    if (!rightPanelAnnotationId) return
+    try {
+      setSaveStatus("saving")
+      await deleteAnnotation({ id: rightPanelAnnotationId, documentId }).unwrap()
+      closeAnnotation()
+      setSaveStatus("saved")
+      setTimeout(() => setSaveStatus("idle"), 2000)
+    } catch {
+      setSaveStatus("offline")
+    }
+  }, [rightPanelAnnotationId, deleteAnnotation, documentId, closeAnnotation, setSaveStatus])
 
   // Register annotation shortcuts
-  useAnnotationShortcuts(undefined, handleUndo, handleRedo)
+  useAnnotationShortcuts(handleDeleteSelected, handleUndo, handleRedo)
 
   // Debounced progress update
   const progressTimer = useRef<NodeJS.Timeout | null>(null)
@@ -503,8 +498,8 @@ export function ViewerShellInner({
         />
         
         {/* Horizontal Tool Header (Integrated) */}
-        <div className="flex h-auto min-h-12 w-full items-center justify-start md:justify-center border-t border-border/20 px-2 py-2 md:px-4 overflow-x-auto no-scrollbar">
-           <div className="flex-shrink-0">
+        <div className="flex h-auto min-h-12 w-full items-center justify-center border-t border-border/20 px-2 py-2 md:px-4 flex-wrap">
+           <div className="flex-shrink-0 z-50">
              <AnnotationToolbar />
            </div>
         </div>

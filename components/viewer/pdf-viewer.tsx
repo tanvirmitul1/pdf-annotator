@@ -162,9 +162,8 @@ export function PdfViewer({
     if (!pageContainer) return
     const containerRect = pageContainer.getBoundingClientRect()
     const state = store.getState()
-    state.setTool("textbox")
     state.startDraft({
-      type: "textbox",
+      type: "editText",
       pageNumber: pageNum,
       color: state.selectedColor,
       isDirect: true,

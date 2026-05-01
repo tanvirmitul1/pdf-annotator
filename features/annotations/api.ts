@@ -189,6 +189,7 @@ export const annotationsApi = api.injectEndpoints({
     }),
 
     // ─── Delete annotation (optimistic) ──────────────────────────────────────
+    // ─── Delete annotation (optimistic) ──────────────────────────────────────
     deleteAnnotation: b.mutation<AnnotationWithTags, DeleteAnnotationArg>({
       query: ({ id }) => ({ url: `/annotations/${id}`, method: "DELETE" }),
       transformResponse: (res: { data: AnnotationWithTags }) => res.data,
@@ -213,6 +214,33 @@ export const annotationsApi = api.injectEndpoints({
         { type: "Annotation", id },
         { type: "Annotation", id: `LIST-${documentId}` },
       ],
+    }),
+
+    // ─── Restore annotation (undo delete) ───────────────────────────────────
+    restoreAnnotation: b.mutation<AnnotationWithTags, DeleteAnnotationArg>({
+      query: ({ id }) => ({
+        url: `/annotations/${id}/restore`,
+        method: "POST",
+      }),
+      transformResponse: (res: { data: AnnotationWithTags }) => res.data,
+      async onQueryStarted({ id, documentId }, { dispatch, queryFulfilled }) {
+        try {
+          const { data: restoredAnnotation } = await queryFulfilled
+          dispatch(
+            annotationsApi.util.updateQueryData("listByDocument", documentId, (draft) => {
+              const existing = draft.find((a) => a.id === id)
+              if (existing) {
+                Object.assign(existing, restoredAnnotation)
+              } else {
+                draft.push(restoredAnnotation)
+              }
+            })
+          )
+        } catch {
+          // Failure handles invalidation natively
+        }
+      },
+      invalidatesTags: (_r, _e, arg) => [{ type: "Annotation", id: `LIST-${arg.documentId}` }],
     }),
 
     // ─── Add tag to annotation (optimistic) ──────────────────────────────────
@@ -292,6 +320,7 @@ export const {
   useBulkCreateAnnotationsMutation,
   useUpdateAnnotationMutation,
   useDeleteAnnotationMutation,
+  useRestoreAnnotationMutation,
   useAddTagMutation,
   useRemoveTagMutation,
 } = annotationsApi

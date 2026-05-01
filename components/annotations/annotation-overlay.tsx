@@ -2328,12 +2328,12 @@ export function AnnotationOverlay({
               onBlur={async (e) => {
                 const newText = e.target.value
 
-                if (!newText.trim()) {
+                if (newText === (draft.content ?? "")) {
                   discardDraft()
                   return
                 }
 
-                if (newText === (draft.content ?? "")) {
+                if (draft.type === "textbox" && !newText.trim()) {
                   discardDraft()
                   return
                 }

@@ -1,8 +1,8 @@
 "use client"
 
-import { useCallback } from "react"
+import { useCallback, useEffect, useRef } from "react"
 import { useShortcuts } from "@/hooks/use-shortcuts"
-import { useViewer } from "@/features/viewer/provider"
+import { useViewer, useViewerStore } from "@/features/viewer/provider"
 import type { ToolId } from "@/features/annotations/types"
 
 /**
@@ -15,9 +15,61 @@ export function useAnnotationShortcuts(
   onRedo?: () => void
 ) {
   const setTool = useViewer((s) => s.setTool)
+  const store = useViewerStore()
+  const previousToolRef = useRef<ToolId | null>(null)
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.repeat) return
+      if (
+        e.target instanceof HTMLInputElement ||
+        e.target instanceof HTMLTextAreaElement ||
+        (e.target as HTMLElement).isContentEditable
+      ) {
+        return
+      }
+
+      if (e.key === "Control" || e.key === "Meta") {
+        const currentTool = store.getState().activeTool
+        if (currentTool !== "select") {
+          previousToolRef.current = currentTool
+          setTool("select")
+        }
+      }
+    }
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === "Control" || e.key === "Meta") {
+        if (previousToolRef.current) {
+          setTool(previousToolRef.current)
+          previousToolRef.current = null
+        }
+      }
+    }
+
+    const handleBlur = () => {
+      if (previousToolRef.current) {
+        setTool(previousToolRef.current)
+        previousToolRef.current = null
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown)
+    window.addEventListener("keyup", handleKeyUp)
+    window.addEventListener("blur", handleBlur)
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown)
+      window.removeEventListener("keyup", handleKeyUp)
+      window.removeEventListener("blur", handleBlur)
+    }
+  }, [setTool, store])
 
   const makeTool = useCallback(
-    (t: ToolId) => () => setTool(t),
+    (t: ToolId) => () => {
+      setTool(t)
+      previousToolRef.current = null // Reset if manually changed
+    },
     [setTool]
   )
 
@@ -172,6 +224,13 @@ export function useAnnotationShortcuts(
     {
       key: "delete",
       label: "Delete",
+      category: "Annotation",
+      description: "Delete selected annotation",
+      handler: () => onDeleteSelected?.(),
+    },
+    {
+      key: "backspace",
+      label: "Backspace",
       category: "Annotation",
       description: "Delete selected annotation",
       handler: () => onDeleteSelected?.(),

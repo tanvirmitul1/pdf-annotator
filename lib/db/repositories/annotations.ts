@@ -208,6 +208,20 @@ export function annotationsFor(userId: string) {
 
       return toClient(row)
     },
+    restore: async (annotationId: string): Promise<AnnotationWithTags> => {
+      const row = await prisma.annotation.findFirst({
+        where: { id: annotationId, userId },
+      })
+      if (!row) throw new Error("Annotation not found")
+      
+      const updated = await prisma.annotation.update({
+        where: { id: annotationId },
+        data: { deletedAt: null },
+        include: annotationInclude,
+      })
+
+      return toClient(updated)
+    },
     addTag: async (
       annotationId: string,
       label: string

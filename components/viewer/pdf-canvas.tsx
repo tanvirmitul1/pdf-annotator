@@ -306,9 +306,9 @@ export function PdfCanvas({
               // but in editText mode show a hover hint so user can see what they're clicking
               color: "transparent",
               // Selection tools need text interaction
-              userSelect: (activeTool === "highlight" || activeTool === "underline" || activeTool === "strikethrough" || activeTool === "squiggly") ? "text" : "none",
-              cursor: activeTool === "editText" ? "text" : (activeTool === "highlight" || activeTool === "underline" || activeTool === "strikethrough" || activeTool === "squiggly") ? "text" : "default",
-              pointerEvents: (activeTool === "highlight" || activeTool === "underline" || activeTool === "strikethrough" || activeTool === "squiggly" || activeTool === "editText") ? "auto" : "none",
+              userSelect: (activeTool === "select" || activeTool === "highlight" || activeTool === "underline" || activeTool === "strikethrough" || activeTool === "squiggly") ? "text" : "none",
+              cursor: activeTool === "editText" ? "text" : (activeTool === "select" || activeTool === "highlight" || activeTool === "underline" || activeTool === "strikethrough" || activeTool === "squiggly") ? "text" : "default",
+              pointerEvents: (activeTool === "select" || activeTool === "highlight" || activeTool === "underline" || activeTool === "strikethrough" || activeTool === "squiggly" || activeTool === "editText") ? "auto" : "none",
               // In editText mode, give a subtle blue background so users can see the text zones
               backgroundColor: activeTool === "editText" ? "rgba(59, 130, 246, 0.12)" : "transparent",
               borderRadius: activeTool === "editText" ? "2px" : "0",
