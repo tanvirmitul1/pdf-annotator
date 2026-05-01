@@ -23,6 +23,7 @@ export type ToolId =
   | "image"
   | "stamp"
   | "eraser"
+  | "cloud"
 
 // ─── Annotation types (mirrors Prisma AnnotationType enum) ───────────────────
 
@@ -44,6 +45,7 @@ export type AnnotationType =
   | "CROSS"
   | "LINE"
   | "STAMP"
+  | "CLOUD"
 
 export type AnnotationStatus = "OPEN" | "IN_PROGRESS" | "RESOLVED"
 
@@ -67,6 +69,7 @@ export const TOOL_TO_TYPE: Partial<Record<ToolId, AnnotationType>> = {
   redact: "REDACTION",
   image: "IMAGE_SHAPE",
   stamp: "STAMP",
+  cloud: "CLOUD",
 }
 
 // ─── Annotation color presets ────────────────────────────────────────────────
@@ -130,6 +133,7 @@ export interface TextboxPositionData {
   strokeColor?: string
   strokeWidth?: number
   opacity?: number
+  rotation?: number
 }
 
 export interface RectPositionData extends PositionDataBase {
@@ -139,6 +143,10 @@ export interface RectPositionData extends PositionDataBase {
   width: number
   height: number
   rotation?: number
+  opacity?: number
+  strokeWidth?: number
+  fillColor?: string
+  strokeColor?: string
 }
 
 export interface PathPositionData extends PositionDataBase {
@@ -146,6 +154,7 @@ export interface PathPositionData extends PositionDataBase {
   points: Array<{ x: number; y: number; pressure?: number }>
   strokeWidth: number
   style?: "pen" | "highlighter"
+  opacity?: number
 }
 
 export interface ArrowPositionData extends PositionDataBase {
@@ -153,6 +162,7 @@ export interface ArrowPositionData extends PositionDataBase {
   from: { x: number; y: number }
   to: { x: number; y: number }
   strokeWidth: number
+  opacity?: number
 }
 
 export interface SignaturePositionData extends PositionDataBase {
@@ -162,6 +172,8 @@ export interface SignaturePositionData extends PositionDataBase {
   width: number
   height: number
   data: string // Base64 or SVG path
+  rotation?: number
+  opacity?: number
 }
 
 export interface ImagePositionData extends PositionDataBase {
@@ -171,6 +183,8 @@ export interface ImagePositionData extends PositionDataBase {
   width: number
   height: number
   url: string
+  rotation?: number
+  opacity?: number
 }
 
 export type PositionData =
@@ -182,6 +196,20 @@ export type PositionData =
   | ArrowPositionData
   | SignaturePositionData
   | ImagePositionData
+  | CloudPositionData
+
+export interface CloudPositionData extends PositionDataBase {
+  kind: "CLOUD"
+  x: number
+  y: number
+  width: number
+  height: number
+  rotation?: number
+  opacity?: number
+  strokeWidth?: number
+  fillColor?: string
+  strokeColor?: string
+}
 
 // ─── Tag ─────────────────────────────────────────────────────────────────────
 

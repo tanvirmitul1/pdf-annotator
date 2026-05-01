@@ -1,6 +1,6 @@
 import type { PositionData } from "./types"
 
-export type ResizeHandle = "nw" | "ne" | "sw" | "se" | "start" | "end"
+export type ResizeHandle = "nw" | "ne" | "sw" | "se" | "start" | "end" | "rot"
 
 const MIN_SCREEN_SIZE_PX = 18
 
@@ -29,7 +29,8 @@ export function isResizablePosition(positionData: PositionData) {
     positionData.kind === "TEXT_BOX" ||
     positionData.kind === "ARROW" ||
     positionData.kind === "SIGNATURE" ||
-    positionData.kind === "IMAGE"
+    positionData.kind === "IMAGE" ||
+    positionData.kind === "CLOUD"
   )
 }
 
@@ -112,7 +113,8 @@ export function translatePositionData(
       }
     }
     case "SIGNATURE":
-    case "IMAGE": {
+    case "IMAGE":
+    case "CLOUD": {
       const nextX = clamp(
         positionData.x + delta.x,
         0,
@@ -143,7 +145,11 @@ export function resizePositionData(
   const clampedPoint = clampPoint(nextPoint, srcW, srcH)
   const minSize = MIN_SCREEN_SIZE_PX / zoom
 
-  if (positionData.kind === "RECT" || positionData.kind === "TEXT_BOX") {
+  if (
+    positionData.kind === "RECT" ||
+    positionData.kind === "TEXT_BOX" ||
+    positionData.kind === "CLOUD"
+  ) {
     let left = positionData.x
     let right = positionData.x + positionData.width
     let top = positionData.y
@@ -239,6 +245,38 @@ export function resizePositionData(
   }
 
   return positionData
+}
+
+export function rotatePositionData(
+  positionData: PositionData,
+  currentPoint: { x: number; y: number },
+  center: { x: number; y: number }
+): PositionData {
+  if (
+    positionData.kind !== "RECT" &&
+    positionData.kind !== "TEXT_BOX" &&
+    positionData.kind !== "SIGNATURE" &&
+    positionData.kind !== "IMAGE" &&
+    positionData.kind !== "CLOUD"
+  ) {
+    return positionData
+  }
+
+  // Calculate angle between vertical axis and vector from center to currentPoint
+  const dx = currentPoint.x - center.x
+  const dy = currentPoint.y - center.y
+  
+  // Math.atan2 returns angle from positive X axis. 
+  // We want angle from positive Y axis (upwards).
+  // atan2(y, x) -> atan2(dy, dx)
+  // angle in radians
+  const radians = Math.atan2(dy, dx)
+  const degrees = (radians * 180) / Math.PI + 90 // offset by 90 to make "up" = 0
+
+  return {
+    ...positionData,
+    rotation: (degrees + 360) % 360,
+  }
 }
 
 export function positionDataEquals(a: PositionData, b: PositionData) {

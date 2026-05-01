@@ -55,6 +55,10 @@ const RectPositionDataSchema = z.object({
   width: z.number(),
   height: z.number(),
   rotation: z.number().optional(),
+  opacity: z.number().optional(),
+  strokeWidth: z.number().optional(),
+  fillColor: z.string().optional(),
+  strokeColor: z.string().optional(),
 })
 
 const PathPositionDataSchema = z.object({
@@ -71,6 +75,7 @@ const PathPositionDataSchema = z.object({
     .min(2),
   strokeWidth: z.number(),
   style: z.enum(["pen", "highlighter"]).optional(),
+  opacity: z.number().optional(),
 })
 
 const ArrowPositionDataSchema = z.object({
@@ -79,6 +84,7 @@ const ArrowPositionDataSchema = z.object({
   from: z.object({ x: z.number(), y: z.number() }),
   to: z.object({ x: z.number(), y: z.number() }),
   strokeWidth: z.number(),
+  opacity: z.number().optional(),
 })
 
 const SignaturePositionDataSchema = z.object({
@@ -89,6 +95,8 @@ const SignaturePositionDataSchema = z.object({
   width: z.number(),
   height: z.number(),
   data: z.string(), // Base64 or SVG path
+  rotation: z.number().optional(),
+  opacity: z.number().optional(),
 })
 
 const ImagePositionDataSchema = z.object({
@@ -99,6 +107,22 @@ const ImagePositionDataSchema = z.object({
   width: z.number(),
   height: z.number(),
   url: z.string().url(),
+  rotation: z.number().optional(),
+  opacity: z.number().optional(),
+})
+
+const CloudPositionDataSchema = z.object({
+  kind: z.literal("CLOUD"),
+  pageNumber: z.number().int().positive(),
+  x: z.number(),
+  y: z.number(),
+  width: z.number(),
+  height: z.number(),
+  rotation: z.number().optional(),
+  opacity: z.number().optional(),
+  strokeWidth: z.number().optional(),
+  fillColor: z.string().optional(),
+  strokeColor: z.string().optional(),
 })
 
 export const PositionDataSchema = z.discriminatedUnion("kind", [
@@ -110,6 +134,7 @@ export const PositionDataSchema = z.discriminatedUnion("kind", [
   ArrowPositionDataSchema,
   SignaturePositionDataSchema,
   ImagePositionDataSchema,
+  CloudPositionDataSchema,
 ])
 
 // ─── Annotation type enum ──────────────────────────────────────────────────────
@@ -131,6 +156,7 @@ export const AnnotationTypeSchema = z.enum([
   "CROSS",
   "LINE",
   "STAMP",
+  "CLOUD",
 ])
 
 export const AnnotationStatusSchema = z.enum([
