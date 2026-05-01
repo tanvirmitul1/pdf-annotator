@@ -64,6 +64,7 @@ enum AnnotationType {
   CROSS
   LINE
   STAMP
+  CLOUD
 }
 
 enum AnnotationStatus {
