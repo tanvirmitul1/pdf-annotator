@@ -153,7 +153,7 @@ export function Toolbar({
 
   return (
     <header
-      className="flex h-14 shrink-0 items-center gap-1 border-b border-border/60 bg-card/90 px-3 backdrop-blur-xl"
+      className="flex h-14 shrink-0 items-center gap-1 border-b border-border/60 bg-card/90 px-3 backdrop-blur-xl overflow-x-auto no-scrollbar"
       role="toolbar"
       aria-label="PDF viewer controls"
     >

@@ -212,6 +212,17 @@
   @apply bg-border/80 rounded-full hover:bg-muted-foreground/50 transition-colors;
 }
 
+/* Hide scrollbar for cleanly scrolling elements */
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+}
+
 /* Page card effects */
 .page-container {
   @apply relative rounded-xl bg-white dark:bg-black/20 p-2 shadow-2xl ring-1 ring-border/50 transition-all duration-300;
@@ -219,6 +230,12 @@
 .page-container:hover {
   @apply ring-primary/30;
   box-shadow: 0 35px 65px -30px color-mix(in oklab, var(--primary) 20%, transparent);
+}
+
+/* Fix for PDF text selection making text white against transparent layer */
+[data-text-span="true"]::selection {
+  background: color-mix(in oklab, var(--primary) 30%, transparent);
+  color: transparent;
 }
 
 

@@ -7,8 +7,8 @@ const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/, "Invalid hex color")
 const TextRectSchema = z.object({
   x: z.number(),
   y: z.number(),
-  width: z.number().positive(),
-  height: z.number().positive(),
+  width: z.number(),
+  height: z.number(),
 })
 
 const TextAnchorSchema = z.object({
@@ -52,8 +52,8 @@ const RectPositionDataSchema = z.object({
   pageNumber: z.number().int().positive(),
   x: z.number(),
   y: z.number(),
-  width: z.number().positive(),
-  height: z.number().positive(),
+  width: z.number(),
+  height: z.number(),
   rotation: z.number().optional(),
 })
 
@@ -69,7 +69,7 @@ const PathPositionDataSchema = z.object({
       })
     )
     .min(2),
-  strokeWidth: z.number().positive(),
+  strokeWidth: z.number(),
   style: z.enum(["pen", "highlighter"]).optional(),
 })
 
@@ -78,7 +78,7 @@ const ArrowPositionDataSchema = z.object({
   pageNumber: z.number().int().positive(),
   from: z.object({ x: z.number(), y: z.number() }),
   to: z.object({ x: z.number(), y: z.number() }),
-  strokeWidth: z.number().positive(),
+  strokeWidth: z.number(),
 })
 
 const SignaturePositionDataSchema = z.object({
@@ -86,8 +86,8 @@ const SignaturePositionDataSchema = z.object({
   pageNumber: z.number().int().positive(),
   x: z.number(),
   y: z.number(),
-  width: z.number().positive(),
-  height: z.number().positive(),
+  width: z.number(),
+  height: z.number(),
   data: z.string(), // Base64 or SVG path
 })
 
@@ -96,8 +96,8 @@ const ImagePositionDataSchema = z.object({
   pageNumber: z.number().int().positive(),
   x: z.number(),
   y: z.number(),
-  width: z.number().positive(),
-  height: z.number().positive(),
+  width: z.number(),
+  height: z.number(),
   url: z.string().url(),
 })
 

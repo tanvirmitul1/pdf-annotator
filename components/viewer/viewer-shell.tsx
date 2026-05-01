@@ -503,8 +503,10 @@ export function ViewerShellInner({
         />
         
         {/* Horizontal Tool Header (Integrated) */}
-        <div className="flex h-12 items-center justify-center border-t border-border/20 px-4">
-           <AnnotationToolbar />
+        <div className="flex h-auto min-h-12 w-full items-center justify-start md:justify-center border-t border-border/20 px-2 py-2 md:px-4 overflow-x-auto no-scrollbar">
+           <div className="flex-shrink-0">
+             <AnnotationToolbar />
+           </div>
         </div>
       </div>
 

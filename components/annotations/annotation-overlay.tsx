@@ -2285,109 +2285,122 @@ export function AnnotationOverlay({
         {renderDrawPreview()}
       </svg>
 
-      {draft && draft.pageNumber === pageNumber && draft.isDirect && (
-        <div 
-          className="absolute z-50 bg-card/95 shadow-2xl ring-2 ring-primary/50 rounded-sm pointer-events-auto"
-          style={{
-            left: ((draft.positionData as Partial<TextboxPositionData>)?.x ?? 0) * zoom,
-            top: ((draft.positionData as Partial<TextboxPositionData>)?.y ?? 0) * zoom,
-            width: ((draft.positionData as Partial<TextboxPositionData>)?.width ?? 0) * zoom,
-            height: ((draft.positionData as Partial<TextboxPositionData>)?.height ?? 0) * zoom,
-          }}
-        >
-          <textarea
-            autoFocus
-            className="size-full bg-transparent border-none outline-none resize-none p-0 overflow-hidden leading-tight"
+      {draft && draft.pageNumber === pageNumber && draft.isDirect && (() => {
+        const pos = draft.positionData as Partial<TextboxPositionData>
+        const draftFontSize = (pos?.fontSize ?? 14) * zoom
+        return (
+          <div
+            className="absolute z-50 pointer-events-auto"
             style={{
-              fontSize: ((draft.positionData as Partial<TextboxPositionData>)?.fontSize ?? 16) * zoom,
-              fontFamily: (draft.positionData as Partial<TextboxPositionData>)?.fontFamily ?? "Inter",
-              textAlign: ((draft.positionData as Partial<TextboxPositionData>)?.textAlign as "left" | "center" | "right") ?? "left",
-              color: draft.color,
-              overflowWrap: "anywhere",
+              left: (pos?.x ?? 0) * zoom,
+              top: (pos?.y ?? 0) * zoom,
+              width: Math.max((pos?.width ?? 0) * zoom, 120),
+              minHeight: Math.max((pos?.height ?? 0) * zoom, 32),
             }}
-            defaultValue={draft.content}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault()
-                e.currentTarget.blur()
-              }
-              if (e.key === "Escape") {
-                discardDraft()
-              }
-            }}
-            onBlur={async (e) => {
-              const newText = e.target.value.trim()
-              
-              // If same content, or blank with no prior content → just discard
-              if (newText === (draft.content ?? "").trim()) {
-                discardDraft()
-                return
-              }
-              
-              if (draft.type === "textbox") {
-                // Don't create a brand new textbox if it's empty
-                if (!draft.id && !newText) {
+          >
+            <textarea
+              autoFocus
+              className="block w-full h-full min-h-[32px] bg-white dark:bg-zinc-900 border-2 border-primary/80 rounded-sm shadow-xl outline-none resize-none leading-snug"
+              style={{
+                fontSize: draftFontSize,
+                fontFamily: pos?.fontFamily ?? "Inter, sans-serif",
+                textAlign: (pos?.textAlign as "left" | "center" | "right") ?? "left",
+                color: "inherit",
+                overflowWrap: "anywhere",
+                padding: "4px 6px",
+                boxSizing: "border-box",
+              }}
+              defaultValue={draft.content ?? ""}
+              onKeyDown={(e) => {
+                // Escape = cancel without saving
+                if (e.key === "Escape") {
+                  e.preventDefault()
+                  discardDraft()
+                }
+                // Ctrl/Cmd+Enter = save (like Google Docs)
+                if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                  e.preventDefault()
+                  e.currentTarget.blur()
+                }
+                e.stopPropagation()
+              }}
+              onClick={(e) => e.stopPropagation()}
+              onBlur={async (e) => {
+                const newText = e.target.value
+
+                if (!newText.trim()) {
                   discardDraft()
                   return
                 }
-                
-                if (draft.id) {
-                  // Update existing annotation
-                  toast.promise(updateAnnotation({
-                    id: draft.id,
-                    documentId,
-                    content: newText,
-                    positionData: draft.positionData as PositionData,
-                  }).unwrap(), {
-                    loading: "Updating text...",
-                    success: "Text updated",
-                    error: "Failed to update text",
-                  })
-                } else {
-                  // Create new annotation
-                  addAnnotation({
-                    documentId,
-                    pageNumber,
-                    type: "TEXTBOX" as AnnotationType,
-                    color: draft.color,
-                    positionData: draft.positionData as PositionData,
-                    content: newText,
-                  })
+
+                if (newText === (draft.content ?? "")) {
+                  discardDraft()
+                  return
                 }
-                discardDraft()
-                return
-              }
-              
-              // Fallback for "editText"
-              toast.promise(async () => {
-                const res = await fetch(`/api/documents/${documentId}/edit`, {
-                  method: "POST",
-                  body: JSON.stringify({
-                    edits: [{
+
+                if (draft.type === "textbox") {
+                  if (draft.id) {
+                    toast.promise(updateAnnotation({
+                      id: draft.id,
+                      documentId,
+                      content: newText,
+                      positionData: draft.positionData as PositionData,
+                    }).unwrap(), {
+                      loading: "Saving...",
+                      success: "Text updated",
+                      error: "Failed to update text",
+                    })
+                  } else {
+                    addAnnotation({
+                      documentId,
                       pageNumber,
-                      x: (draft.positionData as Partial<TextboxPositionData>)?.x,
-                      y: (draft.positionData as Partial<TextboxPositionData>)?.y,
-                      width: (draft.positionData as Partial<TextboxPositionData>)?.width,
-                      height: (draft.positionData as Partial<TextboxPositionData>)?.height,
-                      text: newText,
-                      fontSize: (draft.positionData as Partial<TextboxPositionData>)?.fontSize,
-                      fontFamily: (draft.positionData as Partial<TextboxPositionData>)?.fontFamily,
+                      type: "TEXTBOX" as AnnotationType,
                       color: draft.color,
-                    }]
+                      positionData: draft.positionData as PositionData,
+                      content: newText,
+                    })
+                  }
+                  discardDraft()
+                  return
+                }
+
+                // editText: sends to the PDF-level edit endpoint
+                toast.promise(async () => {
+                  const res = await fetch(`/api/documents/${documentId}/edit`, {
+                    method: "POST",
+                    body: JSON.stringify({
+                      edits: [{
+                        pageNumber,
+                        x: pos?.x,
+                        y: pos?.y,
+                        width: pos?.width,
+                        height: pos?.height,
+                        text: newText,
+                        fontSize: pos?.fontSize,
+                        fontFamily: pos?.fontFamily,
+                        color: draft.color,
+                      }]
+                    })
                   })
+                  if (!res.ok) throw new Error("Failed to save")
+                  discardDraft()
+                }, {
+                  loading: "Updating PDF...",
+                  success: "Text updated in PDF",
+                  error: "Failed to update PDF text",
                 })
-                if (!res.ok) throw new Error("Failed to save edit")
-                discardDraft()
-                // The re-process will update the view
-              }, {
-                loading: "Saving edit to PDF...",
-                success: "PDF updated successfully",
-                error: "Failed to save PDF edit",
-              })
-            }}
-          />
-        </div>
-      )}
+              }}
+            />
+            <div className="absolute -top-6 left-0 flex items-center gap-1 text-[10px] text-muted-foreground select-none pointer-events-none">
+              <kbd className="rounded border border-border/60 bg-muted px-1 font-mono">Esc</kbd>
+              <span>cancel</span>
+              <span className="mx-1">·</span>
+              <kbd className="rounded border border-border/60 bg-muted px-1 font-mono">Click away</kbd>
+              <span>save</span>
+            </div>
+          </div>
+        )
+      })()}
 
       {hoveredAnnotation && hoverPos ? (
         <AnnotationHoverCard
