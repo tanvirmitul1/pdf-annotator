@@ -229,6 +229,7 @@ export interface AnnotationWithTags {
 // ─── Draft annotation (in-progress creation) ────────────────────────────────
 
 export interface AnnotationDraft {
+  id?: string
   type: ToolId
   color: string
   pageNumber?: number

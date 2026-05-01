@@ -1,6 +1,7 @@
 import { api } from "@/store/api"
 import type { Bookmark, ReadingProgress } from "@prisma/client"
 import type { DocumentMemberRole } from "@prisma/client"
+import type { PdfObject } from "@/lib/pdf/analyzer"
 
 export interface DocumentOutlineEntry {
   title: string
@@ -34,7 +35,7 @@ export interface ViewerData {
   outline: DocumentOutlineEntry[] | null
   bookmarks: Bookmark[]
   readingProgress: ReadingProgress | null
-  pagesData: Array<{ pageNumber: number; objects: any[] }>
+  pagesData: Array<{ pageNumber: number; objects: PdfObject[] }>
 }
 
 export const viewerApi = api.injectEndpoints({

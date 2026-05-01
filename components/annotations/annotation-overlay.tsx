@@ -136,9 +136,7 @@ export function AnnotationOverlay({
   const setAnnotationOrphaned = useViewer(
     (state) => state.setAnnotationOrphaned
   )
-  const activeFont = useViewer((state) => state.activeFont)
-  const activeFontSize = useViewer((state) => state.activeFontSize)
-  const activeAlign = useViewer((state) => state.activeAlign)
+
   const draft = useViewer((state) => state.draft)
   const discardDraft = useViewer((state) => state.discardDraft)
   const store = useViewerStore()
@@ -315,6 +313,26 @@ export function AnnotationOverlay({
         return
       }
 
+      // Industry-standard UX: immediately commit annotation with current color.
+      // Show inline toolbar so user can still change color / add comment after.
+      const annotationType = TOOL_TO_TYPE[activeTool as keyof typeof TOOL_TO_TYPE]
+      if (annotationType) {
+        addAnnotation({
+          documentId,
+          pageNumber,
+          type: annotationType,
+          color: selectedColor,
+          positionData: {
+            kind: "TEXT",
+            pageNumber,
+            anchor,
+          },
+        })
+        window.getSelection()?.removeAllRanges()
+        setSelectionInfo(null)
+        return
+      }
+
       setSelectionInfo({
         anchor,
         pos: {
@@ -328,9 +346,13 @@ export function AnnotationOverlay({
     return () => document.removeEventListener("mouseup", onSelectionEnd)
   }, [
     activeTool,
+    addAnnotation,
+    documentId,
+    pageNumber,
     relocateTextAnnotation,
     relocatingAnnotationId,
     rotation,
+    selectedColor,
     srcH,
     srcW,
     zoom,
@@ -1506,6 +1528,21 @@ export function AnnotationOverlay({
         setContextMenu(null)
         void handleAnnotationActivate(annotation)
       },
+      onDoubleClick: (event: React.MouseEvent) => {
+        event.stopPropagation()
+        if (annotation.type === "TEXTBOX" && canEdit) {
+          store.getState().startDraft({
+            id: annotation.id,
+            type: "textbox",
+            color: annotation.color,
+            pageNumber: annotation.pageNumber,
+            positionData: annotation.positionData,
+            content: annotation.content || "",
+            isDirect: true,
+          })
+          setHoveredAnnotation(null)
+        }
+      },
       onPointerDown: (event: React.PointerEvent) => {
         if (activeTool !== "select" || !canMove) {
           return
@@ -1843,7 +1880,7 @@ export function AnnotationOverlay({
               strokeOpacity={isSelected ? 0.95 : 0.7}
             />
           ) : null}
-          {annotation.type === "TEXTBOX" && resolvedPosition.kind === "TEXT_BOX" ? (
+          {annotation.type === "TEXTBOX" && resolvedPosition.kind === "TEXT_BOX" && draft?.id !== annotation.id ? (
             <foreignObject
               x={x + TEXTBOX_PADDING}
               y={y + TEXTBOX_PADDING}
@@ -2279,12 +2316,49 @@ export function AnnotationOverlay({
               }
             }}
             onBlur={async (e) => {
-              const newText = e.target.value
-              if (newText === draft.content) {
+              const newText = e.target.value.trim()
+              
+              // If same content, or blank with no prior content → just discard
+              if (newText === (draft.content ?? "").trim()) {
                 discardDraft()
                 return
               }
               
+              if (draft.type === "textbox") {
+                // Don't create a brand new textbox if it's empty
+                if (!draft.id && !newText) {
+                  discardDraft()
+                  return
+                }
+                
+                if (draft.id) {
+                  // Update existing annotation
+                  toast.promise(updateAnnotation({
+                    id: draft.id,
+                    documentId,
+                    content: newText,
+                    positionData: draft.positionData as PositionData,
+                  }).unwrap(), {
+                    loading: "Updating text...",
+                    success: "Text updated",
+                    error: "Failed to update text",
+                  })
+                } else {
+                  // Create new annotation
+                  addAnnotation({
+                    documentId,
+                    pageNumber,
+                    type: "TEXTBOX" as AnnotationType,
+                    color: draft.color,
+                    positionData: draft.positionData as PositionData,
+                    content: newText,
+                  })
+                }
+                discardDraft()
+                return
+              }
+              
+              // Fallback for "editText"
               toast.promise(async () => {
                 const res = await fetch(`/api/documents/${documentId}/edit`, {
                   method: "POST",

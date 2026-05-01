@@ -67,7 +67,7 @@ export async function updateAnnotation(
   await assertValidAssignee(existing.documentId, changes.assigneeId)
 
   // Strip updatedAt from the changes before passing to the repository
-  const { updatedAt: _, ...repoChanges } = changes
+  const { updatedAt: _updatedAt, ...repoChanges } = changes
   return repo.update(annotationId, repoChanges)
 }
 

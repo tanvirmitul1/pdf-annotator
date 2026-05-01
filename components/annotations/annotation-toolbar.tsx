@@ -69,7 +69,7 @@ const TOOLS: ToolDef[] = [
   {
     id: "editText",
     label: "Edit Text (Pro)",
-    shortcut: "T",
+    shortcut: "Shift+T",
     icon: <FileText className="size-4" />,
     category: "text",
     desktopOnly: true,
@@ -192,7 +192,7 @@ const TOOLS: ToolDef[] = [
   {
     id: "textbox",
     label: "Text box",
-    shortcut: "X",
+    shortcut: "T",
     icon: <Type className="size-4" />,
     hasColor: true,
     desktopOnly: true,

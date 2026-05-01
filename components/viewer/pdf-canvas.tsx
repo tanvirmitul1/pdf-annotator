@@ -303,9 +303,10 @@ export function PdfCanvas({
               transformOrigin: "0 0",
               whiteSpace: "pre",
               color: "transparent",
-              userSelect: activeTool === "editText" ? "none" : "text",
-              cursor: activeTool === "editText" ? "edit" : "text",
-              pointerEvents: activeTool === "editText" ? "auto" : "none",
+              // Allow text selection for text-based annotation tools
+              userSelect: (activeTool === "highlight" || activeTool === "underline" || activeTool === "strikethrough" || activeTool === "squiggly") ? "text" : activeTool === "editText" ? "none" : "none",
+              cursor: activeTool === "editText" ? "text" : (activeTool === "highlight" || activeTool === "underline" || activeTool === "strikethrough" || activeTool === "squiggly") ? "text" : "default",
+              pointerEvents: (activeTool === "highlight" || activeTool === "underline" || activeTool === "strikethrough" || activeTool === "squiggly" || activeTool === "editText") ? "auto" : "none",
               backgroundColor: activeTool === "editText" ? "rgba(59, 130, 246, 0.05)" : "transparent",
             }}
           >

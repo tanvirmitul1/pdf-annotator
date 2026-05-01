@@ -28,10 +28,8 @@ import { Textarea } from "@/components/ui/textarea"
 import {
   Avatar,
   AvatarFallback,
-  AvatarGroup,
   AvatarImage,
 } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
 import { useAppSelector } from "@/store/hooks"
 
 import { ColorPicker } from "./color-picker"

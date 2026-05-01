@@ -93,11 +93,18 @@ export function useAnnotationShortcuts(
       handler: makeTool("arrow"),
     },
     {
-      key: "x",
-      label: "X",
+      key: "t",
+      label: "T",
       category: "Annotation",
       description: "Text box",
       handler: makeTool("textbox"),
+    },
+    {
+      key: "shift+t",
+      label: "Shift+T",
+      category: "Annotation",
+      description: "Edit Text Pro",
+      handler: makeTool("editText"),
     },
     {
       key: "delete",
