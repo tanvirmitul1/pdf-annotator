@@ -94,6 +94,8 @@ export function useOverlayLogic(props: AnnotationOverlayProps) {
   const setSelectedColor = useViewer((state) => state.setSelectedColor)
   const pushUndo = useViewer((state) => state.pushUndo)
   const setAnnotationOrphaned = useViewer((state) => state.setAnnotationOrphaned)
+  const editingAnnotationId = useViewer((state) => state.editingAnnotationId)
+  const setEditingAnnotation = useViewer((state) => state.setEditingAnnotation)
 
   const draft = useViewer((state) => state.draft)
   const discardDraft = useViewer((state) => state.discardDraft)
@@ -568,25 +570,41 @@ export function useOverlayLogic(props: AnnotationOverlayProps) {
       }
 
       if (activeTool === "textbox") {
-        addAnnotation({
+        const localId = addAnnotation({
           documentId,
           pageNumber,
           type: "TEXTBOX",
           color: selectedColor,
-          positionData: { kind: "TEXT_BOX", x: point.x, y: point.y, width: 120, height: 60, pageNumber, fontSize: 12, fontFamily: "font-sans" },
-          content: "Type something...",
+          positionData: { kind: "TEXT_BOX", x: point.x, y: point.y, width: 150, height: 40, pageNumber, fontSize: 14, fontFamily: "font-sans" },
+          content: "",
+        })
+        // Switch to select tool so the user can type in the new textbox
+        store.getState().setTool("select")
+        setEditingAnnotation(localId)
+        return
+      }
+
+      if (activeTool === "note") {
+        addAnnotation({
+          documentId,
+          pageNumber,
+          type: "NOTE",
+          color: selectedColor,
+          positionData: { kind: "POINT", x: point.x, y: point.y, pageNumber },
+          content: "",
         })
         return
       }
       
       if (activeTool === "checkmark" || activeTool === "cross" || activeTool === "stamp") {
         const type = activeTool === "checkmark" ? "CHECKMARK" : activeTool === "cross" ? "CROSS" : "STAMP"
+        const size = 28
         addAnnotation({
           documentId,
           pageNumber,
           type,
           color: selectedColor,
-          positionData: { kind: "POINT", x: point.x, y: point.y, pageNumber },
+          positionData: { kind: "RECT", x: point.x - size / 2, y: point.y - size / 2, width: size, height: size, pageNumber },
         })
         return
       }
@@ -706,6 +724,8 @@ export function useOverlayLogic(props: AnnotationOverlayProps) {
     addAnnotation,
     livePositions,
     toolThickness,
+    editingAnnotationId,
+    setEditingAnnotation,
     isDrawingMode: !["select", "hand", "highlight", "underline", "strikethrough", "squiggly"].includes(activeTool),
     isDrawing: !!drawRect || drawPath.length > 0 || !!arrowDraw,
     isManipulating: !!manipulationRef.current,

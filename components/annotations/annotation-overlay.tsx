@@ -1,11 +1,11 @@
 "use client"
 
-import { AlertTriangle } from "lucide-react"
+import { AlertTriangle, Trash2 } from "lucide-react"
 import { srcToScreen } from "@/features/annotations/types"
 import { useViewer } from "@/features/viewer/provider"
 import { cn } from "@/lib/utils"
 
-import { AnnotationHoverCard } from "./annotation-hover-card"
+
 import { InlineToolbar } from "./inline-toolbar"
 import { SelectionMenu } from "./selection-menu"
 
@@ -17,19 +17,19 @@ const HANDLE_RADIUS = 6
 const TEXTBOX_PADDING = 8
 
 export function AnnotationOverlay(props: AnnotationOverlayProps) {
-  const { 
-    documentId, 
-    pageNumber, 
-    zoom, 
-    rotation, 
-    srcW, 
-    srcH, 
-    screenW, 
-    screenH 
+  const {
+    documentId,
+    pageNumber,
+    zoom,
+    rotation,
+    srcW,
+    srcH,
+    screenW,
+    screenH
   } = props
 
   const logic = useOverlayLogic(props)
-  
+
   const {
     overlayRef,
     pageAnnotations,
@@ -65,6 +65,8 @@ export function AnnotationOverlay(props: AnnotationOverlayProps) {
     isManipulating,
     livePositions,
     toolThickness,
+    editingAnnotationId,
+    setEditingAnnotation,
   } = logic
 
   const ringColor = "hsl(var(--primary))"
@@ -75,9 +77,9 @@ export function AnnotationOverlay(props: AnnotationOverlayProps) {
       className={cn(
         "absolute inset-0 z-10 overflow-visible touch-none",
         isDrawingMode || isDrawing || isManipulating ? "pointer-events-auto" : "pointer-events-none",
-        activeTool === "hand" ? "cursor-grab active:cursor-grabbing" : 
-        activeTool === "select" ? "cursor-default" : 
-        activeTool === "eraser" ? "cursor-crosshair" : "cursor-crosshair"
+        activeTool === "hand" ? "cursor-grab active:cursor-grabbing" :
+          activeTool === "select" ? "cursor-default" :
+            activeTool === "eraser" ? "cursor-crosshair" : "cursor-crosshair"
       )}
       onPointerMove={handlePointerMove}
       onPointerDown={(e) => {
@@ -104,7 +106,7 @@ export function AnnotationOverlay(props: AnnotationOverlayProps) {
           const isSelected = selectedAnnotationId === annotation.id
           const isHovered = !coarsePointer && hoveredAnnotation?.id === annotation.id
           const isEraser = activeTool === "eraser"
-          
+
           const effectivePosition = livePositions[annotation.id] ?? resolved.positionData
 
           return (
@@ -127,10 +129,10 @@ export function AnnotationOverlay(props: AnnotationOverlayProps) {
               handleRadius={HANDLE_RADIUS}
               textboxPadding={TEXTBOX_PADDING}
               draftId={draft?.id ?? null}
-              onMouseEnter={() => {}} 
-              onMouseLeave={() => {}} 
-              onFocus={() => {}}
-              onBlur={() => {}}
+              onMouseEnter={() => { }}
+              onMouseLeave={() => { }}
+              onFocus={() => { }}
+              onBlur={() => { }}
               onClick={(e) => {
                 if (activeTool === "select" || activeTool === "hand") {
                   e.stopPropagation()
@@ -140,10 +142,11 @@ export function AnnotationOverlay(props: AnnotationOverlayProps) {
               onDoubleClick={(e) => {
                 if (activeTool === "select" && annotation.type === "TEXTBOX") {
                   e.stopPropagation()
-                  // Enter edit mode
+                  setEditingAnnotation(annotation.id)
                 }
               }}
               onPointerDown={(e) => {
+                if (editingAnnotationId === annotation.id) return
                 if (activeTool === "select" || activeTool === "hand") {
                   e.stopPropagation()
                   e.currentTarget.setPointerCapture(e.pointerId)
@@ -151,6 +154,12 @@ export function AnnotationOverlay(props: AnnotationOverlayProps) {
                 }
               }}
               onBeginManipulation={beginManipulation}
+              editingAnnotationId={editingAnnotationId}
+              onStartEditing={(id) => setEditingAnnotation(id)}
+              onStopEditing={() => setEditingAnnotation(null)}
+              onContentUpdate={(id, content) => {
+                updateAnnotation({ id, documentId, content })
+              }}
             />
           )
         })}
@@ -164,18 +173,44 @@ export function AnnotationOverlay(props: AnnotationOverlayProps) {
         )}
 
         {/* Drawing Previews */}
-        {drawRect && (
-          <rect
-            x={srcToScreen(drawRect.x, 0, srcW, srcH, zoom, rotation).x}
-            y={srcToScreen(0, drawRect.y, srcW, srcH, zoom, rotation).y}
-            width={drawRect.w * zoom}
-            height={drawRect.h * zoom}
-            fill={activeTool === "redact" ? "black" : "transparent"}
-            stroke={activeTool === "redact" ? "black" : "hsl(var(--primary))"}
-            strokeWidth={2}
-            strokeDasharray={activeTool === "redact" ? undefined : "4 2"}
-          />
-        )}
+        {drawRect && (() => {
+          const sx = srcToScreen(drawRect.x, 0, srcW, srcH, zoom, rotation).x
+          const sy = srcToScreen(0, drawRect.y, srcW, srcH, zoom, rotation).y
+          const sw = drawRect.w * zoom
+          const sh = drawRect.h * zoom
+          const isRedact = activeTool === "redact"
+          const isCircle = activeTool === "circle"
+
+          if (isCircle) {
+            return (
+              <ellipse
+                cx={sx + sw / 2}
+                cy={sy + sh / 2}
+                rx={sw / 2}
+                ry={sh / 2}
+                fill="none"
+                stroke={selectedColor as string}
+                strokeWidth={Math.max(2, toolThickness * zoom)}
+                strokeLinecap="round"
+                opacity={0.85}
+              />
+            )
+          }
+
+          return (
+            <rect
+              x={sx}
+              y={sy}
+              width={sw}
+              height={sh}
+              fill={isRedact ? "rgba(0,0,0,0.6)" : "transparent"}
+              stroke={isRedact ? "black" : (selectedColor as string)}
+              strokeWidth={isRedact ? 1 : Math.max(2, toolThickness * zoom)}
+              strokeLinecap="round"
+              opacity={0.85}
+            />
+          )
+        })()}
 
         {drawPath.length > 1 && (
           <path
@@ -193,26 +228,92 @@ export function AnnotationOverlay(props: AnnotationOverlayProps) {
           />
         )}
 
-        {arrowDraw && (
-          <line
-            x1={srcToScreen(arrowDraw.from.x, arrowDraw.from.y, srcW, srcH, zoom, rotation).x}
-            y1={srcToScreen(arrowDraw.from.x, arrowDraw.from.y, srcW, srcH, zoom, rotation).y}
-            x2={srcToScreen(arrowDraw.to.x, arrowDraw.to.y, srcW, srcH, zoom, rotation).x}
-            y2={srcToScreen(arrowDraw.to.x, arrowDraw.to.y, srcW, srcH, zoom, rotation).y}
-            stroke="hsl(var(--primary))"
-            strokeWidth={2}
-            strokeDasharray="4 2"
-          />
-        )}
+        {arrowDraw && (() => {
+          const from = srcToScreen(arrowDraw.from.x, arrowDraw.from.y, srcW, srcH, zoom, rotation)
+          const to = srcToScreen(arrowDraw.to.x, arrowDraw.to.y, srcW, srcH, zoom, rotation)
+          const markerId = "arrow-preview-marker"
+          return (
+            <g>
+              <defs>
+                <marker id={markerId} markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                  <path d="M0,0 L0,6 L8,3 z" fill={selectedColor as string} />
+                </marker>
+              </defs>
+              <line
+                x1={from.x} y1={from.y} x2={to.x} y2={to.y}
+                stroke={selectedColor as string}
+                strokeWidth={Math.max(2, toolThickness * zoom)}
+                strokeLinecap="round"
+                markerEnd={`url(#${markerId})`}
+                opacity={0.85}
+              />
+            </g>
+          )
+        })()}
       </svg>
 
+      {/* Delete button for selected annotation */}
+      {selectedAnnotationId && (() => {
+        const selectedAnnotation = pageAnnotations.find(a => a.id === selectedAnnotationId)
+        if (!selectedAnnotation) return null
+        const effectivePos = livePositions[selectedAnnotationId] ?? resolvedMap[selectedAnnotationId]?.positionData
+        if (!effectivePos) return null
+
+        let btnX = 0, btnY = 0
+        if (effectivePos.kind === "RECT" || effectivePos.kind === "TEXT_BOX" || effectivePos.kind === "CLOUD") {
+          const pos = effectivePos as { x: number; y: number; width: number; height: number }
+          const screen = srcToScreen(pos.x + pos.width / 2, pos.y + pos.height, srcW, srcH, zoom, rotation)
+          btnX = screen.x
+          btnY = screen.y + 12
+        } else if (effectivePos.kind === "TEXT") {
+          const rects = effectivePos.anchor?.rects ?? []
+          if (rects.length > 0) {
+            const last = rects[rects.length - 1]
+            const screen = srcToScreen(last.x + last.width / 2, last.y + last.height, srcW, srcH, zoom, rotation)
+            btnX = screen.x
+            btnY = screen.y + 12
+          }
+        } else if (effectivePos.kind === "PATH") {
+          const points = (effectivePos as { points: Array<{ x: number; y: number }> }).points
+          if (points.length > 0) {
+            const maxY = Math.max(...points.map(p => p.y))
+            const avgX = points.reduce((s, p) => s + p.x, 0) / points.length
+            const screen = srcToScreen(avgX, maxY, srcW, srcH, zoom, rotation)
+            btnX = screen.x
+            btnY = screen.y + 12
+          }
+        } else if (effectivePos.kind === "ARROW") {
+          const midX = ((effectivePos as any).from.x + (effectivePos as any).to.x) / 2
+          const maxY = Math.max((effectivePos as any).from.y, (effectivePos as any).to.y)
+          const screen = srcToScreen(midX, maxY, srcW, srcH, zoom, rotation)
+          btnX = screen.x
+          btnY = screen.y + 12
+        } else if (effectivePos.kind === "POINT") {
+          const screen = srcToScreen(effectivePos.x, effectivePos.y, srcW, srcH, zoom, rotation)
+          btnX = screen.x
+          btnY = screen.y + 20
+        }
+
+        return (
+          <button
+            className="pointer-events-auto absolute flex items-center gap-1 rounded-md bg-destructive px-2 py-1 text-xs font-medium text-destructive-foreground shadow-lg transition-all hover:bg-destructive/90 active:scale-95"
+            style={{
+              left: btnX,
+              top: btnY,
+              transform: "translateX(-50%)",
+              zIndex: 50,
+            }}
+            onClick={(e) => {
+              e.stopPropagation()
+              deleteAnnotationImmediate(selectedAnnotation)
+            }}
+          >
+            <Trash2 className="size-3" />
+          </button>
+        )
+      })()}
+
       {/* Floating Menus */}
-      {hoveredAnnotation && hoverPos && (
-        <AnnotationHoverCard
-          annotation={hoveredAnnotation}
-          position={hoverPos}
-        />
-      )}
 
       {selectionInfo && (
         <SelectionMenu
@@ -266,7 +367,7 @@ export function AnnotationOverlay(props: AnnotationOverlayProps) {
           )}
           selectedColor={selectedColor as string}
           onColorSelect={(color) => updateAnnotation({ id: (draft as any).id, documentId, color: (color || selectedColor) as string })}
-          onComment={() => {}}
+          onComment={() => { }}
           onDismiss={discardDraft}
         />
       )}

@@ -105,7 +105,50 @@ export function ResizeHandles({
         {handleProps("ne", x2, y1, "nesw-resize")}
         {handleProps("sw", x1, y2, "nesw-resize")}
         {handleProps("se", x2, y2, "nwse-resize")}
-        {handleProps("rot", (x1 + x2) / 2, y1 - 24, "crosshair")}
+        {/* Rotation handle with connector line */}
+        <line
+          x1={(x1 + x2) / 2} y1={y1}
+          x2={(x1 + x2) / 2} y2={y1 - 20}
+          stroke={annotation.color}
+          strokeWidth={1}
+          strokeDasharray="3 2"
+          style={{ pointerEvents: "none" }}
+        />
+        <g
+          data-annotation-handle="true"
+          style={{ cursor: "grab", pointerEvents: "auto" }}
+          onPointerDown={(event) => {
+            event.preventDefault()
+            event.stopPropagation()
+            event.currentTarget.setPointerCapture(event.pointerId)
+            onBeginManipulation(annotation, "resize", event.clientX, event.clientY, "rot")
+          }}
+        >
+          <circle
+            cx={(x1 + x2) / 2}
+            cy={y1 - 24}
+            r={handleRadius + 2}
+            fill="hsl(var(--background))"
+            stroke={annotation.color}
+            strokeWidth={1.5}
+          />
+          {/* Rotation arrow icon inside the circle */}
+          <path
+            d={`M ${(x1 + x2) / 2 - 3} ${y1 - 27} A 4 4 0 1 1 ${(x1 + x2) / 2 + 3} ${y1 - 27}`}
+            fill="none"
+            stroke={annotation.color}
+            strokeWidth={1.5}
+            strokeLinecap="round"
+          />
+          <path
+            d={`M ${(x1 + x2) / 2 + 1} ${y1 - 29} L ${(x1 + x2) / 2 + 4} ${y1 - 27} L ${(x1 + x2) / 2 + 1} ${y1 - 25}`}
+            fill="none"
+            stroke={annotation.color}
+            strokeWidth={1.2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </g>
       </g>
     )
   }
@@ -122,7 +165,48 @@ export function ResizeHandles({
         {handleProps("ne", x2, y1, "nesw-resize")}
         {handleProps("sw", x1, y2, "nesw-resize")}
         {handleProps("se", x2, y2, "nwse-resize")}
-        {handleProps("rot", (x1 + x2) / 2, y1 - 24, "crosshair")}
+        <line
+          x1={(x1 + x2) / 2} y1={y1}
+          x2={(x1 + x2) / 2} y2={y1 - 20}
+          stroke={annotation.color}
+          strokeWidth={1}
+          strokeDasharray="3 2"
+          style={{ pointerEvents: "none" }}
+        />
+        <g
+          data-annotation-handle="true"
+          style={{ cursor: "grab", pointerEvents: "auto" }}
+          onPointerDown={(event) => {
+            event.preventDefault()
+            event.stopPropagation()
+            event.currentTarget.setPointerCapture(event.pointerId)
+            onBeginManipulation(annotation, "resize", event.clientX, event.clientY, "rot")
+          }}
+        >
+          <circle
+            cx={(x1 + x2) / 2}
+            cy={y1 - 24}
+            r={handleRadius + 2}
+            fill="hsl(var(--background))"
+            stroke={annotation.color}
+            strokeWidth={1.5}
+          />
+          <path
+            d={`M ${(x1 + x2) / 2 - 3} ${y1 - 27} A 4 4 0 1 1 ${(x1 + x2) / 2 + 3} ${y1 - 27}`}
+            fill="none"
+            stroke={annotation.color}
+            strokeWidth={1.5}
+            strokeLinecap="round"
+          />
+          <path
+            d={`M ${(x1 + x2) / 2 + 1} ${y1 - 29} L ${(x1 + x2) / 2 + 4} ${y1 - 27} L ${(x1 + x2) / 2 + 1} ${y1 - 25}`}
+            fill="none"
+            stroke={annotation.color}
+            strokeWidth={1.2}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </g>
       </g>
     )
   }

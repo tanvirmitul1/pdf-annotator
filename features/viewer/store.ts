@@ -76,6 +76,8 @@ export interface ViewerState {
   hoveredAnnotationId: string | null
   /** Annotations whose text anchor could not be re-resolved against the current text layer */
   orphanedAnnotationIds: Record<string, boolean>
+  /** ID of the annotation currently being inline-edited (textbox) */
+  editingAnnotationId: string | null
   /** In-progress annotation draft */
   draft: AnnotationDraft | null
   /** Current stroke color for the active tool */
@@ -150,6 +152,7 @@ export interface ViewerState {
   setFontSize: (size: number) => void
   setAlign: (align: "left" | "center" | "right") => void
   duplicateAnnotation: (id: string) => void
+  setEditingAnnotation: (id: string | null) => void
 }
 
 export const createViewerStore = (documentId: string, isAuthenticated = false, onAnnotationAttempt?: () => boolean) =>
@@ -183,6 +186,7 @@ export const createViewerStore = (documentId: string, isAuthenticated = false, o
       selectedAnnotationId: null,
       hoveredAnnotationId: null,
       orphanedAnnotationIds: {},
+      editingAnnotationId: null,
       draft: null,
       selectedColor: DEFAULT_ANNOTATION_COLOR,
       toolColors: {},
@@ -388,6 +392,7 @@ export const createViewerStore = (documentId: string, isAuthenticated = false, o
       setFontSize: (activeFontSize) => set({ activeFontSize }),
       setAlign: (activeAlign) => set({ activeAlign }),
       duplicateAnnotation: (id) => set({ duplicationIntentId: id }),
+      setEditingAnnotation: (id) => set({ editingAnnotationId: id }),
     }))
   )
 

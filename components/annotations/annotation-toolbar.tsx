@@ -80,11 +80,14 @@ const TOOL_GROUPS: ToolGroupDef[] = [
     icon: <Type className="size-4" />,
     items: [
       { id: "textbox", label: "Add Text", shortcut: "T", icon: <Type className="size-4" />, hasColor: true },
-      { id: "note", label: "Comment", shortcut: "N", icon: <StickyNote className="size-4" />, hasColor: true },
       { id: "underline", label: "Underline", shortcut: "U", icon: <Underline className="size-4" />, hasColor: true },
       { id: "strikethrough", label: "Strikethrough", shortcut: "S", icon: <Strikethrough className="size-4" />, hasColor: true },
       { id: "squiggly", label: "Squiggly", shortcut: "Q", icon: <Waves className="size-4" />, hasColor: true },
     ],
+  },
+  {
+    id: "note",
+    items: [{ id: "note", label: "Sticky Note", shortcut: "N", icon: <StickyNote className="size-4" />, hasColor: true }],
   },
   {
     id: "shapes",

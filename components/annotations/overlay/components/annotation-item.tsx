@@ -44,6 +44,10 @@ interface AnnotationItemProps {
     clientY: number,
     handle?: ResizeHandle
   ) => void
+  editingAnnotationId: string | null
+  onStartEditing: (id: string) => void
+  onStopEditing: () => void
+  onContentUpdate: (id: string, content: string) => void
 }
 
 export function AnnotationItem({
@@ -72,6 +76,10 @@ export function AnnotationItem({
   onDoubleClick,
   onPointerDown,
   onBeginManipulation,
+  editingAnnotationId,
+  onStartEditing,
+  onStopEditing,
+  onContentUpdate,
 }: AnnotationItemProps) {
   const sharedProps = {
     "data-annotation": annotation.id,
@@ -184,21 +192,54 @@ export function AnnotationItem({
       zoom,
       rotation
     )
+    const size = 14 * zoom
 
     return (
       <g key={annotation.id} {...sharedProps}>
-        <circle
-          cx={point.x}
-          cy={point.y}
-          r={isHovered ? 10 : 8}
-          fill={annotation.color}
-          fillOpacity={0.9}
-        />
+        {annotation.type === "CHECKMARK" ? (
+          <path
+            d={`M ${point.x - size * 0.5} ${point.y} L ${point.x - size * 0.1} ${point.y + size * 0.4} L ${point.x + size * 0.5} ${point.y - size * 0.35}`}
+            fill="none"
+            stroke={annotation.color}
+            strokeWidth={3 * zoom}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            opacity={opacity}
+          />
+        ) : annotation.type === "CROSS" ? (
+          <g>
+            <line
+              x1={point.x - size * 0.35} y1={point.y - size * 0.35}
+              x2={point.x + size * 0.35} y2={point.y + size * 0.35}
+              stroke={annotation.color}
+              strokeWidth={3 * zoom}
+              strokeLinecap="round"
+              opacity={opacity}
+            />
+            <line
+              x1={point.x + size * 0.35} y1={point.y - size * 0.35}
+              x2={point.x - size * 0.35} y2={point.y + size * 0.35}
+              stroke={annotation.color}
+              strokeWidth={3 * zoom}
+              strokeLinecap="round"
+              opacity={opacity}
+            />
+          </g>
+        ) : (
+          /* STAMP or generic point */
+          <circle
+            cx={point.x}
+            cy={point.y}
+            r={isHovered ? 10 * zoom : 8 * zoom}
+            fill={annotation.color}
+            fillOpacity={0.9}
+          />
+        )}
         {isSelected || isHovered ? (
           <circle
             cx={point.x}
             cy={point.y}
-            r={isHovered ? 14 : 12}
+            r={size + 4 * zoom}
             fill="none"
             stroke={ringColor}
             strokeWidth={2}
@@ -248,6 +289,35 @@ export function AnnotationItem({
              strokeWidth={isHovered ? 2.5 * zoom : 2 * zoom}
              opacity={opacity}
            />
+        ) : annotation.type === "CHECKMARK" ? (
+          <path
+            d={`M ${x + width * 0.15} ${y + height * 0.5} L ${x + width * 0.4} ${y + height * 0.78} L ${x + width * 0.85} ${y + height * 0.22}`}
+            fill="none"
+            stroke={annotation.color}
+            strokeWidth={Math.max(2, 3 * zoom)}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            opacity={opacity}
+          />
+        ) : annotation.type === "CROSS" ? (
+          <g>
+            <line
+              x1={x + width * 0.2} y1={y + height * 0.2}
+              x2={x + width * 0.8} y2={y + height * 0.8}
+              stroke={annotation.color}
+              strokeWidth={Math.max(2, 3 * zoom)}
+              strokeLinecap="round"
+              opacity={opacity}
+            />
+            <line
+              x1={x + width * 0.8} y1={y + height * 0.2}
+              x2={x + width * 0.2} y2={y + height * 0.8}
+              stroke={annotation.color}
+              strokeWidth={Math.max(2, 3 * zoom)}
+              strokeLinecap="round"
+              opacity={opacity}
+            />
+          </g>
         ) : annotation.type === "CIRCLE" ? (
           <ellipse
             cx={centerX}
@@ -287,29 +357,63 @@ export function AnnotationItem({
             strokeOpacity={isSelected ? 0.95 : 0.7}
           />
         ) : null}
-        {annotation.type === "TEXTBOX" && resolvedPosition.kind === "TEXT_BOX" && draftId !== annotation.id ? (
+        {annotation.type === "TEXTBOX" && resolvedPosition.kind === "TEXT_BOX" ? (
           <foreignObject
             x={x + textboxPadding}
             y={y + textboxPadding}
             width={Math.max(width - textboxPadding * 2, 1)}
             height={Math.max(height - textboxPadding * 2, 1)}
-            style={{ pointerEvents: activeTool === "select" ? "auto" : "none" }}
+            style={{ pointerEvents: "auto", overflow: "visible" }}
           >
-            <div
-              className={cn(
-                "h-full w-full overflow-hidden leading-tight break-words whitespace-pre-wrap",
-                resolvedPosition.fontFamily
-              )}
-              style={{ 
-                color: annotation.color,
-                fontSize: resolvedPosition.fontSize ? `${resolvedPosition.fontSize * zoom}px` : undefined,
-                textAlign: resolvedPosition.textAlign ?? "left",
-                opacity: resolvedPosition.opacity ?? 1,
-                overflowWrap: "anywhere",
-              }}
-            >
-              {annotation.content}
-            </div>
+            {editingAnnotationId === annotation.id ? (
+              <textarea
+                autoFocus
+                defaultValue={annotation.content ?? ""}
+                className="h-full w-full resize-none border-none bg-transparent p-0 outline-none focus:ring-0"
+                style={{
+                  color: annotation.color,
+                  fontSize: resolvedPosition.fontSize ? `${resolvedPosition.fontSize * zoom}px` : undefined,
+                  fontFamily: "inherit",
+                  textAlign: resolvedPosition.textAlign ?? "left",
+                  lineHeight: 1.3,
+                  caretColor: annotation.color,
+                }}
+                onBlur={(e) => {
+                  onContentUpdate(annotation.id, e.currentTarget.value)
+                  onStopEditing()
+                }}
+                onKeyDown={(e) => {
+                  e.stopPropagation()
+                  if (e.key === "Escape") {
+                    onContentUpdate(annotation.id, e.currentTarget.value)
+                    onStopEditing()
+                  }
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
+              />
+            ) : (
+              <div
+                className={cn(
+                  "h-full w-full overflow-hidden leading-tight break-words whitespace-pre-wrap",
+                  resolvedPosition.fontFamily
+                )}
+                style={{
+                  color: annotation.color,
+                  fontSize: resolvedPosition.fontSize ? `${resolvedPosition.fontSize * zoom}px` : undefined,
+                  textAlign: resolvedPosition.textAlign ?? "left",
+                  opacity: resolvedPosition.opacity ?? 1,
+                  overflowWrap: "anywhere",
+                  cursor: "text",
+                }}
+                onDoubleClick={(e) => {
+                  e.stopPropagation()
+                  onStartEditing(annotation.id)
+                }}
+              >
+                {annotation.content || "Click to type..."}
+              </div>
+            )}
           </foreignObject>
         ) : null}
         {renderResizeHandles(annotation, resolvedPosition)}
