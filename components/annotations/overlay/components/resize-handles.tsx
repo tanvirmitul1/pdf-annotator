@@ -124,27 +124,27 @@ export function ResizeHandles({
             onBeginManipulation(annotation, "resize", event.clientX, event.clientY, "rot")
           }}
         >
+          {/* Invisible hit area */}
           <circle
             cx={(x1 + x2) / 2}
             cy={y1 - 24}
-            r={handleRadius + 2}
-            fill="hsl(var(--background))"
-            stroke={annotation.color}
-            strokeWidth={1.5}
+            r={handleRadius + 4}
+            fill="transparent"
+            stroke="none"
           />
-          {/* Rotation arrow icon inside the circle */}
+          {/* Rotation arrow icon */}
           <path
-            d={`M ${(x1 + x2) / 2 - 3} ${y1 - 27} A 4 4 0 1 1 ${(x1 + x2) / 2 + 3} ${y1 - 27}`}
+            d={`M ${(x1 + x2) / 2 - 4} ${y1 - 27} A 5 5 0 1 1 ${(x1 + x2) / 2 + 4} ${y1 - 27}`}
             fill="none"
             stroke={annotation.color}
-            strokeWidth={1.5}
+            strokeWidth={2}
             strokeLinecap="round"
           />
           <path
-            d={`M ${(x1 + x2) / 2 + 1} ${y1 - 29} L ${(x1 + x2) / 2 + 4} ${y1 - 27} L ${(x1 + x2) / 2 + 1} ${y1 - 25}`}
+            d={`M ${(x1 + x2) / 2 + 2} ${y1 - 30} L ${(x1 + x2) / 2 + 5} ${y1 - 27} L ${(x1 + x2) / 2 + 2} ${y1 - 24}`}
             fill="none"
             stroke={annotation.color}
-            strokeWidth={1.2}
+            strokeWidth={1.5}
             strokeLinecap="round"
             strokeLinejoin="round"
           />
@@ -186,23 +186,22 @@ export function ResizeHandles({
           <circle
             cx={(x1 + x2) / 2}
             cy={y1 - 24}
-            r={handleRadius + 2}
-            fill="hsl(var(--background))"
-            stroke={annotation.color}
-            strokeWidth={1.5}
+            r={handleRadius + 4}
+            fill="transparent"
+            stroke="none"
           />
           <path
-            d={`M ${(x1 + x2) / 2 - 3} ${y1 - 27} A 4 4 0 1 1 ${(x1 + x2) / 2 + 3} ${y1 - 27}`}
+            d={`M ${(x1 + x2) / 2 - 4} ${y1 - 27} A 5 5 0 1 1 ${(x1 + x2) / 2 + 4} ${y1 - 27}`}
             fill="none"
             stroke={annotation.color}
-            strokeWidth={1.5}
+            strokeWidth={2}
             strokeLinecap="round"
           />
           <path
-            d={`M ${(x1 + x2) / 2 + 1} ${y1 - 29} L ${(x1 + x2) / 2 + 4} ${y1 - 27} L ${(x1 + x2) / 2 + 1} ${y1 - 25}`}
+            d={`M ${(x1 + x2) / 2 + 2} ${y1 - 30} L ${(x1 + x2) / 2 + 5} ${y1 - 27} L ${(x1 + x2) / 2 + 2} ${y1 - 24}`}
             fill="none"
             stroke={annotation.color}
-            strokeWidth={1.2}
+            strokeWidth={1.5}
             strokeLinecap="round"
             strokeLinejoin="round"
           />
