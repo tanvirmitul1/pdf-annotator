@@ -84,17 +84,21 @@ export function PdfViewer({
     return () => { cancelled = true }
   }, [pdfDocument, setTotalPages])
 
+  // Apply a 1.5x base scale factor to make 100% zoom look like 150%
+  const ZOOM_SENSITIVITY = 1.5
+  const displayZoom = useMemo(() => zoom * ZOOM_SENSITIVITY, [zoom])
+
   const getItemSize = useCallback((index: number) => {
     const pageRec = displayPages[index]
     if (!pageRec || pageRec.originalIndex === undefined || !pageDimensions[pageRec.originalIndex - 1]) {
-      return 800 * zoom + PAGE_GAP
+      return 800 * displayZoom + PAGE_GAP
     }
     const dim = pageDimensions[pageRec.originalIndex - 1]
     const totalRot = (rotation + pageRec.rotation) % 360
     const isRotated = totalRot === 90 || totalRot === 270
     const h = isRotated ? dim.width : dim.height
-    return Math.round(h * zoom) + PAGE_GAP
-  }, [pageDimensions, zoom, rotation, displayPages])
+    return Math.round(h * displayZoom) + PAGE_GAP
+  }, [pageDimensions, displayZoom, rotation, displayPages])
 
   const virtualizer = useVirtualizer({
     count: displayPages.length,
@@ -159,25 +163,29 @@ export function PdfViewer({
   }, [totalPages, getItemSize, setPage, onProgressUpdate, displayPages])
 
   // Ctrl+Scroll → PDF zoom (prevent browser zoom)
-  const setZoom = useViewer((s) => s.setZoom)
+  const setZoomAction = useViewer((s) => s.setZoom)
   useEffect(() => {
-    const el = scrollRef.current
-    if (!el) return
-
     const handleWheel = (e: WheelEvent) => {
+      // Check if Ctrl or Meta key is pressed
       if (!e.ctrlKey && !e.metaKey) return
+      
+      // Only block if we are over the viewer area to avoid blocking browser zoom on other UI
+      if (!scrollRef.current?.contains(e.target as Node)) return
+      
+      // Prevent browser default zoom
       e.preventDefault()
       
+      // Update our internal zoom
       const currentZoom = store.getState().zoom
       const delta = e.deltaY > 0 ? -0.1 : 0.1
       const newZoom = Math.round(Math.max(0.25, Math.min(4, currentZoom + delta)) * 100) / 100
-      setZoom(newZoom)
+      setZoomAction(newZoom)
     }
 
-    el.addEventListener("wheel", handleWheel, { passive: false })
-    return () => el.removeEventListener("wheel", handleWheel)
-  }, [setZoom, store])
-
+    // Attach to window to reliably catch Ctrl+Scroll and prevent browser zoom
+    window.addEventListener("wheel", handleWheel, { passive: false })
+    return () => window.removeEventListener("wheel", handleWheel)
+  }, [setZoomAction, store])
 
   const handleTextClick = useCallback((text: string, rect: DOMRect, pageNum: number) => {
     const pageContainer = scrollRef.current?.querySelector(`[data-testid="pdf-page-${pageNum}"]`)
@@ -192,17 +200,18 @@ export function PdfViewer({
       positionData: {
         kind: "TEXT_BOX",
         pageNumber: pageNum,
-        x: (rect.left - containerRect.left) / zoom,
-        y: (rect.top - containerRect.top) / zoom,
-        width: rect.width / zoom,
-        height: rect.height / zoom,
-        fontSize: (rect.height / zoom) * 0.8,
+        x: (rect.left - containerRect.left) / displayZoom,
+        y: (rect.top - containerRect.top) / displayZoom,
+        width: rect.width / displayZoom,
+        height: rect.height / displayZoom,
+        fontSize: (rect.height / displayZoom) * 0.8,
         fontFamily: "Inter",
         textAlign: "left",
       },
       content: text,
     })
-  }, [zoom, store])
+  }, [displayZoom, store])
+
 
   if (pageDimensions.length === 0) {
     return <div className="flex flex-1 items-center justify-center bg-background"><div className="h-10 w-10 animate-spin rounded-full border-4 border-muted border-t-primary" /></div>
@@ -227,8 +236,8 @@ export function PdfViewer({
 
           const totalRot = (rotation + pageRec.rotation) % 360 as 0 | 90 | 180 | 270
           const isRotated = totalRot === 90 || totalRot === 270
-          const scaledW = Math.round((isRotated ? dim.height : dim.width) * zoom)
-          const scaledH = Math.round((isRotated ? dim.width : dim.height) * zoom)
+          const scaledW = Math.round((isRotated ? dim.height : dim.width) * displayZoom)
+          const scaledH = Math.round((isRotated ? dim.width : dim.height) * displayZoom)
           const objects = (pagesData?.find(p => p.pageNumber === pageNum)?.objects ?? []) as PdfObject[]
 
           return (
@@ -239,7 +248,7 @@ export function PdfViewer({
                   <div className="relative" style={{ width: scaledW, height: scaledH }}>
                     <PdfCanvas
                       page={loadedPages.get(pageNum) ?? null}
-                      zoom={zoom}
+                      zoom={displayZoom}
                       rotation={totalRot}
                       active={true}
                       naturalWidth={isRotated ? dim.height : dim.width}
@@ -250,8 +259,8 @@ export function PdfViewer({
                       searchMatches={searchMatches.filter(m => m.pageNumber === pageNum)}
                       isCurrentMatch={currentMatch?.pageNumber === pageNum}
                     />
-                    <PdfObjectLayer pageNumber={pageNum} objects={objects} zoom={zoom} rotation={totalRot} screenWidth={scaledW} screenHeight={scaledH} />
-                    <AnnotationOverlay documentId={documentId} pageNumber={pageNum} zoom={zoom} rotation={totalRot} srcW={dim.width} srcH={dim.height} screenW={scaledW} screenH={scaledH} textLayerGenerationKey={`${textLayerGenerationKey}:${pageRec.rotation}`} textLayerReadyKey={textLayerReadyByPage[pageNum] ?? null} />
+                    <PdfObjectLayer pageNumber={pageNum} objects={objects} zoom={displayZoom} rotation={totalRot} screenWidth={scaledW} screenHeight={scaledH} />
+                    <AnnotationOverlay documentId={documentId} pageNumber={pageNum} zoom={displayZoom} rotation={totalRot} srcW={dim.width} srcH={dim.height} screenW={scaledW} screenH={scaledH} textLayerGenerationKey={`${textLayerGenerationKey}:${pageRec.rotation}`} textLayerReadyKey={textLayerReadyByPage[pageNum] ?? null} />
                   </div>
                 </div>
               </div>
