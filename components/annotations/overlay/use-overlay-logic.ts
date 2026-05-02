@@ -233,30 +233,52 @@ export function useOverlayLogic(props: AnnotationOverlayProps) {
   )
 
   const deleteAnnotationImmediate = useCallback(
-    (annotation: AnnotationWithTags, options?: { showToast?: boolean }) => {
-      if (erasedAnnotationIdsRef.current.has(annotation.id)) return
-      erasedAnnotationIdsRef.current.add(annotation.id)
-      pushUndo({ action: "delete", before: annotation, after: null })
+    async (annotationOrId: AnnotationWithTags | string, options?: { showToast?: boolean }) => {
+      // Find the full annotation object if only an ID was provided
+      const annotation = typeof annotationOrId === "string" 
+        ? allAnnotations.find(a => a.id === annotationOrId)
+        : annotationOrId
 
-      void deleteAnnotation({ id: annotation.id, documentId })
-        .unwrap()
-        .then(() => {
-          if (options?.showToast !== false) {
-            toast.success("Annotation deleted", {
-              duration: 5000,
-              action: {
-                label: "Undo",
-                onClick: () => { void restoreDeletedAnnotation(annotation) },
-              },
-            })
-          }
+      if (!annotation || !annotation.id) {
+        console.error("deleteAnnotationImmediate: Could not resolve annotation", { annotationOrId, annotation })
+        return
+      }
+
+      if (erasedAnnotationIdsRef.current.has(annotation.id)) return
+      
+      try {
+        erasedAnnotationIdsRef.current.add(annotation.id)
+        
+        // Pass a shallow clone to avoid proxy/serialization issues in the undo stack
+        pushUndo({ 
+          action: "delete", 
+          before: { ...annotation }, 
+          after: null 
         })
-        .catch(() => {
-          erasedAnnotationIdsRef.current.delete(annotation.id)
-          toast.error("Could not delete annotation")
-        })
+
+        // Trigger the mutation
+        const result = await deleteAnnotation({ id: annotation.id, documentId }).unwrap()
+        console.log("Annotation deleted successfully:", result)
+
+        if (options?.showToast !== false) {
+          toast.success("Annotation deleted", {
+            duration: 5000,
+            action: {
+              label: "Undo",
+              onClick: () => { void restoreDeletedAnnotation(annotation) },
+            },
+          })
+        }
+      } catch (error) {
+        erasedAnnotationIdsRef.current.delete(annotation.id)
+        console.error("Annotation deletion failed:", error)
+        
+        // If the error has a message, use it; otherwise fallback to generic
+        const message = (error as any)?.data?.message || (error as any)?.message || "Could not delete annotation"
+        toast.error(message)
+      }
     },
-    [deleteAnnotation, documentId, pushUndo, restoreDeletedAnnotation]
+    [allAnnotations, deleteAnnotation, documentId, pushUndo, restoreDeletedAnnotation]
   )
 
   const eraseAtPoint = useCallback(
@@ -382,14 +404,68 @@ export function useOverlayLogic(props: AnnotationOverlayProps) {
         return // Selection is on another page
       }
 
-      const sourceRects: TextRect[] = rects.map((rect) => {
+      // Robustly capture text and rects by traversing the range
+      const sourceRects: TextRect[] = []
+      
+      // We'll use the browser rects for initial creation to be pixel-perfect
+      rects.forEach((rect) => {
         const relX = rect.left - overlayRect.left
         const relY = rect.top - overlayRect.top
-        const srcPoint = screenToSrc(relX, relY, srcW, srcH, zoom, rotation)
-        return { x: srcPoint.x, y: srcPoint.y, width: rect.width / zoom, height: rect.height / zoom }
+        
+        let sx, sy, sw, sh
+        if (rotation === 0) {
+          const pt = screenToSrc(relX, relY, srcW, srcH, zoom, rotation)
+          sx = pt.x; sy = pt.y; sw = rect.width / zoom; sh = rect.height / zoom
+        } else if (rotation === 90) {
+          sx = relY / zoom; sy = srcH - (relX + rect.width) / zoom
+          sw = rect.height / zoom; sh = rect.width / zoom
+        } else if (rotation === 180) {
+          sx = srcW - (relX + rect.width) / zoom; sy = srcH - (relY + rect.height) / zoom
+          sw = rect.width / zoom; sh = rect.height / zoom
+        } else { // 270
+          sx = srcW - (relY + rect.height) / zoom; sy = relX / zoom
+          sw = rect.height / zoom; sh = rect.width / zoom
+        }
+        sourceRects.push({ x: sx, y: sy, width: sw, height: sh })
       })
 
-      const anchor = { rects: sourceRects, quotedText: selection.toString().slice(0, 5000), prefix: "", suffix: "" }
+      // Get context (prefix/suffix) from the text layer
+      const textLayer = overlayRef.current?.parentElement?.querySelector(`[data-text-layer="${pageNumber}"]`) as HTMLElement
+      let prefix = "", suffix = ""
+      let selectedText = range.toString()
+
+      if (textLayer && selectedText) {
+        try {
+          const fullText = textLayer.innerText
+          
+          // Calculate precise offset of the selection within the text layer
+          const preRange = range.cloneRange()
+          preRange.selectNodeContents(textLayer)
+          preRange.setEnd(range.startContainer, range.startOffset)
+          const startOffset = preRange.toString().length
+          const endOffset = startOffset + selectedText.length
+          
+          prefix = fullText.slice(Math.max(0, startOffset - 40), startOffset)
+          suffix = fullText.slice(endOffset, endOffset + 40)
+          
+          // Double check if the sliced text matches to handle any innerText vs Range.toString discrepancies
+          const actualTextAtOffset = fullText.slice(startOffset, endOffset)
+          if (actualTextAtOffset && actualTextAtOffset !== selectedText) {
+            // If they differ slightly (e.g. whitespace), we prefer the textLayer's version
+            // as it matches the prefix/suffix context exactly
+            selectedText = actualTextAtOffset
+          }
+        } catch (err) {
+          console.warn("Failed to calculate precise selection offset", err)
+        }
+      }
+
+      const anchor = { 
+        rects: sourceRects, 
+        quotedText: selectedText.slice(0, 5000), 
+        prefix, 
+        suffix 
+      }
 
       if (relocatingAnnotationId) {
         void relocateTextAnnotation(anchor)
@@ -466,11 +542,18 @@ export function useOverlayLogic(props: AnnotationOverlayProps) {
           })
 
           const reanchored = resolveTextAnchor(segments, annotation.positionData.anchor)
+          
+          // Use original rects if available and match is still found, to maintain pixel-perfect precision
+          const originalRects = annotation.positionData.anchor.rects
+          const finalRects = (!reanchored.orphaned && originalRects && originalRects.length > 0)
+            ? originalRects
+            : reanchored.rects
+
           nextResolved[annotation.id] = {
             positionData: {
               kind: "TEXT",
               pageNumber: annotation.positionData.pageNumber,
-              anchor: { ...annotation.positionData.anchor, rects: reanchored.rects },
+              anchor: { ...annotation.positionData.anchor, rects: finalRects },
             },
             orphaned: reanchored.orphaned,
           }

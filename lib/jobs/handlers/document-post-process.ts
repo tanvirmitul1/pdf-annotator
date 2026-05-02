@@ -93,6 +93,8 @@ async function processPdf(document: PdfDocumentRecord, storage: StorageAdapter, 
   const pdf = await pdfjs.getDocument({
     data: new Uint8Array(buffer),
     standardFontDataUrl: STANDARD_FONT_DATA_URL,
+    cMapUrl: _pdfjsRoot + "cmaps/",
+    cMapPacked: true,
     wasmUrl: WASM_URL,
     password: "", 
   }).promise.catch(async (err) => {

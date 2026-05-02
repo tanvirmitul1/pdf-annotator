@@ -296,19 +296,21 @@ export function AnnotationOverlay(props: AnnotationOverlayProps) {
 
         return (
           <button
-            className="pointer-events-auto absolute flex items-center gap-1 rounded-md bg-destructive px-2 py-1 text-xs font-medium text-destructive-foreground shadow-lg transition-all hover:bg-destructive/90 active:scale-95"
+            className="pointer-events-auto absolute flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-semibold text-foreground shadow-xl ring-1 ring-black/5 transition-all hover:bg-accent hover:text-accent-foreground active:scale-95"
             style={{
               left: btnX,
               top: btnY,
               transform: "translateX(-50%)",
               zIndex: 50,
             }}
+            onPointerDown={(e) => e.stopPropagation()}
             onClick={(e) => {
               e.stopPropagation()
-              deleteAnnotationImmediate(selectedAnnotation)
+              deleteAnnotationImmediate(selectedAnnotationId)
             }}
           >
-            <Trash2 className="size-3" />
+            <Trash2 className="size-3.5" />
+            <span>Delete</span>
           </button>
         )
       })()}
@@ -335,21 +337,6 @@ export function AnnotationOverlay(props: AnnotationOverlayProps) {
             setSelectionInfo(null)
           }}
           onColorSelect={setSelectedColor}
-          onComment={() => {
-            addAnnotation({
-              documentId,
-              pageNumber,
-              type: "NOTE",
-              color: selectedColor as string,
-              positionData: {
-                kind: "TEXT",
-                pageNumber,
-                anchor: selectionInfo.anchor,
-              },
-            })
-            window.getSelection()?.removeAllRanges()
-            setSelectionInfo(null)
-          }}
           onDismiss={() => setSelectionInfo(null)}
         />
       )}
@@ -367,7 +354,6 @@ export function AnnotationOverlay(props: AnnotationOverlayProps) {
           )}
           selectedColor={selectedColor as string}
           onColorSelect={(color) => updateAnnotation({ id: (draft as any).id, documentId, color: (color || selectedColor) as string })}
-          onComment={() => { }}
           onDismiss={discardDraft}
         />
       )}

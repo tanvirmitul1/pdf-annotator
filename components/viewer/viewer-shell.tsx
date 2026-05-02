@@ -347,7 +347,12 @@ export function ViewerShellInner({
         if (!res.ok) throw new Error("Download URL unavailable")
         const { url } = await res.json()
 
-        const loadingTask: PDFDocumentLoadingTask = getDocument(url)
+        const loadingTask: PDFDocumentLoadingTask = getDocument({
+          url,
+          standardFontDataUrl: "/standard_fonts/",
+          cMapUrl: "/cmaps/",
+          cMapPacked: true,
+        })
         const pdf = await loadingTask.promise
         if (!cancelled) {
           setPdfDocument(pdf)

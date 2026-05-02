@@ -1,13 +1,12 @@
 "use client"
 
-import { MessageSquare, X } from "lucide-react"
+import { X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ANNOTATION_COLORS } from "@/features/annotations/types"
 
 interface InlineToolbarProps {
   position: { x: number; y: number }
   onColorSelect: (hex: string) => void
-  onComment: () => void
   onDismiss: () => void
   selectedColor: string
   className?: string
@@ -15,12 +14,11 @@ interface InlineToolbarProps {
 
 /**
  * Small floating toolbar that appears after the user selects text.
- * Shows color swatches + comment icon + dismiss button.
+ * Shows color swatches + dismiss button.
  */
 export function InlineToolbar({
   position,
   onColorSelect,
-  onComment,
   onDismiss,
   selectedColor,
   className,
@@ -51,16 +49,6 @@ export function InlineToolbar({
       ))}
 
       <div className="mx-1 h-4 w-px bg-border" />
-
-      <button
-        type="button"
-        aria-label="Add comment"
-        title="Add comment"
-        onClick={onComment}
-        className="flex size-6 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        <MessageSquare className="size-3.5" />
-      </button>
 
       <button
         type="button"

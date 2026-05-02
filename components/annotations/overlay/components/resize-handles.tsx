@@ -77,23 +77,26 @@ export function ResizeHandles({
     />
   )
 
-  if (positionData.kind === "RECT" || positionData.kind === "TEXT_BOX" || positionData.kind === "CLOUD") {
-    const topLeft = srcToScreen(
-      positionData.x,
-      positionData.y,
-      srcW,
-      srcH,
-      zoom,
-      rotation
-    )
-    const bottomRight = srcToScreen(
-      positionData.x + (positionData as any).width,
-      positionData.y + (positionData as any).height,
-      srcW,
-      srcH,
-      zoom,
-      rotation
-    )
+  if (positionData.kind === "RECT" || positionData.kind === "TEXT_BOX" || positionData.kind === "CLOUD" || positionData.kind === "TEXT") {
+    let minX = 0, minY = 0, maxX = 0, maxY = 0
+    
+    if (positionData.kind === "TEXT") {
+      const rects = positionData.anchor.rects
+      if (rects.length === 0) return null
+      minX = Math.min(...rects.map(r => r.x))
+      maxX = Math.max(...rects.map(r => r.x + r.width))
+      minY = Math.min(...rects.map(r => r.y))
+      maxY = Math.max(...rects.map(r => r.y + r.height))
+    } else {
+      minX = positionData.x
+      maxX = positionData.x + positionData.width
+      minY = positionData.y
+      maxY = positionData.y + positionData.height
+    }
+
+    const topLeft = srcToScreen(minX, minY, srcW, srcH, zoom, rotation)
+    const bottomRight = srcToScreen(maxX, maxY, srcW, srcH, zoom, rotation)
+    
     const x1 = Math.min(topLeft.x, bottomRight.x)
     const y1 = Math.min(topLeft.y, bottomRight.y)
     const x2 = Math.max(topLeft.x, bottomRight.x)

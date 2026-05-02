@@ -13,37 +13,40 @@ export interface ReanchorResult {
 function buildNormalizedSegments(segments: ReanchorSegment[]) {
   const normalizedChars: string[] = []
   const charSources: number[] = []
+  const charOriginalIndices: number[] = []
 
   segments.forEach((segment, index) => {
-    for (const char of segment.text) {
+    for (let i = 0; i < segment.text.length; i += 1) {
+      const char = segment.text[i]
       normalizedChars.push(/\s/.test(char) ? " " : char)
       charSources.push(index)
+      charOriginalIndices.push(i)
     }
   })
 
-  const normalizedText = normalizedChars.join("").replace(/\s+/g, " ")
+  const finalChars: string[] = []
   const remappedSources: number[] = []
+  const remappedOriginalIndices: number[] = []
   let previousWasSpace = false
 
   for (let i = 0; i < normalizedChars.length; i += 1) {
     const char = normalizedChars[i]
     const isSpace = char === " "
 
-    if (isSpace) {
-      if (previousWasSpace) {
-        continue
-      }
-      previousWasSpace = true
-    } else {
-      previousWasSpace = false
+    if (isSpace && previousWasSpace) {
+      continue
     }
+    previousWasSpace = isSpace
 
+    finalChars.push(char)
     remappedSources.push(charSources[i])
+    remappedOriginalIndices.push(charOriginalIndices[i])
   }
 
   return {
-    normalizedText,
+    normalizedText: finalChars.join(""),
     remappedSources,
+    remappedOriginalIndices,
   }
 }
 
@@ -59,7 +62,7 @@ export function resolveTextAnchor(
     return { rects: anchor.rects, orphaned: true }
   }
 
-  const { normalizedText, remappedSources } = buildNormalizedSegments(segments)
+  const { normalizedText, remappedSources, remappedOriginalIndices } = buildNormalizedSegments(segments)
   const quotedText = normalizeForMatch(anchor.quotedText)
   if (!quotedText) {
     return { rects: anchor.rects, orphaned: true }
@@ -92,20 +95,40 @@ export function resolveTextAnchor(
   }
 
   const matchEnd = matchStart + matchText.length
-  const segmentIndexes = new Set<number>()
+  const rects: TextRect[] = []
 
   for (let i = matchStart; i < matchEnd && i < remappedSources.length; i += 1) {
-    segmentIndexes.add(remappedSources[i])
-  }
+    const segmentIndex = remappedSources[i]
+    const segment = segments[segmentIndex]
+    if (!segment) continue
 
-  if (segmentIndexes.size === 0) {
-    return { rects: anchor.rects, orphaned: true }
-  }
+    // Find the range within the normalized text that belongs to this segment
+    let firstInSegment = -1
+    let lastInSegment = -1
+    for (let j = matchStart; j < matchEnd; j += 1) {
+      if (remappedSources[j] === segmentIndex) {
+        if (firstInSegment === -1) firstInSegment = j
+        lastInSegment = j
+      }
+    }
 
-  const rects = Array.from(segmentIndexes)
-    .sort((left, right) => left - right)
-    .map((index) => segments[index]?.rect)
-    .filter((rect): rect is TextRect => Boolean(rect))
+    if (firstInSegment === -1) continue
+
+    // Use precise original indices from the mapping
+    const localStart = remappedOriginalIndices[firstInSegment]
+    const localEnd = remappedOriginalIndices[lastInSegment] + 1
+
+    const charWidth = segment.rect.width / Math.max(segment.text.length, 1)
+    
+    rects.push({
+      ...segment.rect,
+      x: segment.rect.x + localStart * charWidth,
+      width: (localEnd - localStart) * charWidth,
+    })
+
+    // Skip ahead to the next segment
+    i = lastInSegment
+  }
 
   if (rects.length === 0) {
     return { rects: anchor.rects, orphaned: true }

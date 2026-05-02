@@ -20,7 +20,7 @@ function clampPoint(
 }
 
 export function isMovablePosition(positionData: PositionData) {
-  return positionData.kind !== "TEXT"
+  return true
 }
 
 export function isResizablePosition(positionData: PositionData) {
@@ -30,7 +30,8 @@ export function isResizablePosition(positionData: PositionData) {
     positionData.kind === "ARROW" ||
     positionData.kind === "SIGNATURE" ||
     positionData.kind === "IMAGE" ||
-    positionData.kind === "CLOUD"
+    positionData.kind === "CLOUD" ||
+    positionData.kind === "TEXT"
   )
 }
 
@@ -41,8 +42,19 @@ export function translatePositionData(
   srcH: number
 ): PositionData {
   switch (positionData.kind) {
-    case "TEXT":
-      return positionData
+    case "TEXT": {
+      return {
+        ...positionData,
+        anchor: {
+          ...positionData.anchor,
+          rects: positionData.anchor.rects.map(r => ({
+            ...r,
+            x: clamp(r.x + delta.x, 0, srcW - r.width),
+            y: clamp(r.y + delta.y, 0, srcH - r.height),
+          }))
+        }
+      }
+    }
     case "POINT": {
       const point = clampPoint(
         {
@@ -240,6 +252,40 @@ export function resizePositionData(
       return {
         ...positionData,
         to: clampedPoint,
+      }
+    }
+  }
+
+  if (positionData.kind === "TEXT") {
+    const rects = positionData.anchor.rects
+    if (rects.length === 0) return positionData
+
+    // Find overall bounding box
+    const minX = Math.min(...rects.map(r => r.x))
+    const maxX = Math.max(...rects.map(r => r.x + r.width))
+    const minY = Math.min(...rects.map(r => r.y))
+    const maxY = Math.max(...rects.map(r => r.y + r.height))
+    
+    let nextMinX = minX, nextMaxX = maxX, nextMinY = minY, nextMaxY = maxY
+
+    if (handle === "nw" || handle === "sw") nextMinX = clampedPoint.x
+    if (handle === "ne" || handle === "se") nextMaxX = clampedPoint.x
+    if (handle === "nw" || handle === "ne") nextMinY = clampedPoint.y
+    if (handle === "sw" || handle === "se") nextMaxY = clampedPoint.y
+
+    const scaleX = (nextMaxX - nextMinX) / Math.max(maxX - minX, 1)
+    const scaleY = (nextMaxY - nextMinY) / Math.max(maxY - minY, 1)
+
+    return {
+      ...positionData,
+      anchor: {
+        ...positionData.anchor,
+        rects: rects.map(r => ({
+          x: nextMinX + (r.x - minX) * scaleX,
+          y: nextMinY + (r.y - minY) * scaleY,
+          width: r.width * scaleX,
+          height: r.height * scaleY,
+        }))
       }
     }
   }

@@ -179,6 +179,7 @@ export function AnnotationItem({
 
           return null
         })}
+        {renderResizeHandles(annotation, resolvedPosition)}
       </g>
     )
   }
