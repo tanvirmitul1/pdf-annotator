@@ -40,6 +40,8 @@ export function PdfViewer({
   const searchMatches = useViewer((s) => s.searchMatches)
   const currentMatchIndex = useViewer((s) => s.currentMatchIndex)
   const pageOrder = useViewer((s) => s.pageOrder)
+  const setSelectedAnnotation = useViewer((s) => s.setSelectedAnnotation)
+  const setEditingAnnotation = useViewer((s) => s.setEditingAnnotation)
   const store = useViewerStore()
 
   const displayPages = useMemo(() => {
@@ -208,7 +210,14 @@ export function PdfViewer({
 
   return (
     <ScrollArea className="h-full w-full" viewportRef={scrollRef} viewportProps={{ onScroll: handleScroll, tabIndex: -1 }}>
-      <div className="flex flex-col items-center py-8" style={{ height: `${virtualizer.getTotalSize()}px`, position: "relative" }}>
+      <div 
+        className="flex flex-col items-center py-8" 
+        style={{ height: `${virtualizer.getTotalSize()}px`, position: "relative" }}
+        onClick={() => {
+          setSelectedAnnotation(null)
+          setEditingAnnotation(null)
+        }}
+      >
         {virtualItems.map((vi) => {
           const pageRec = displayPages[vi.index]
           if (!pageRec || pageRec.originalIndex === undefined) return null

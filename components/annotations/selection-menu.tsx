@@ -1,6 +1,6 @@
 "use client"
 
-import { Type, Underline, Strikethrough, MessageSquare } from "lucide-react"
+import { Type, Underline, Strikethrough, MessageSquare, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ANNOTATION_COLORS } from "@/features/annotations/types"
 import { motion } from "framer-motion"
@@ -59,6 +59,14 @@ export function SelectionMenu({
           title="Add Comment"
         >
           <MessageSquare className="size-4" />
+        </button>
+        <div className="mx-1 h-4 w-px bg-border/40" />
+        <button
+          onClick={onDismiss}
+          className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-destructive/10 hover:text-destructive transition-colors"
+          title="Close"
+        >
+          <X className="size-4" />
         </button>
       </div>
 

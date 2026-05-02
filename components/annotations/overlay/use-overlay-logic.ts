@@ -96,6 +96,7 @@ export function useOverlayLogic(props: AnnotationOverlayProps) {
   const setAnnotationOrphaned = useViewer((state) => state.setAnnotationOrphaned)
   const editingAnnotationId = useViewer((state) => state.editingAnnotationId)
   const setEditingAnnotation = useViewer((state) => state.setEditingAnnotation)
+  const setSelectedAnnotation = useViewer((state) => state.setSelectedAnnotation)
 
   const draft = useViewer((state) => state.draft)
   const discardDraft = useViewer((state) => state.discardDraft)
@@ -608,8 +609,14 @@ export function useOverlayLogic(props: AnnotationOverlayProps) {
         })
         return
       }
+
+      if (activeTool === "select" || activeTool === "hand") {
+        setSelectedAnnotation(null)
+        setEditingAnnotation(null)
+        return
+      }
     },
-    [activeTool, addAnnotation, documentId, eraseAtPoint, getRelativeClientPoint, getSourcePointFromClient, pageNumber, selectedColor]
+    [activeTool, addAnnotation, documentId, eraseAtPoint, getRelativeClientPoint, getSourcePointFromClient, pageNumber, selectedColor, setSelectedAnnotation, setEditingAnnotation]
   )
 
   const handlePointerUp = useCallback(
@@ -726,6 +733,7 @@ export function useOverlayLogic(props: AnnotationOverlayProps) {
     toolThickness,
     editingAnnotationId,
     setEditingAnnotation,
+    setSelectedAnnotation,
     isDrawingMode: !["select", "hand", "highlight", "underline", "strikethrough", "squiggly"].includes(activeTool),
     isDrawing: !!drawRect || drawPath.length > 0 || !!arrowDraw,
     isManipulating: !!manipulationRef.current,
