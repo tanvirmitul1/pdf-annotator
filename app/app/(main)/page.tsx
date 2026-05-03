@@ -1,9 +1,7 @@
-import { Upload } from "lucide-react"
-import Link from "next/link"
-
 import { DocumentList } from "@/components/documents/list"
+import { DashboardUpload } from "@/components/documents/dashboard-upload"
 import { requireAppUser } from "@/lib/auth/require"
-import { Button } from "@/components/ui/button"
+
 
 function getGreeting() {
   const hour = new Date().getHours()
@@ -26,12 +24,8 @@ export default async function AppDashboardPage() {
             Documents
           </h1>
         </div>
-        <Button asChild size="sm" className="shrink-0 gap-2">
-          <Link href="/app/upload">
-            <Upload className="size-3.5" />
-            Upload
-          </Link>
-        </Button>
+        <DashboardUpload />
+
       </div>
 
       {/* Document list */}
