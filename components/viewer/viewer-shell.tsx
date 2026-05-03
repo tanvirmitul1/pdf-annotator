@@ -159,7 +159,14 @@ export function ViewerShellInner({
   const clearUndoHistory = useViewer((s) => s.clearUndoHistory)
   const setSaveStatus = useViewer((s) => s.setSaveStatus)
 
-  const { data, isLoading, refetch } = useGetDocumentViewerDataQuery(documentId)
+  const [pollingInterval, setPollingInterval] = useState(0)
+  const { data, isLoading, refetch } = useGetDocumentViewerDataQuery(documentId, {
+    pollingInterval,
+  })
+
+  useEffect(() => {
+    setPollingInterval(data?.document?.status === "PROCESSING" ? 10000 : 0)
+  }, [data?.document?.status])
   const setPageOrder = useViewer((s) => s.setPageOrder)
   const pageOrder = useViewer((s) => s.pageOrder)
 
@@ -365,18 +372,9 @@ export function ViewerShellInner({
       }
     }
 
-    // Still poll for metadata updates (like processing status) if not READY
-    let interval: NodeJS.Timeout | null = null
-    if (docStatus !== "READY") {
-      interval = setInterval(() => {
-        void refetch()
-      }, 3000)
-    }
-
     loadPdf()
     return () => {
       cancelled = true
-      if (interval) clearInterval(interval)
     }
   }, [docStatus, docStorageKey, documentId, initialPage, setPage, setTotalPages, refetch, data?.document])
 
