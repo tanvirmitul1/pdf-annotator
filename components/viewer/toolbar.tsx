@@ -42,11 +42,15 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu"
+
+
 import { NotificationBell } from "@/components/notifications/notification-bell"
 import { DocumentShareDialog } from "./document-share-dialog"
 import { UserMenu } from "@/components/common/user-menu"
 import { ThemeToggle } from "@/components/common/theme-toggle"
 import { cn } from "@/lib/utils"
+
+import { SHORTCUTS } from "@/features/shortcuts/definitions"
 
 const ZOOM_STEPS = [0.25, 0.33, 0.5, 0.67, 0.75, 1, 1.25, 1.5, 2, 3, 4]
 
@@ -167,7 +171,7 @@ export function Toolbar({
           </Button>
         </Tip>
 
-        <Tip label={`${sidebarOpen ? "Hide" : "Show"} sidebar (T)`}>
+        <Tip label={`${sidebarOpen ? "Hide" : "Show"} sidebar`}>
           <Button
             variant="ghost"
             size="icon"
@@ -184,7 +188,7 @@ export function Toolbar({
 
       {/* Group: Page Control */}
       <div className="flex items-center gap-0.5">
-        <Tip label="Previous page (←)">
+        <Tip label={`${SHORTCUTS.PREV_PAGE.description} (${SHORTCUTS.PREV_PAGE.label})`}>
           <Button
             variant="ghost"
             size="icon"
@@ -210,7 +214,7 @@ export function Toolbar({
           </span>
         </form>
 
-        <Tip label="Next page (→)">
+        <Tip label={`${SHORTCUTS.NEXT_PAGE.description} (${SHORTCUTS.NEXT_PAGE.label})`}>
           <Button
             variant="ghost"
             size="icon"
@@ -227,11 +231,13 @@ export function Toolbar({
 
       {/* Group: Zoom (Desktop only center) */}
       <div className="hidden items-center gap-0.5 lg:flex">
-        <Button variant="ghost" size="icon" className="size-9 rounded-xl" onClick={zoomOut} disabled={zoom <= 0.25}>
-          <ZoomOut className="size-4" />
-        </Button>
+        <Tip label={`${SHORTCUTS.ZOOM_OUT.description} (${SHORTCUTS.ZOOM_OUT.label})`}>
+          <Button variant="ghost" size="icon" className="size-9 rounded-xl" onClick={zoomOut} disabled={zoom <= 0.25}>
+            <ZoomOut className="size-4" />
+          </Button>
+        </Tip>
         
-        <Tip label="Fit width (0)">
+        <Tip label={`${SHORTCUTS.ZOOM_FIT.description} (${SHORTCUTS.ZOOM_FIT.label})`}>
           <button 
             onClick={() => setZoom(1)}
             className="min-w-[4rem] text-center text-[11px] font-bold tabular-nums hover:text-primary transition-colors"
@@ -240,9 +246,11 @@ export function Toolbar({
           </button>
         </Tip>
 
-        <Button variant="ghost" size="icon" className="size-9 rounded-xl" onClick={zoomIn} disabled={zoom >= 4}>
-          <ZoomIn className="size-4" />
-        </Button>
+        <Tip label={`${SHORTCUTS.ZOOM_IN.description} (${SHORTCUTS.ZOOM_IN.label})`}>
+          <Button variant="ghost" size="icon" className="size-9 rounded-xl" onClick={zoomIn} disabled={zoom >= 4}>
+            <ZoomIn className="size-4" />
+          </Button>
+        </Tip>
       </div>
 
       {/* Group: Document Identity (Mobile: Hidden / Desktop: Centered or Right) */}
@@ -265,7 +273,7 @@ export function Toolbar({
       {/* Right-side actions */}
       <div className="ml-auto flex items-center gap-0.5">
         <div className="hidden items-center gap-0.5 sm:flex">
-           <Tip label={currentBookmark ? "Remove bookmark (B)" : "Bookmark page (B)"}>
+           <Tip label={currentBookmark ? "Remove bookmark" : "Bookmark page"}>
              <Button
                variant="ghost"
                size="icon"
@@ -276,7 +284,7 @@ export function Toolbar({
              </Button>
            </Tip>
 
-           <Tip label="Search (Ctrl+F)">
+           <Tip label={`${SHORTCUTS.OPEN_SEARCH.description} (${SHORTCUTS.OPEN_SEARCH.label})`}>
              <Button
                variant="ghost"
                size="icon"
@@ -287,6 +295,7 @@ export function Toolbar({
              </Button>
            </Tip>
         </div>
+
 
         <Divider className="hidden sm:block" />
 

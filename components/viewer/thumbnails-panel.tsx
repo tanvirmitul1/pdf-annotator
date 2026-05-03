@@ -3,18 +3,11 @@
 import { useRef, useEffect } from "react"
 import { useVirtualizer } from "@tanstack/react-virtual"
 import type { PDFDocumentProxy } from "pdfjs-dist"
-import { Trash2, Copy, Plus, RotateCw, Check, FileUp, MoreVertical } from "lucide-react"
+import { Trash2, Plus, RotateCw, Check, FileUp } from "lucide-react"
 
-import { useViewer, useViewerStore } from "@/features/viewer/provider"
+import { useViewer } from "@/features/viewer/provider"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-  DropdownMenuSeparator,
-} from "@/components/ui/dropdown-menu"
 import {
   Tooltip,
   TooltipContent,
@@ -38,14 +31,12 @@ export function ThumbnailsPanel({
   const pageOrder = useViewer((s) => s.pageOrder)
   const setSidebarTab = useViewer((s) => s.setSidebarTab)
   const deletePage = useViewer((s) => s.deletePage)
-  const duplicatePage = useViewer((s) => s.duplicatePage)
   const addBlankPage = useViewer((s) => s.addBlankPage)
   const rotatePage = useViewer((s) => s.rotatePage)
-  const documentId = useViewer((s) => s.documentId)
   
   const selectedPageIndices = useViewer((s) => s.selectedPageIndices || [])
-  const togglePageSelection = useViewer((s) => (s as any).togglePageSelection)
-  const clearPageSelection = useViewer((s) => (s as any).clearPageSelection)
+  const togglePageSelection = useViewer((s) => s.togglePageSelection)
+  const clearPageSelection = useViewer((s) => s.clearPageSelection)
 
   const containerRef = useRef<HTMLDivElement>(null)
 

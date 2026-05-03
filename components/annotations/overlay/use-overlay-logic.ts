@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { toast } from "sonner"
 import type { 
   AnnotationWithTags, 
+  AnnotationType,
   PositionData, 
   TextAnchor,
   TextRect
@@ -17,9 +18,8 @@ import {
   simplifyPath,
   type ResizeHandle
 } from "@/features/annotations/geometry"
-import { 
+import {
   screenToSrc, 
-  srcToScreen,
   TOOL_TO_TYPE 
 } from "@/features/annotations/types"
 import { resolveTextAnchor } from "@/features/annotations/reanchor"
@@ -269,12 +269,13 @@ export function useOverlayLogic(props: AnnotationOverlayProps) {
             },
           })
         }
-      } catch (error) {
+      } catch (error: unknown) {
         erasedAnnotationIdsRef.current.delete(annotation.id)
         console.error("Annotation deletion failed:", error)
         
-        // If the error has a message, use it; otherwise fallback to generic
-        const message = (error as any)?.data?.message || (error as any)?.message || "Could not delete annotation"
+        const message = (error as { data?: { message?: string }, message?: string })?.data?.message 
+          || (error as { message?: string })?.message 
+          || "Could not delete annotation"
         toast.error(message)
       }
     },
@@ -318,7 +319,10 @@ export function useOverlayLogic(props: AnnotationOverlayProps) {
       startClient: { x: clientX, y: clientY },
       originalPosition,
       centerSrc: (originalPosition.kind === "RECT" || originalPosition.kind === "TEXT_BOX" || originalPosition.kind === "SIGNATURE" || originalPosition.kind === "IMAGE" || originalPosition.kind === "CLOUD") 
-        ? { x: (originalPosition as any).x + (originalPosition as any).width / 2, y: (originalPosition as any).y + (originalPosition as any).height / 2 }
+        ? { 
+            x: (originalPosition as { x: number }).x + (originalPosition as { width: number }).width / 2, 
+            y: (originalPosition as { y: number }).y + (originalPosition as { height: number }).height / 2 
+          }
         : undefined
     }
     movedDuringManipulationRef.current = false
@@ -342,7 +346,7 @@ export function useOverlayLogic(props: AnnotationOverlayProps) {
   )
 
   // Duplication Intent
-  const duplicationIntentId = useViewer((s) => (s as any).duplicationIntentId)
+  const duplicationIntentId = useViewer((s) => s.duplicationIntentId)
   useEffect(() => {
     if (duplicationIntentId) {
       const ann = allAnnotations.find((a) => a.id === duplicationIntentId)
@@ -356,9 +360,9 @@ export function useOverlayLogic(props: AnnotationOverlayProps) {
           positionData: translatePositionData(ann.positionData, { x: 20, y: 20 }, srcW, srcH),
         })
       }
-      (useViewerStore as any).getState().duplicateAnnotation(null as any)
+      store.getState().duplicateAnnotation(null as unknown as string)
     }
-  }, [duplicationIntentId, allAnnotations, addAnnotation, documentId, srcW, srcH])
+  }, [duplicationIntentId, allAnnotations, addAnnotation, documentId, srcW, srcH, store])
 
   // Context Menu Cleanup
   useEffect(() => {
@@ -558,7 +562,7 @@ export function useOverlayLogic(props: AnnotationOverlayProps) {
             orphaned: reanchored.orphaned,
           }
           setAnnotationOrphaned(annotation.id, reanchored.orphaned)
-        } catch (error) {
+        } catch {
           nextResolved[annotation.id] = fallback
           setAnnotationOrphaned(annotation.id, fallback.orphaned)
         }
@@ -629,7 +633,7 @@ export function useOverlayLogic(props: AnnotationOverlayProps) {
         }
       }
     },
-    [activeTool, coarsePointer, eraseAtPoint, getRelativeClientPoint, getSourcePointFromClient, rotation, setHoveredAnnotation, setLivePosition, srcH, srcW, zoom]
+    [activeTool, coarsePointer, eraseAtPoint, getRelativeClientPoint, getSourcePointFromClient, setHoveredAnnotation, setLivePosition, srcH, srcW, zoom]
   )
 
   const handlePointerDown = useCallback(
@@ -699,7 +703,7 @@ export function useOverlayLogic(props: AnnotationOverlayProps) {
         return
       }
     },
-    [activeTool, addAnnotation, documentId, eraseAtPoint, getRelativeClientPoint, getSourcePointFromClient, pageNumber, selectedColor, setSelectedAnnotation, setEditingAnnotation]
+    [activeTool, addAnnotation, documentId, eraseAtPoint, getRelativeClientPoint, getSourcePointFromClient, pageNumber, selectedColor, setSelectedAnnotation, setEditingAnnotation, store]
   )
 
   const handlePointerUp = useCallback(
@@ -740,7 +744,7 @@ export function useOverlayLogic(props: AnnotationOverlayProps) {
             addAnnotation({
               documentId,
               pageNumber,
-              type: type as any,
+              type: type as AnnotationType,
               color: type === "REDACTION" ? "#000000" : (selectedColor as string),
               positionData: {
                 kind: type === "CLOUD" ? "CLOUD" : "RECT",

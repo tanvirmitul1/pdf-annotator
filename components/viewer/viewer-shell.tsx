@@ -38,7 +38,8 @@ import { BottomBar } from "@/components/annotations/bottom-bar"
 import { AnnotationPanel } from "@/components/annotations/annotation-panel"
 import { SaveStatus } from "@/components/annotations/save-status"
 import { LoginGateModal } from "./login-gate-modal"
-import type { AnnotationWithTags } from "@/features/annotations/types"
+import { SHORTCUTS } from "@/features/shortcuts/definitions"
+import type { PageMetadata } from "@/features/viewer/store"
 
 type PdfjsModule = typeof import("pdfjs-dist")
 
@@ -144,7 +145,6 @@ export function ViewerShellInner({
   const zoom = useViewer((s) => s.zoom)
   const setZoom = useViewer((s) => s.setZoom)
   const setPage = useViewer((s) => s.setPage)
-  const setTool = useViewer((s) => s.setTool)
   const setTotalPages = useViewer((s) => s.setTotalPages)
   const openSidebar = useViewer((s) => s.openSidebar)
   const openSearch = useViewer((s) => s.openSearch)
@@ -171,7 +171,7 @@ export function ViewerShellInner({
   const [updatePageOrder] = useUpdatePageOrderMutation()
 
   const { call: debouncedUpdatePageOrder } = useDebouncedMutation(
-    (order: any[]) => updatePageOrder({ documentId, pageOrder: order }),
+    (order: PageMetadata[]) => updatePageOrder({ documentId, pageOrder: order }),
     1000
   )
 
@@ -390,103 +390,57 @@ export function ViewerShellInner({
 
   useShortcuts([
     {
-      key: "arrowleft",
-      label: "←",
-      category: "Navigation",
-      description: "Previous page",
+      ...SHORTCUTS.PREV_PAGE,
       handler: () => setPage(currentPage - 1),
     },
     {
-      key: "arrowright",
-      label: "→",
-      category: "Navigation",
-      description: "Next page",
+      ...SHORTCUTS.NEXT_PAGE,
       handler: () => setPage(currentPage + 1),
     },
     {
-      key: "+",
-      label: "+",
-      category: "View",
-      description: "Zoom in",
+      ...SHORTCUTS.ZOOM_IN,
       handler: () => {
         const next = ZOOM_STEPS.find((z) => z > zoom)
         if (next) setZoom(next)
       },
     },
     {
-      key: "-",
-      label: "-",
-      category: "View",
-      description: "Zoom out",
+      ...SHORTCUTS.ZOOM_OUT,
       handler: () => {
         const next = [...ZOOM_STEPS].reverse().find((z) => z < zoom)
         if (next) setZoom(next)
       },
     },
     {
-      key: "0",
-      label: "0",
-      category: "View",
-      description: "Fit width",
+      ...SHORTCUTS.ZOOM_FIT,
       handler: () => setZoom(1),
     },
     {
-      key: "[",
-      label: "[",
-      category: "Sidebar",
-      description: "Toggle thumbnails",
+      ...SHORTCUTS.TOGGLE_THUMBNAILS,
       handler: () => openSidebar("thumbnails"),
     },
     {
-      key: "]",
-      label: "]",
-      category: "Sidebar",
-      description: "Toggle outline",
+      ...SHORTCUTS.TOGGLE_OUTLINE,
       handler: () => openSidebar("outline"),
     },
     {
-      key: "ctrl+f",
-      label: "Ctrl+F",
-      category: "Search",
-      description: "Search in document",
+      ...SHORTCUTS.OPEN_SEARCH,
       handler: () => openSearch(),
-      allowInInput: false,
     },
     {
-      key: "escape",
-      label: "Esc",
-      category: "General",
-      description: "Close overlays",
+      ...SHORTCUTS.ESCAPE,
       handler: () => {
         if (searchOpen) closeSearch()
         else if (shortcutsOpen) closeShortcuts()
       },
     },
     {
-      key: "?",
-      label: "?",
-      category: "General",
-      description: "Show shortcuts",
+      ...SHORTCUTS.SHOW_SHORTCUTS,
       handler: () => openShortcuts(),
     },
-    // Tools
-    { key: "v", label: "V", category: "Tools", description: "Select tool", handler: () => setTool("select") },
-    { key: "t", label: "T", category: "Tools", description: "Text tool", handler: () => setTool("textbox") },
-    { key: "r", label: "R", category: "Tools", description: "Rectangle", handler: () => setTool("rectangle") },
-    { key: "o", label: "O", category: "Tools", description: "Circle", handler: () => setTool("circle") },
-    { key: "l", label: "L", category: "Tools", description: "Line", handler: () => setTool("line") },
-    { key: "a", label: "A", category: "Tools", description: "Arrow", handler: () => setTool("arrow") },
-    { key: "c", label: "C", category: "Tools", description: "Cloud", handler: () => setTool("cloud") },
-    { key: "n", label: "N", category: "Tools", description: "Comment", handler: () => setTool("note") },
-    { key: "u", label: "U", category: "Tools", description: "Underline", handler: () => setTool("underline") },
-    { key: "s", label: "S", category: "Tools", description: "Strikethrough", handler: () => setTool("strikethrough") },
-    { key: "q", label: "Q", category: "Tools", description: "Squiggly", handler: () => setTool("squiggly") },
-    { key: "k", label: "K", category: "Tools", description: "Checkmark", handler: () => setTool("checkmark") },
-    { key: "x", label: "X", category: "Tools", description: "Cross", handler: () => setTool("cross") },
-    { key: "i", label: "I", category: "Tools", description: "Signature", handler: () => setTool("signature") },
-    { key: "d", label: "D", category: "Tools", description: "Redact", handler: () => setTool("redact") },
-    { key: "e", label: "E", category: "Tools", description: "Eraser", handler: () => setTool("eraser") },
   ])
+
+
 
   if (isLoading || !pdfDocument) {
     const status = data?.document?.status
