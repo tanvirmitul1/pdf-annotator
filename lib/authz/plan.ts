@@ -3,7 +3,6 @@ import { z } from "zod"
 
 import { cacheDelete, cacheGet, cacheSet } from "@/lib/cache/redis"
 import { prisma } from "@/lib/db/prisma"
-import { NotFoundError } from "@/lib/errors"
 
 const CACHE_TTL_SECONDS = 60
 
@@ -17,7 +16,7 @@ const PlanLimitsSchema = z.object({
 
 export type PlanLimits = z.infer<typeof PlanLimitsSchema>
 
-export async function getPlan(userId: string) {
+export async function getPlan() {
   // Free for everyone! Bypass DB and return unlimited limits.
   return PlanLimitsSchema.parse({
     maxDocuments: 9999999,
