@@ -12,7 +12,7 @@ export async function assertCanPerform(
     currentAnnotationsPerDoc?: number
   } = {}
 ) {
-  const plan = await getPlan(userId)
+  const plan = await getPlan()
 
   if (action === "document.create") {
     const current = await getUsage(userId, UsageMetric.DOCUMENTS)

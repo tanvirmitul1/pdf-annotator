@@ -1,6 +1,6 @@
 import type { PositionData } from "./types"
 
-export type ResizeHandle = "nw" | "ne" | "sw" | "se" | "start" | "end"
+export type ResizeHandle = "nw" | "ne" | "sw" | "se" | "start" | "end" | "rot"
 
 const MIN_SCREEN_SIZE_PX = 18
 
@@ -20,11 +20,19 @@ function clampPoint(
 }
 
 export function isMovablePosition(positionData: PositionData) {
-  return positionData.kind !== "TEXT"
+  return true
 }
 
 export function isResizablePosition(positionData: PositionData) {
-  return positionData.kind === "RECT" || positionData.kind === "ARROW"
+  return (
+    positionData.kind === "RECT" ||
+    positionData.kind === "TEXT_BOX" ||
+    positionData.kind === "ARROW" ||
+    positionData.kind === "SIGNATURE" ||
+    positionData.kind === "IMAGE" ||
+    positionData.kind === "CLOUD" ||
+    positionData.kind === "TEXT"
+  )
 }
 
 export function translatePositionData(
@@ -34,8 +42,19 @@ export function translatePositionData(
   srcH: number
 ): PositionData {
   switch (positionData.kind) {
-    case "TEXT":
-      return positionData
+    case "TEXT": {
+      return {
+        ...positionData,
+        anchor: {
+          ...positionData.anchor,
+          rects: positionData.anchor.rects.map(r => ({
+            ...r,
+            x: clamp(r.x + delta.x, 0, srcW - r.width),
+            y: clamp(r.y + delta.y, 0, srcH - r.height),
+          }))
+        }
+      }
+    }
     case "POINT": {
       const point = clampPoint(
         {
@@ -51,7 +70,8 @@ export function translatePositionData(
         y: point.y,
       }
     }
-    case "RECT": {
+    case "RECT":
+    case "TEXT_BOX": {
       const nextX = clamp(positionData.x + delta.x, 0, Math.max(0, srcW - positionData.width))
       const nextY = clamp(
         positionData.y + delta.y,
@@ -104,6 +124,25 @@ export function translatePositionData(
         to,
       }
     }
+    case "SIGNATURE":
+    case "IMAGE":
+    case "CLOUD": {
+      const nextX = clamp(
+        positionData.x + delta.x,
+        0,
+        Math.max(0, srcW - positionData.width)
+      )
+      const nextY = clamp(
+        positionData.y + delta.y,
+        0,
+        Math.max(0, srcH - positionData.height)
+      )
+      return {
+        ...positionData,
+        x: nextX,
+        y: nextY,
+      }
+    }
   }
 }
 
@@ -118,7 +157,11 @@ export function resizePositionData(
   const clampedPoint = clampPoint(nextPoint, srcW, srcH)
   const minSize = MIN_SCREEN_SIZE_PX / zoom
 
-  if (positionData.kind === "RECT") {
+  if (
+    positionData.kind === "RECT" ||
+    positionData.kind === "TEXT_BOX" ||
+    positionData.kind === "CLOUD"
+  ) {
     let left = positionData.x
     let right = positionData.x + positionData.width
     let top = positionData.y
@@ -167,6 +210,36 @@ export function resizePositionData(
     }
   }
 
+  if (positionData.kind === "SIGNATURE" || positionData.kind === "IMAGE") {
+    let left = positionData.x
+    let right = positionData.x + positionData.width
+    let top = positionData.y
+    let bottom = positionData.y + positionData.height
+
+    if (handle === "nw" || handle === "sw") left = clampedPoint.x
+    if (handle === "ne" || handle === "se") right = clampedPoint.x
+    if (handle === "nw" || handle === "ne") top = clampedPoint.y
+    if (handle === "sw" || handle === "se") bottom = clampedPoint.y
+
+    if (Math.abs(right - left) < minSize) {
+      if (handle === "nw" || handle === "sw") left = right - minSize
+      else right = left + minSize
+    }
+
+    if (Math.abs(bottom - top) < minSize) {
+      if (handle === "nw" || handle === "ne") top = bottom - minSize
+      else bottom = top + minSize
+    }
+
+    return {
+      ...positionData,
+      x: Math.min(left, right),
+      y: Math.min(top, bottom),
+      width: Math.max(minSize, Math.abs(right - left)),
+      height: Math.max(minSize, Math.abs(bottom - top)),
+    }
+  }
+
   if (positionData.kind === "ARROW") {
     if (handle === "start") {
       return {
@@ -183,7 +256,73 @@ export function resizePositionData(
     }
   }
 
+  if (positionData.kind === "TEXT") {
+    const rects = positionData.anchor.rects
+    if (rects.length === 0) return positionData
+
+    // Find overall bounding box
+    const minX = Math.min(...rects.map(r => r.x))
+    const maxX = Math.max(...rects.map(r => r.x + r.width))
+    const minY = Math.min(...rects.map(r => r.y))
+    const maxY = Math.max(...rects.map(r => r.y + r.height))
+    
+    let nextMinX = minX, nextMaxX = maxX, nextMinY = minY, nextMaxY = maxY
+
+    if (handle === "nw" || handle === "sw") nextMinX = clampedPoint.x
+    if (handle === "ne" || handle === "se") nextMaxX = clampedPoint.x
+    if (handle === "nw" || handle === "ne") nextMinY = clampedPoint.y
+    if (handle === "sw" || handle === "se") nextMaxY = clampedPoint.y
+
+    const scaleX = (nextMaxX - nextMinX) / Math.max(maxX - minX, 1)
+    const scaleY = (nextMaxY - nextMinY) / Math.max(maxY - minY, 1)
+
+    return {
+      ...positionData,
+      anchor: {
+        ...positionData.anchor,
+        rects: rects.map(r => ({
+          x: nextMinX + (r.x - minX) * scaleX,
+          y: nextMinY + (r.y - minY) * scaleY,
+          width: r.width * scaleX,
+          height: r.height * scaleY,
+        }))
+      }
+    }
+  }
+
   return positionData
+}
+
+export function rotatePositionData(
+  positionData: PositionData,
+  currentPoint: { x: number; y: number },
+  center: { x: number; y: number }
+): PositionData {
+  if (
+    positionData.kind !== "RECT" &&
+    positionData.kind !== "TEXT_BOX" &&
+    positionData.kind !== "SIGNATURE" &&
+    positionData.kind !== "IMAGE" &&
+    positionData.kind !== "CLOUD"
+  ) {
+    return positionData
+  }
+
+  // Calculate angle between vertical axis and vector from center to currentPoint
+  const dx = currentPoint.x - center.x
+  const dy = currentPoint.y - center.y
+  
+  // Math.atan2 returns angle from positive X axis. 
+  // We want angle from positive Y axis (upwards).
+  // atan2(y, x) -> atan2(dy, dx)
+  // angle in radians
+  const radians = Math.atan2(dy, dx)
+  const degrees = (radians * 180) / Math.PI + 90 // offset by 90 to make "up" = 0
+
+  return {
+    ...positionData,
+    rotation: (degrees + 360) % 360,
+  }
 }
 
 export function positionDataEquals(a: PositionData, b: PositionData) {

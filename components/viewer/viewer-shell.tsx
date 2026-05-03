@@ -2,19 +2,21 @@
 
 import { useEffect, useRef, useCallback, useState } from "react"
 import type { PDFDocumentProxy, PDFDocumentLoadingTask } from "pdfjs-dist"
-import { Loader2 } from "lucide-react"
+import { Loader2, X } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
+import { Button } from "@/components/ui/button"
+import { PageManager } from "./page-manager"
 
 import { ViewerProvider, useViewer } from "@/features/viewer/provider"
 import {
   useGetDocumentViewerDataQuery,
   useUpdateReadingProgressMutation,
+  useUpdatePageOrderMutation,
 } from "@/features/viewer/api"
-import {
-  useCreateAnnotationMutation,
-  useDeleteAnnotationMutation,
-  useUpdateAnnotationMutation,
-  useListByDocumentQuery,
-} from "@/features/annotations/api"
+import { useDebouncedMutation } from "@/hooks/use-debounced-mutation"
+import { useListByDocumentQuery } from "@/features/annotations/api"
+import { useAnnotationManager } from "@/features/annotations/use-annotation-manager"
+import { cn } from "@/lib/utils"
 import { useGetMeQuery } from "@/features/auth/slice"
 import { useShortcuts } from "@/hooks/use-shortcuts"
 import { useAnnotationShortcuts } from "@/hooks/use-annotation-shortcuts"
@@ -27,10 +29,13 @@ import { ShortcutsOverlay } from "./shortcuts-overlay"
 import { OfflineBanner } from "./offline-banner"
 import { ViewerSkeleton } from "./viewer-skeleton"
 import { AnnotationToolbar } from "@/components/annotations/annotation-toolbar"
+import { SecondaryToolbar } from "@/components/annotations/secondary-toolbar"
+import { BottomBar } from "@/components/annotations/bottom-bar"
 import { AnnotationPanel } from "@/components/annotations/annotation-panel"
 import { SaveStatus } from "@/components/annotations/save-status"
 import { LoginGateModal } from "./login-gate-modal"
-import type { AnnotationWithTags } from "@/features/annotations/types"
+import { SHORTCUTS } from "@/features/shortcuts/definitions"
+import type { PageMetadata } from "@/features/viewer/store"
 
 type PdfjsModule = typeof import("pdfjs-dist")
 
@@ -119,21 +124,8 @@ export function ViewerShell({
   )
 }
 
-function toCreateAnnotationInput(
-  annotation: AnnotationWithTags,
-  documentId: string
-) {
-  return {
-    documentId,
-    pageNumber: annotation.pageNumber,
-    type: annotation.type,
-    color: annotation.color,
-    positionData: annotation.positionData,
-    ...(annotation.content ? { content: annotation.content } : {}),
-  }
-}
 
-function ViewerShellInner({
+export function ViewerShellInner({
   documentId,
   documentName,
   initialPage,
@@ -143,6 +135,7 @@ function ViewerShellInner({
   const [loadError, setLoadError] = useState<string | null>(null)
 
   const sidebarOpen = useViewer((s) => s.sidebarOpen)
+  const sidebarTab = useViewer((s) => s.sidebarTab)
   const currentPage = useViewer((s) => s.currentPage)
   const totalPages = useViewer((s) => s.totalPages)
   const zoom = useViewer((s) => s.zoom)
@@ -157,6 +150,9 @@ function ViewerShellInner({
   const closeShortcuts = useViewer((s) => s.closeShortcuts)
   const shortcutsOpen = useViewer((s) => s.shortcutsOpen)
   const rightPanelAnnotationId = useViewer((s) => s.rightPanelAnnotationId)
+  const closeAnnotation = useViewer((s) => s.closeAnnotation)
+  const closeSidebar = useViewer((s) => s.closeSidebar)
+  const toggleSidebar = useViewer((s) => s.toggleSidebar)
   const draft = useViewer((s) => s.draft)
   const undo = useViewer((s) => s.undo)
   const redo = useViewer((s) => s.redo)
@@ -164,15 +160,42 @@ function ViewerShellInner({
   const setSaveStatus = useViewer((s) => s.setSaveStatus)
 
   const { data, isLoading, refetch } = useGetDocumentViewerDataQuery(documentId)
+  const setPageOrder = useViewer((s) => s.setPageOrder)
+  const pageOrder = useViewer((s) => s.pageOrder)
+
   const [updateProgress] = useUpdateReadingProgressMutation()
-  const [createAnnotation] = useCreateAnnotationMutation()
-  const [deleteAnnotation] = useDeleteAnnotationMutation()
-  const [updateAnnotation] = useUpdateAnnotationMutation()
+  const [updatePageOrder] = useUpdatePageOrderMutation()
+
+  const { call: debouncedUpdatePageOrder } = useDebouncedMutation(
+    (order: PageMetadata[]) => updatePageOrder({ documentId, pageOrder: order }),
+    1000
+  )
+
+  // Sync pageOrder to store on load
+  useEffect(() => {
+    if (data?.pageOrder) {
+      setPageOrder(data.pageOrder)
+    }
+  }, [data?.pageOrder, setPageOrder])
+
+  // Watch for pageOrder changes and persist
+  const lastPersistedOrderRef = useRef<string>("")
+  useEffect(() => {
+    const orderStr = JSON.stringify(pageOrder)
+    if (pageOrder.length > 0 && orderStr !== lastPersistedOrderRef.current) {
+       // Only persist if it's not the initial load from server
+       if (lastPersistedOrderRef.current !== "") {
+         debouncedUpdatePageOrder(pageOrder)
+       }
+       lastPersistedOrderRef.current = orderStr
+    }
+  }, [pageOrder, debouncedUpdatePageOrder])
+  const { updateAnnotation, deleteAnnotation, restoreAnnotation } = useAnnotationManager(documentId)
 
   // Multi-user polling: poll every 10s when collaborators exist and user isn't drawing
   const hasCollaborators = (data?.collaborators?.length ?? 0) > 1
   const shouldPoll = hasCollaborators && !draft
-  const { data: annotations = [] } = useListByDocumentQuery(documentId, {
+  useListByDocumentQuery(documentId, {
     pollingInterval: shouldPoll ? 10_000 : 0,
     skipPollingIfUnfocused: true,
   })
@@ -185,36 +208,25 @@ function ViewerShellInner({
     try {
       setSaveStatus("saving")
       if (entry.action === "create" && entry.after) {
-        // Undo create = delete
-        await deleteAnnotation({ id: entry.after.id, documentId }).unwrap()
+        deleteAnnotation({ id: entry.after.id, documentId })
       } else if (entry.action === "delete" && entry.before) {
-        // Undo delete = restore via create
-        await createAnnotation(
-          toCreateAnnotationInput(entry.before, documentId)
-        ).unwrap()
+        restoreAnnotation({ id: entry.before.id, documentId })
       } else if (entry.action === "update" && entry.before) {
         const { content, color, positionData } = entry.before
-        await updateAnnotation({
+        updateAnnotation({
           id: entry.before.id,
           documentId,
           content: content ?? undefined,
           color,
           positionData,
-        }).unwrap()
+        })
       }
       setSaveStatus("saved")
       setTimeout(() => setSaveStatus("idle"), 2000)
     } catch {
       setSaveStatus("offline")
     }
-  }, [
-    undo,
-    deleteAnnotation,
-    createAnnotation,
-    updateAnnotation,
-    documentId,
-    setSaveStatus,
-  ])
+  }, [undo, deleteAnnotation, restoreAnnotation, updateAnnotation, documentId, setSaveStatus])
 
   // Redo handler
   const handleRedo = useCallback(async () => {
@@ -224,37 +236,40 @@ function ViewerShellInner({
     try {
       setSaveStatus("saving")
       if (entry.action === "create" && entry.after) {
-        await createAnnotation(
-          toCreateAnnotationInput(entry.after, documentId)
-        ).unwrap()
+        restoreAnnotation({ id: entry.after.id, documentId })
       } else if (entry.action === "delete" && entry.before) {
-        await deleteAnnotation({ id: entry.before.id, documentId }).unwrap()
+        deleteAnnotation({ id: entry.before.id, documentId })
       } else if (entry.action === "update" && entry.after) {
         const { content, color, positionData } = entry.after
-        await updateAnnotation({
+        updateAnnotation({
           id: entry.after.id,
           documentId,
           content: content ?? undefined,
           color,
           positionData,
-        }).unwrap()
+        })
       }
       setSaveStatus("saved")
       setTimeout(() => setSaveStatus("idle"), 2000)
     } catch {
       setSaveStatus("offline")
     }
-  }, [
-    redo,
-    deleteAnnotation,
-    createAnnotation,
-    updateAnnotation,
-    documentId,
-    setSaveStatus,
-  ])
+  }, [redo, deleteAnnotation, restoreAnnotation, updateAnnotation, documentId, setSaveStatus])
+  const handleDeleteSelected = useCallback(async () => {
+    if (!rightPanelAnnotationId) return
+    try {
+      setSaveStatus("saving")
+      deleteAnnotation({ id: rightPanelAnnotationId, documentId })
+      closeAnnotation()
+      setSaveStatus("saved")
+      setTimeout(() => setSaveStatus("idle"), 2000)
+    } catch {
+      setSaveStatus("offline")
+    }
+  }, [rightPanelAnnotationId, deleteAnnotation, documentId, closeAnnotation, setSaveStatus])
 
   // Register annotation shortcuts
-  useAnnotationShortcuts(undefined, handleUndo, handleRedo)
+  useAnnotationShortcuts(handleDeleteSelected, handleUndo, handleRedo)
 
   // Debounced progress update
   const progressTimer = useRef<NodeJS.Timeout | null>(null)
@@ -275,13 +290,11 @@ function ViewerShellInner({
   // Flush pending reading-progress on page unload via sendBeacon
   useEffect(() => {
     function onUnload() {
-      // Cancel the debounced timer — we'll flush synchronously via beacon
       if (progressTimer.current) {
         clearTimeout(progressTimer.current)
         progressTimer.current = null
       }
 
-      // Use sendBeacon to persist the last reading position before the tab closes
       if (totalPages > 0 && currentPage > 0) {
         const percent = Math.round(
           ((currentPage - 1) / Math.max(totalPages - 1, 1)) * 100
@@ -304,24 +317,16 @@ function ViewerShellInner({
     clearUndoHistory()
   }, [documentId, clearUndoHistory])
 
-  // Capture initial reading position once — not as a reactive dependency
   const initialLastPage = useRef<number | null>(null)
   if (initialLastPage.current === null && data?.readingProgress?.lastPage) {
     initialLastPage.current = data.readingProgress.lastPage
   }
 
-  // Load PDF — only depends on document metadata, NOT reading progress
   const docStatus = data?.document?.status
   const docStorageKey = data?.document?.storageKey
   useEffect(() => {
     if (!data?.document) return
-
-    if (docStatus !== "READY") {
-      const interval = setInterval(() => {
-        void refetch()
-      }, 2000)
-      return () => clearInterval(interval)
-    }
+    if (docStatus === "FAILED") return
 
     if (!docStorageKey) return
 
@@ -336,7 +341,12 @@ function ViewerShellInner({
         if (!res.ok) throw new Error("Download URL unavailable")
         const { url } = await res.json()
 
-        const loadingTask: PDFDocumentLoadingTask = getDocument(url)
+        const loadingTask: PDFDocumentLoadingTask = getDocument({
+          url,
+          standardFontDataUrl: "/standard_fonts/",
+          cMapUrl: "/cmaps/",
+          cMapPacked: true,
+        })
         const pdf = await loadingTask.promise
         if (!cancelled) {
           setPdfDocument(pdf)
@@ -355,138 +365,81 @@ function ViewerShellInner({
       }
     }
 
+    // Still poll for metadata updates (like processing status) if not READY
+    let interval: NodeJS.Timeout | null = null
+    if (docStatus !== "READY") {
+      interval = setInterval(() => {
+        void refetch()
+      }, 3000)
+    }
+
     loadPdf()
     return () => {
       cancelled = true
+      if (interval) clearInterval(interval)
     }
-  }, [
-    docStatus,
-    docStorageKey,
-    documentId,
-    initialPage,
-    setPage,
-    setTotalPages,
-    refetch,
-    data?.document,
-  ])
+  }, [docStatus, docStorageKey, documentId, initialPage, setPage, setTotalPages, refetch, data?.document])
 
   const ZOOM_STEPS = [0.25, 0.33, 0.5, 0.67, 0.75, 1, 1.25, 1.5, 2, 3, 4]
 
   useShortcuts([
     {
-      key: "arrowleft",
-      label: "←",
-      category: "Navigation",
-      description: "Previous page",
+      ...SHORTCUTS.PREV_PAGE,
       handler: () => setPage(currentPage - 1),
     },
     {
-      key: "arrowright",
-      label: "→",
-      category: "Navigation",
-      description: "Next page",
+      ...SHORTCUTS.NEXT_PAGE,
       handler: () => setPage(currentPage + 1),
     },
     {
-      key: "pageup",
-      label: "PgUp",
-      category: "Navigation",
-      description: "Previous page",
-      handler: () => setPage(currentPage - 1),
-    },
-    {
-      key: "pagedown",
-      label: "PgDn",
-      category: "Navigation",
-      description: "Next page",
-      handler: () => setPage(currentPage + 1),
-    },
-    {
-      key: "home",
-      label: "Home",
-      category: "Navigation",
-      description: "First page",
-      handler: () => setPage(1),
-    },
-    {
-      key: "end",
-      label: "End",
-      category: "Navigation",
-      description: "Last page",
-      handler: () => setPage(totalPages),
-    },
-    {
-      key: "+",
-      label: "+",
-      category: "View",
-      description: "Zoom in",
+      ...SHORTCUTS.ZOOM_IN,
       handler: () => {
         const next = ZOOM_STEPS.find((z) => z > zoom)
         if (next) setZoom(next)
       },
     },
     {
-      key: "-",
-      label: "-",
-      category: "View",
-      description: "Zoom out",
+      ...SHORTCUTS.ZOOM_OUT,
       handler: () => {
         const next = [...ZOOM_STEPS].reverse().find((z) => z < zoom)
         if (next) setZoom(next)
       },
     },
     {
-      key: "0",
-      label: "0",
-      category: "View",
-      description: "Fit width",
+      ...SHORTCUTS.ZOOM_FIT,
       handler: () => setZoom(1),
     },
     {
-      key: "t",
-      label: "T",
-      category: "Sidebar",
-      description: "Toggle thumbnails",
+      ...SHORTCUTS.TOGGLE_THUMBNAILS,
       handler: () => openSidebar("thumbnails"),
     },
     {
-      key: "o",
-      label: "O",
-      category: "Sidebar",
-      description: "Toggle outline",
+      ...SHORTCUTS.TOGGLE_OUTLINE,
       handler: () => openSidebar("outline"),
     },
     {
-      key: "ctrl+f",
-      label: "Ctrl+F",
-      category: "Search",
-      description: "Search in document",
+      ...SHORTCUTS.OPEN_SEARCH,
       handler: () => openSearch(),
-      allowInInput: false,
     },
     {
-      key: "escape",
-      label: "Esc",
-      category: "General",
-      description: "Close overlays",
+      ...SHORTCUTS.ESCAPE,
       handler: () => {
         if (searchOpen) closeSearch()
         else if (shortcutsOpen) closeShortcuts()
       },
     },
     {
-      key: "?",
-      label: "?",
-      category: "General",
-      description: "Show shortcuts",
+      ...SHORTCUTS.SHOW_SHORTCUTS,
       handler: () => openShortcuts(),
     },
   ])
 
+
+
   if (isLoading || !pdfDocument) {
     const status = data?.document?.status
     return (
-      <div className="flex h-full flex-col overflow-hidden rounded-xl border border-border/60 bg-card/80 shadow-sm">
+      <div className="flex h-full flex-col overflow-hidden bg-background">
         {loadError ? (
           <div className="flex flex-1 flex-col items-center justify-center gap-4 p-8">
             <div className="flex size-12 items-center justify-center rounded-full bg-destructive/10 text-destructive">
@@ -497,7 +450,7 @@ function ViewerShellInner({
               <p className="text-sm text-muted-foreground">{loadError}</p>
             </div>
             <button
-              className="rounded-md border border-border/70 px-4 py-2 text-sm font-medium hover:bg-muted/50 transition-colors"
+              className="rounded-full border border-border/70 px-4 py-2 text-sm font-medium hover:bg-muted/50 transition-colors"
               onClick={() => window.location.reload()}
             >
               Try again
@@ -505,23 +458,18 @@ function ViewerShellInner({
           </div>
         ) : status !== "READY" ? (
           <div className="flex flex-1 items-center justify-center px-6">
-            <div className="flex max-w-xs flex-col items-center gap-4 text-center">
-              <div className="relative flex size-16 items-center justify-center">
-                <div className="absolute inset-0 animate-spin rounded-full border-2 border-border border-t-primary" />
-                <Loader2 className="size-5 text-primary animate-spin" style={{ animationDuration: "1.5s" }} />
+            <div className="flex max-w-xs flex-col items-center gap-6 text-center">
+              <div className="relative flex size-20 items-center justify-center">
+                <div className="absolute inset-0 animate-spin rounded-full border-4 border-primary/10 border-t-primary" />
+                <Loader2 className="size-8 text-primary animate-pulse" />
               </div>
-              <div className="space-y-1.5">
-                <p className="font-heading text-base font-semibold text-foreground">
-                  Preparing your document
+              <div className="space-y-2">
+                <p className="font-heading text-lg font-bold text-foreground">
+                  Preparing Your Workspace
                 </p>
-                <p className="text-sm text-muted-foreground leading-6">
-                  This usually takes a few seconds. Hang tight.
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  We&apos;re processing your PDF for high-fidelity rendering and search.
                 </p>
-              </div>
-              <div className="relative h-1 w-40 overflow-hidden rounded-full bg-muted">
-                <div className="absolute inset-y-0 left-0 w-1/3 rounded-full bg-primary" style={{
-                  animation: "shimmer-bar 1.5s ease-in-out infinite",
-                }} />
               </div>
             </div>
           </div>
@@ -533,94 +481,156 @@ function ViewerShellInner({
   }
 
   const outline = data?.outline ?? null
-  const downloadUrl: string | null = null
 
   return (
-    <div className="flex h-full w-full flex-col overflow-hidden rounded-xl border border-border/60 bg-card/80 shadow-sm">
+    <div className="flex h-full w-full flex-col overflow-hidden bg-background selection:bg-primary/20">
       <OfflineBanner />
 
-      <Toolbar
-        documentId={documentId}
-        documentName={documentName}
-        downloadUrl={downloadUrl}
-        saveStatusSlot={<SaveStatus className="ml-2" />}
-        collaborators={data?.collaborators ?? []}
-        canInviteMembers={Boolean(data?.permissions.canInviteMembers)}
-        canManageMembers={Boolean(data?.permissions.canManageMembers)}
-        user={user}
-      />
-
-      {/* Reading progress bar */}
-      <div className="relative h-0.5 w-full bg-muted/80">
-        <div
-          className="absolute top-0 left-0 h-full bg-primary transition-all duration-300"
-          style={{
-            width: `${totalPages > 0 ? ((currentPage - 1) / (totalPages - 1)) * 100 : 0}%`,
-          }}
-          role="progressbar"
-          aria-label={`Reading progress: page ${currentPage} of ${totalPages}`}
-          aria-valuenow={currentPage}
-          aria-valuemin={1}
-          aria-valuemax={totalPages}
+      {/* Top Bar Area: Docked Header + Secondary Tool Header */}
+      <div className="shrink-0 flex flex-col border-b border-border/40 bg-card/50 backdrop-blur-md z-50">
+        <Toolbar
+          documentId={documentId}
+          documentName={documentName}
+          downloadUrl={null}
+          saveStatusSlot={<SaveStatus className="ml-2" />}
+          collaborators={data?.collaborators ?? []}
+          canInviteMembers={Boolean(data?.permissions.canInviteMembers)}
+          canManageMembers={Boolean(data?.permissions.canManageMembers)}
+          user={user}
         />
+        
+        {/* Horizontal Tool Header (Integrated) */}
+        <div className="flex h-auto min-h-12 w-full items-center justify-center border-t border-border/20 px-2 py-2 md:px-4 flex-wrap">
+           <div className="flex-shrink-0 z-50">
+             <AnnotationToolbar />
+           </div>
+        </div>
       </div>
 
-      {/* Main body */}
-      <div className="relative flex flex-1 overflow-hidden">
-        {/* Left sidebar */}
-        {sidebarOpen && (
-          <Sidebar
-            documentId={documentId}
-            pdfDocument={pdfDocument}
-            totalPages={totalPages}
-            outline={outline}
-            className="hidden md:flex"
-          />
-        )}
+      <main className="relative flex flex-1 overflow-hidden min-h-0">
+        {/* Left Sidebar: Integrated into layout flow on desktop */}
+        <AnimatePresence initial={false}>
+          {sidebarOpen && (
+            <motion.div
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: 288, opacity: 1 }}
+              exit={{ width: 0, opacity: 0 }}
+              transition={{ type: "spring", damping: 30, stiffness: 300 }}
+              className="z-40 h-full border-r border-border/40 bg-card/30 backdrop-blur-2xl flex-shrink-0 overflow-hidden hidden md:block"
+            >
+              <Sidebar
+                documentId={documentId}
+                pdfDocument={pdfDocument}
+                totalPages={totalPages}
+                outline={outline}
+                className="w-72"
+              />
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-        {/* Annotation toolbar (floating, left edge of PDF area) */}
-        <div className="relative flex flex-col items-center px-1 py-4">
-          <AnnotationToolbar />
+        {/* Mobile Sidebar: Overlay/Drawer */}
+        <AnimatePresence>
+          {sidebarOpen && (
+            <motion.div
+              initial={{ x: -300, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: -300, opacity: 0 }}
+              transition={{ type: "spring", damping: 25, stiffness: 200 }}
+              className="fixed inset-y-0 left-0 z-[60] w-[280px] border-r border-border/40 bg-card backdrop-blur-3xl md:hidden"
+            >
+               <div className="flex flex-col h-full">
+                  <div className="flex items-center justify-between p-4 border-b">
+                     <span className="font-semibold">Document Info</span>
+                     <Button variant="ghost" size="icon" onClick={toggleSidebar}>
+                        <X className="size-4" />
+                     </Button>
+                  </div>
+                  <Sidebar
+                    documentId={documentId}
+                    pdfDocument={pdfDocument}
+                    totalPages={totalPages}
+                    outline={outline}
+                    className="w-full flex-1"
+                  />
+               </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Center Canvas Area: Properly constrained and scrollable */}
+        <div className="relative flex-1 flex flex-col min-w-0 bg-muted/10 h-full">
+          {/* Floating Context Toolbar (Top Center) - More subtle now that tools are at the top */}
+          <div className="pointer-events-none absolute left-0 right-0 top-4 z-40 flex justify-center">
+            <div className="pointer-events-auto animate-in fade-in zoom-in-95 duration-300">
+              <SecondaryToolbar />
+            </div>
+          </div>
+
+          {/* PDF Viewer: Takes up remaining space and is scrollable */}
+          <div className="flex-1 min-h-0 h-full">
+            <PdfViewer
+              pdfDocument={pdfDocument}
+              documentId={documentId}
+              pagesData={data?.pagesData}
+              onProgressUpdate={handleProgressUpdate}
+            />
+          </div>
+
+          {/* Bottom Controls: Navigation/Zoom consolidated here on mobile */}
+          <div className="pointer-events-none absolute bottom-6 left-0 right-0 z-40 flex justify-center px-4">
+            <div className="pointer-events-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <BottomBar />
+            </div>
+          </div>
         </div>
 
-        {/* PDF viewer */}
-        <PdfViewer
-          pdfDocument={pdfDocument}
-          documentId={documentId}
-          onProgressUpdate={handleProgressUpdate}
-        />
-
-        {/* Right annotation panel */}
-        {rightPanelAnnotationId && <AnnotationPanel documentId={documentId} />}
-
-        {/* Search bar overlay */}
-        <SearchBar documentId={documentId} />
-
-        {/* Shortcuts overlay */}
-        <ShortcutsOverlay />
-      </div>
-
-      {/* Bottom status bar */}
-      <div className="flex h-8 shrink-0 items-center justify-end gap-3 border-t border-border/70 bg-card/75 px-4 text-xs text-muted-foreground backdrop-blur-xl">
-        <span>
-          Page {currentPage} of {totalPages || "—"}
-          {totalPages > 0 && (
-            <span className="ml-1 text-muted-foreground/70">
-              (
-              {Math.round(
-                ((currentPage - 1) / Math.max(totalPages - 1, 1)) * 100
+        {/* Right Annotation Panel: Modern Inspector / Mobile Drawer */}
+        <AnimatePresence>
+          {rightPanelAnnotationId && (
+            <motion.div
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: 304, opacity: 1 }}
+              exit={{ width: 0, opacity: 0 }}
+              transition={{ type: "spring", damping: 30, stiffness: 300 }}
+              className={cn(
+                "z-[55] h-full border-l border-border/40 bg-card/30 backdrop-blur-2xl shadow-2xl flex-shrink-0 overflow-hidden",
+                "fixed inset-y-0 right-0 w-full md:relative md:w-[19rem]"
               )}
-              %)
-            </span>
+            >
+              <div className="absolute top-4 right-4 z-50 md:hidden">
+                <Button variant="outline" size="icon" className="rounded-full" onClick={() => closeAnnotation()}>
+                   <X className="size-4" />
+                </Button>
+              </div>
+              <AnnotationPanel documentId={documentId} />
+            </motion.div>
           )}
-        </span>
-        <span>{Math.round(zoom * 100)}%</span>
-        {annotations.length > 0 && (
-          <span className="text-muted-foreground/60">
-            {annotations.length} annotation{annotations.length !== 1 ? "s" : ""}
-          </span>
-        )}
-      </div>
+        </AnimatePresence>
+      </main>
+
+      {/* Overlays */}
+      <SearchBar documentId={documentId} />
+      <ShortcutsOverlay />
+      
+      {/* Page Organize Mode (Full Screen Overlay if active) */}
+      {sidebarTab === "organize" && sidebarOpen && (
+         <div className="fixed inset-0 z-[100] bg-background/98 backdrop-blur-xl animate-in fade-in zoom-in-95 duration-300">
+            <div className="container mx-auto h-full py-8 flex flex-col">
+               <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-2xl font-bold">Organize Pages</h2>
+                  <Button variant="ghost" size="icon" onClick={() => closeSidebar()}>
+                     <X className="size-5" />
+                  </Button>
+               </div>
+               <div className="flex-1 min-h-0">
+                  <PageManager pdfDocument={pdfDocument} />
+               </div>
+            </div>
+         </div>
+      )}
     </div>
   )
 }
+
+

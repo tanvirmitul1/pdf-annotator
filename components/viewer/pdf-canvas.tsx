@@ -3,6 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import type { PDFPageProxy, RenderTask } from "pdfjs-dist"
 import { AlertCircle, RefreshCw } from "lucide-react"
+import { useViewer } from "@/features/viewer/provider"
 
 import { Button } from "@/components/ui/button"
 
@@ -26,6 +27,7 @@ export interface PdfCanvasProps {
   naturalHeight: number
   textLayerGenerationKey: string
   onTextLayerReady?: (pageNumber: number, generationKey: string) => void
+  onTextClick?: (text: string, rect: DOMRect, pageNumber: number) => void
   searchMatches?: Array<{ startOffset: number; endOffset: number }>
   isCurrentMatch?: boolean
 }
@@ -57,7 +59,9 @@ export function PdfCanvas({
   onTextLayerReady,
   searchMatches = [],
   isCurrentMatch = false,
+  onTextClick,
 }: PdfCanvasProps) {
+  const activeTool = useViewer((s) => s.activeTool)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const textLayerRef = useRef<HTMLDivElement>(null)
   const [renderError, setRenderError] = useState(false)
@@ -94,16 +98,23 @@ export function PdfCanvas({
       setRenderError(false)
 
       const viewport = pageProxy.getViewport({ scale: zoom, rotation })
-      canvas.width = viewport.width
-      canvas.height = viewport.height
+      const dpr = window.devicePixelRatio || 1
+      
+      canvas.width = Math.floor(viewport.width * dpr)
+      canvas.height = Math.floor(viewport.height * dpr)
+      canvas.style.width = `${Math.floor(viewport.width)}px`
+      canvas.style.height = `${Math.floor(viewport.height)}px`
 
-      const ctx = canvas.getContext("2d")
+      const ctx = canvas.getContext("2d", { alpha: false })
       if (!ctx) return
 
+      // Scale context for DPR
+      ctx.scale(dpr, dpr)
+
       const task = pageProxy.render({
-        canvas,
         canvasContext: ctx,
         viewport,
+        canvas: canvas,
       })
       renderTaskRef.current = task
 
@@ -277,6 +288,11 @@ export function PdfCanvas({
             key={item.id}
             data-text-span="true"
             data-text-content={item.text}
+            onClick={(e) => {
+              if (activeTool === "editText" && onTextClick) {
+                onTextClick(item.text, e.currentTarget.getBoundingClientRect(), page?.pageNumber ?? 1)
+              }
+            }}
             style={{
               position: "absolute",
               left: item.left,
@@ -286,9 +302,17 @@ export function PdfCanvas({
               transform: `scaleX(${item.scaleX}) rotate(${item.angle}rad)`,
               transformOrigin: "0 0",
               whiteSpace: "pre",
+              // Text is transparent in normal view (PDF canvas renders it), 
+              // but in editText mode show a hover hint so user can see what they're clicking
               color: "transparent",
-              userSelect: "text",
-              cursor: "text",
+              // Selection tools need text interaction
+              userSelect: (activeTool === "select" || activeTool === "highlight" || activeTool === "underline" || activeTool === "strikethrough" || activeTool === "squiggly") ? "text" : "none",
+              cursor: activeTool === "editText" ? "text" : (activeTool === "select" || activeTool === "highlight" || activeTool === "underline" || activeTool === "strikethrough" || activeTool === "squiggly") ? "text" : "default",
+              pointerEvents: (activeTool === "select" || activeTool === "highlight" || activeTool === "underline" || activeTool === "strikethrough" || activeTool === "squiggly" || activeTool === "editText") ? "auto" : "none",
+              // In editText mode, give a subtle blue background so users can see the text zones
+              backgroundColor: activeTool === "editText" ? "rgba(59, 130, 246, 0.12)" : "transparent",
+              borderRadius: activeTool === "editText" ? "2px" : "0",
+              transition: "background-color 0.1s",
             }}
           >
             {item.text}

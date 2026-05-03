@@ -180,11 +180,7 @@ export const commentsApi = api.injectEndpoints({
         body: { emoji },
       }),
       transformResponse: (res: { data: ReactionSummary[] }) => res.data,
-      async onQueryStarted({ commentId, annotationId, emoji }, { dispatch, queryFulfilled, getState }) {
-        const state = getState() as {
-          auth?: { user?: { id: string } | null }
-        }
-        const currentUserId = state.auth?.user?.id
+      async onQueryStarted({ commentId, annotationId, emoji }, { dispatch, queryFulfilled }) {
 
         // Optimistic toggle
         const patch = dispatch(

@@ -8,7 +8,7 @@ import type {
 } from "@/features/annotations/types"
 import { MAX_UNDO_STACK, DEFAULT_ANNOTATION_COLOR } from "@/features/annotations/types"
 
-export type SidebarTab = "thumbnails" | "outline" | "bookmarks" | "annotations"
+export type SidebarTab = "thumbnails" | "outline" | "bookmarks" | "annotations" | "organize"
 
 export interface SearchMatch {
   pageNumber: number
@@ -16,6 +16,13 @@ export interface SearchMatch {
   text: string
   startOffset: number
   endOffset: number
+}
+
+export interface PageMetadata {
+  originalIndex?: number // 1-based, only for 'original'
+  type: "original" | "blank"
+  rotation: 0 | 90 | 180 | 270
+  deleted?: boolean
 }
 
 function getDefaultToolThickness(tool: ToolId) {
@@ -51,6 +58,12 @@ export interface ViewerState {
   currentMatchIndex: number
   searchOpen: boolean
   shortcutsOpen: boolean
+  pageOrder: PageMetadata[]
+  selectedPageIndices: number[]
+  isMultiSelectMode: boolean
+  duplicationIntentId: string | null
+  autosaveEnabled: boolean
+  setAutosaveEnabled: (enabled: boolean) => void
 
   // ─── Annotation state ────────────────────────────────────────────────────
   /** The currently active annotation tool */
@@ -59,10 +72,14 @@ export interface ViewerState {
   rightPanelAnnotationId: string | null
   /** ID of the orphaned text annotation currently being relocated */
   relocatingAnnotationId: string | null
+  /** ID of the annotation currently selected for inline editing */
+  selectedAnnotationId: string | null
   /** ID of the annotation currently hovered */
   hoveredAnnotationId: string | null
   /** Annotations whose text anchor could not be re-resolved against the current text layer */
   orphanedAnnotationIds: Record<string, boolean>
+  /** ID of the annotation currently being inline-edited (textbox) */
+  editingAnnotationId: string | null
   /** In-progress annotation draft */
   draft: AnnotationDraft | null
   /** Current stroke color for the active tool */
@@ -79,6 +96,12 @@ export interface ViewerState {
   redoStack: UndoEntry[]
   /** Autosave status indicator */
   saveStatus: SaveStatus
+  /** Current font family for text tools */
+  activeFont: string
+  /** Current font size for text tools */
+  activeFontSize: number
+  /** Current text alignment for text tools */
+  activeAlign: "left" | "center" | "right"
 
   // ─── Viewer actions ───────────────────────────────────────────────────────
   setZoom: (z: number) => void
@@ -98,6 +121,15 @@ export interface ViewerState {
   closeSearch: () => void
   openShortcuts: () => void
   closeShortcuts: () => void
+  setPageOrder: (order: PageMetadata[]) => void
+  reorderPage: (fromIndex: number, toIndex: number) => void
+  rotatePage: (pageIndex: number, degrees: 90 | -90) => void
+  deletePage: (pageIndex: number) => void
+  duplicatePage: (pageIndex: number) => void
+  addBlankPage: (afterIndex: number | null) => void
+  togglePageSelection: (index: number) => void
+  clearPageSelection: () => void
+  selectAllPages: () => void
 
   // ─── Annotation actions ───────────────────────────────────────────────────
   setTool: (t: ToolId) => void
@@ -106,6 +138,7 @@ export interface ViewerState {
   startRelocatingAnnotation: (id: string) => void
   cancelRelocatingAnnotation: () => void
   setHoveredAnnotation: (id: string | null) => void
+  setSelectedAnnotation: (id: string | null) => void
   setAnnotationOrphaned: (id: string, orphaned: boolean) => void
   startDraft: (d: AnnotationDraft) => void
   updateDraft: (patch: Partial<AnnotationDraft>) => void
@@ -117,6 +150,11 @@ export interface ViewerState {
   redo: () => UndoEntry | null
   clearUndoHistory: () => void
   setSaveStatus: (s: SaveStatus) => void
+  setFont: (font: string) => void
+  setFontSize: (size: number) => void
+  setAlign: (align: "left" | "center" | "right") => void
+  duplicateAnnotation: (id: string) => void
+  setEditingAnnotation: (id: string | null) => void
 }
 
 export const createViewerStore = (documentId: string, isAuthenticated = false, onAnnotationAttempt?: () => boolean) =>
@@ -138,13 +176,21 @@ export const createViewerStore = (documentId: string, isAuthenticated = false, o
       currentMatchIndex: 0,
       searchOpen: false,
       shortcutsOpen: false,
+      pageOrder: [],
+      selectedPageIndices: [],
+      isMultiSelectMode: false,
+      duplicationIntentId: null,
+      autosaveEnabled: true,
+
 
       // ─── Annotation defaults ──────────────────────────────────────────────
       activeTool: "select" as ToolId,
       rightPanelAnnotationId: null,
       relocatingAnnotationId: null,
+      selectedAnnotationId: null,
       hoveredAnnotationId: null,
       orphanedAnnotationIds: {},
+      editingAnnotationId: null,
       draft: null,
       selectedColor: DEFAULT_ANNOTATION_COLOR,
       toolColors: {},
@@ -153,6 +199,9 @@ export const createViewerStore = (documentId: string, isAuthenticated = false, o
       undoStack: [],
       redoStack: [],
       saveStatus: "idle" as SaveStatus,
+      activeFont: "font-sans",
+      activeFontSize: 16,
+      activeAlign: "left" as const,
 
       // ─── Viewer actions ───────────────────────────────────────────────────
       setZoom: (zoom) => set({ zoom: Math.max(0.25, Math.min(4, zoom)) }),
@@ -160,7 +209,21 @@ export const createViewerStore = (documentId: string, isAuthenticated = false, o
         set((s) => ({
           currentPage: Math.max(1, Math.min(s.totalPages || 1, currentPage)),
         })),
-      setTotalPages: (totalPages) => set({ totalPages }),
+      setTotalPages: (totalPages) =>
+        set((s) => {
+          const newState: Partial<ViewerState> = { totalPages }
+          if (s.pageOrder.length === 0 && totalPages > 0) {
+            newState.pageOrder = Array.from({ length: totalPages }, (_, i) => ({
+              originalIndex: i + 1,
+              type: "original" as const,
+              rotation: 0 as const,
+            }))
+          }
+          return newState
+        }),
+
+      setAutosaveEnabled: (autosaveEnabled) => set({ autosaveEnabled }),
+
       setRotation: (rotation) => set({ rotation }),
       setSidebarTab: (sidebarTab) => set({ sidebarTab, sidebarOpen: true }),
       toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),
@@ -188,6 +251,72 @@ export const createViewerStore = (documentId: string, isAuthenticated = false, o
         set({ searchOpen: false, searchQuery: "", searchMatches: [] }),
       openShortcuts: () => set({ shortcutsOpen: true }),
       closeShortcuts: () => set({ shortcutsOpen: false }),
+      setPageOrder: (pageOrder) => set({ pageOrder }),
+      reorderPage: (from, to) =>
+        set((s) => {
+          const next = [...s.pageOrder]
+          const [moved] = next.splice(from, 1)
+          next.splice(to, 0, moved)
+          return { pageOrder: next }
+        }),
+      rotatePage: (index, degrees) =>
+        set((s) => {
+          const next = [...s.pageOrder]
+          const page = next[index]
+          if (page) {
+            const nextRotation = ((page.rotation + degrees + 360) %
+              360) as 0 | 90 | 180 | 270
+            next[index] = { ...page, rotation: nextRotation }
+          }
+          return { pageOrder: next }
+        }),
+      deletePage: (index) =>
+        set((s) => {
+          const next = [...s.pageOrder]
+          if (next[index]) {
+            next[index] = { ...next[index], deleted: true }
+          }
+          return { pageOrder: next }
+        }),
+      duplicatePage: (index) =>
+        set((s) => {
+          const next = [...s.pageOrder]
+          if (next[index]) {
+            const dup = { ...next[index] }
+            next.splice(index + 1, 0, dup)
+          }
+          return { pageOrder: next }
+        }),
+      addBlankPage: (afterIndex) =>
+        set((s) => {
+          const next = [...s.pageOrder]
+          const blank: PageMetadata = {
+            type: "blank",
+            rotation: 0,
+          }
+          if (afterIndex === null) {
+            next.push(blank)
+          } else {
+            next.splice(afterIndex + 1, 0, blank)
+          }
+          return { pageOrder: next }
+        }),
+      togglePageSelection: (index) =>
+        set((s) => {
+          const next = s.selectedPageIndices.includes(index)
+            ? s.selectedPageIndices.filter((i) => i !== index)
+            : [...s.selectedPageIndices, index]
+          return {
+            selectedPageIndices: next,
+            isMultiSelectMode: next.length > 0,
+          }
+        }),
+      clearPageSelection: () => set({ selectedPageIndices: [], isMultiSelectMode: false }),
+      selectAllPages: () =>
+        set((s) => ({
+          selectedPageIndices: s.pageOrder.map((_, i) => i),
+          isMultiSelectMode: true,
+        })),
 
       // ─── Annotation actions ───────────────────────────────────────────────
       setTool: (activeTool) => {
@@ -206,6 +335,7 @@ export const createViewerStore = (documentId: string, isAuthenticated = false, o
       startRelocatingAnnotation: (id) => set({ relocatingAnnotationId: id }),
       cancelRelocatingAnnotation: () => set({ relocatingAnnotationId: null }),
       setHoveredAnnotation: (id) => set({ hoveredAnnotationId: id }),
+      setSelectedAnnotation: (id) => set({ selectedAnnotationId: id, rightPanelAnnotationId: id }),
       setAnnotationOrphaned: (id, orphaned) =>
         set((state) => {
           if (orphaned) {
@@ -276,6 +406,11 @@ export const createViewerStore = (documentId: string, isAuthenticated = false, o
           relocatingAnnotationId: null,
         }),
       setSaveStatus: (saveStatus) => set({ saveStatus }),
+      setFont: (activeFont) => set({ activeFont }),
+      setFontSize: (activeFontSize) => set({ activeFontSize }),
+      setAlign: (activeAlign) => set({ activeAlign }),
+      duplicateAnnotation: (id) => set({ duplicationIntentId: id }),
+      setEditingAnnotation: (id) => set({ editingAnnotationId: id }),
     }))
   )
 

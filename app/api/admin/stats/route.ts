@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { prisma } from "@/lib/db/prisma"
 import { withErrorHandling } from "@/lib/api/handler"
 import { requireAdmin } from "@/lib/auth/require-admin"
 
-async function handler(_request: NextRequest) {
+async function handler() {
   await requireAdmin()
 
   const now = new Date()

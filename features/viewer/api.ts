@@ -1,6 +1,7 @@
 import { api } from "@/store/api"
 import type { Bookmark, ReadingProgress } from "@prisma/client"
 import type { DocumentMemberRole } from "@prisma/client"
+import type { PdfObject } from "@/lib/pdf/analyzer"
 
 export interface DocumentOutlineEntry {
   title: string
@@ -34,6 +35,8 @@ export interface ViewerData {
   outline: DocumentOutlineEntry[] | null
   bookmarks: Bookmark[]
   readingProgress: ReadingProgress | null
+  pagesData: Array<{ pageNumber: number; objects: PdfObject[] }>
+  pageOrder: any[] | null
 }
 
 export const viewerApi = api.injectEndpoints({
@@ -85,10 +88,31 @@ export const viewerApi = api.injectEndpoints({
       // getDocumentViewerData on every scroll, triggering a cascade:
       // scroll → progress PUT → viewer-data GET → PDF download GET → loop.
     }),
+
+    updatePageOrder: b.mutation<void, { documentId: string; pageOrder: any[] }>({
+      query: ({ documentId, pageOrder }) => ({
+        url: `/documents/${documentId}/page-order`,
+        method: "PUT",
+        body: pageOrder,
+      }),
+      async onQueryStarted({ documentId, pageOrder }, { dispatch, queryFulfilled }) {
+        const patch = dispatch(
+          viewerApi.util.updateQueryData("getDocumentViewerData", documentId, (draft) => {
+            draft.pageOrder = pageOrder
+          })
+        )
+        try {
+          await queryFulfilled
+        } catch {
+          patch.undo()
+        }
+      },
+    }),
   }),
 })
 
 export const {
   useGetDocumentViewerDataQuery,
   useUpdateReadingProgressMutation,
+  useUpdatePageOrderMutation,
 } = viewerApi

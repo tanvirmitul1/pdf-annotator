@@ -31,3 +31,9 @@ export function useViewer<T>(selector: (s: ViewerState) => T): T {
   if (!store) throw new Error("useViewer must be used inside ViewerProvider")
   return useStore(store, selector)
 }
+
+export function useViewerStore(): StoreApi<ViewerState> {
+  const store = useContext(ViewerContext)
+  if (!store) throw new Error("useViewerStore must be used inside ViewerProvider")
+  return store
+}

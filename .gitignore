@@ -46,4 +46,6 @@ next-env.d.ts
 /graphify-out/
 # graphify — stray directory from path bug
 /C:projectspdf-annotatorgraphify-out/
-.claude/settings.local.json
+# PDF.js assets (copied via postinstall)
+/public/standard_fonts/
+/public/cmaps/

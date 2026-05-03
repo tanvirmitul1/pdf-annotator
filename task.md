@@ -1,0 +1,47 @@
+# Tasks
+
+- [x] Research and Planning
+    - [x] Analyze SmallPDF features
+    - [x] Audit SmallPDF UI/UX and tools
+    - [x] Explore current codebase
+    - [x] Identify gaps between current app and SmallPDF
+    - [x] Create implementation plan (Approved)
+- [x] UI/UX Foundations
+    - [x] Design system update (colors, animations, premium feel)
+    - [x] Advanced Toolbar implementation (Floating Pill design)
+    - [x] Secondary Formatting Toolbar (context-sensitive)
+    - [x] Bottom Toolbar (Navigation, Zoom, Fit-to-Width)
+- [x] Feature Implementation: Text & Formatting [x]
+    - [x] Enhanced text boxes (fonts, sizes, alignment, fill/stroke)
+    - [ ] Direct Text Editing (Pro feature - modify existing PDF text)
+    - [ ] Sticky notes / Comments (Collapsible UI, rich text)
+- [x] Feature Implementation: Highlighting & Markup
+    - [x] Underline, Strikethrough, Squiggle
+    - [x] Multi-color highlighter with opacity control
+    - [ ] Text search with highlighting results
+- [x] Feature Implementation: Shapes & Drawing
+    - [x] Advanced shapes (Arrow, Line, Circle, Rectangle, Checkmark, Cross)
+    - [x] Fill Color, Stroke Color, Stroke Thickness, Opacity for shapes
+    - [x] Drawing tool improvements (Pencil vs Marker, pressure simulation)
+    - [x] Eraser tool improvement
+- [x] Feature Implementation: Advanced Tools
+    - [x] Signature (Draw, Type, Upload, Initials)
+    - [x] Image insertion (Upload, Resize, Move)
+    - [x] Redaction (Securely remove content)
+    - [ ] Whiteout (Visual cover-up)
+    - [x] Stamps & Watermarking
+- [x] Page Manipulation
+    - [x] Reorder pages via drag-and-drop
+    - [x] Duplicate, Rotate, and Delete pages
+    - [x] Add blank page or merge files between pages
+    - [ ] Crop and Page Numbering
+- [ ] Core Logic & Backend [/]
+    - [ ] Undo/Redo system (Toolbar integration)
+    - [x] State management for text formatting [x]
+    - [ ] AI Assistant integration (Chat/Summarize)
+    - [ ] Export system (Word/Excel/PPT conversion, Compression)
+    - [ ] Password Protection (Lock/Unlock)
+- [ ] Final Polish & Verification [ ]
+    - [ ] Dark/Light mode refinement
+    - [ ] Performance optimization (Virtualization)
+    - [ ] Walkthrough creation

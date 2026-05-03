@@ -67,7 +67,7 @@ export async function updateAnnotation(
   await assertValidAssignee(existing.documentId, changes.assigneeId)
 
   // Strip updatedAt from the changes before passing to the repository
-  const { updatedAt: _clientUpdatedAt, ...repoChanges } = changes
+  const { updatedAt: _updatedAt, ...repoChanges } = changes
   return repo.update(annotationId, repoChanges)
 }
 
@@ -83,6 +83,14 @@ export async function softDeleteAnnotation(
   }
 
   return repo.softDelete(annotationId)
+}
+
+export async function restoreAnnotation(
+  userId: string,
+  annotationId: string
+): Promise<AnnotationWithTags> {
+  const repo = annotationsFor(userId)
+  return repo.restore(annotationId)
 }
 
 export async function addTagToAnnotation(

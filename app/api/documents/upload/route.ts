@@ -47,7 +47,7 @@ async function handler(request: NextRequest) {
   }
 
   // Check quota
-  const plan = await getPlan(identity.userId)
+  const plan = await getPlan()
   const currentDocuments = await getUsage(identity.userId, "DOCUMENTS")
   const currentStorageMB = await getUsage(identity.userId, "STORAGE_MB")
 

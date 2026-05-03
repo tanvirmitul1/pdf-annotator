@@ -17,7 +17,9 @@ export interface AccessibleDocument {
     image: string | null
   }
   role: DocumentMemberRole | "OWNER"
+  pageOrder: unknown
 }
+
 
 export interface CollaboratorSummary {
   id: string
@@ -58,6 +60,7 @@ export async function getAccessibleDocument(
         select: { role: true },
         take: 1,
       },
+      pageOrder: true,
     },
   })
 
@@ -75,6 +78,7 @@ export async function getAccessibleDocument(
     thumbnailKey: document.thumbnailKey,
     owner: document.user,
     role: document.userId === userId ? "OWNER" : document.members[0]?.role ?? "VIEWER",
+    pageOrder: document.pageOrder,
   }
 }
 

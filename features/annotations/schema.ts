@@ -7,8 +7,8 @@ const hexColor = z.string().regex(/^#[0-9a-fA-F]{6}$/, "Invalid hex color")
 const TextRectSchema = z.object({
   x: z.number(),
   y: z.number(),
-  width: z.number().positive(),
-  height: z.number().positive(),
+  width: z.number(),
+  height: z.number(),
 })
 
 const TextAnchorSchema = z.object({
@@ -31,14 +31,34 @@ const PointPositionDataSchema = z.object({
   y: z.number(),
 })
 
+export const TextboxPositionDataSchema = z.object({
+  kind: z.literal("TEXT_BOX"),
+  pageNumber: z.number(),
+  x: z.number(),
+  y: z.number(),
+  width: z.number(),
+  height: z.number(),
+  fontSize: z.number().optional(),
+  fontFamily: z.string().optional(),
+  textAlign: z.enum(["left", "center", "right"]).optional(),
+  fillColor: z.string().optional(),
+  strokeColor: z.string().optional(),
+  strokeWidth: z.number().optional(),
+  opacity: z.number().optional(),
+})
+
 const RectPositionDataSchema = z.object({
   kind: z.literal("RECT"),
   pageNumber: z.number().int().positive(),
   x: z.number(),
   y: z.number(),
-  width: z.number().positive(),
-  height: z.number().positive(),
+  width: z.number(),
+  height: z.number(),
   rotation: z.number().optional(),
+  opacity: z.number().optional(),
+  strokeWidth: z.number().optional(),
+  fillColor: z.string().optional(),
+  strokeColor: z.string().optional(),
 })
 
 const PathPositionDataSchema = z.object({
@@ -53,8 +73,9 @@ const PathPositionDataSchema = z.object({
       })
     )
     .min(2),
-  strokeWidth: z.number().positive(),
+  strokeWidth: z.number(),
   style: z.enum(["pen", "highlighter"]).optional(),
+  opacity: z.number().optional(),
 })
 
 const ArrowPositionDataSchema = z.object({
@@ -62,15 +83,58 @@ const ArrowPositionDataSchema = z.object({
   pageNumber: z.number().int().positive(),
   from: z.object({ x: z.number(), y: z.number() }),
   to: z.object({ x: z.number(), y: z.number() }),
-  strokeWidth: z.number().positive(),
+  strokeWidth: z.number(),
+  opacity: z.number().optional(),
+})
+
+const SignaturePositionDataSchema = z.object({
+  kind: z.literal("SIGNATURE"),
+  pageNumber: z.number().int().positive(),
+  x: z.number(),
+  y: z.number(),
+  width: z.number(),
+  height: z.number(),
+  data: z.string(), // Base64 or SVG path
+  rotation: z.number().optional(),
+  opacity: z.number().optional(),
+})
+
+const ImagePositionDataSchema = z.object({
+  kind: z.literal("IMAGE"),
+  pageNumber: z.number().int().positive(),
+  x: z.number(),
+  y: z.number(),
+  width: z.number(),
+  height: z.number(),
+  url: z.string().url(),
+  rotation: z.number().optional(),
+  opacity: z.number().optional(),
+})
+
+const CloudPositionDataSchema = z.object({
+  kind: z.literal("CLOUD"),
+  pageNumber: z.number().int().positive(),
+  x: z.number(),
+  y: z.number(),
+  width: z.number(),
+  height: z.number(),
+  rotation: z.number().optional(),
+  opacity: z.number().optional(),
+  strokeWidth: z.number().optional(),
+  fillColor: z.string().optional(),
+  strokeColor: z.string().optional(),
 })
 
 export const PositionDataSchema = z.discriminatedUnion("kind", [
   TextPositionDataSchema,
   PointPositionDataSchema,
+  TextboxPositionDataSchema,
   RectPositionDataSchema,
   PathPositionDataSchema,
   ArrowPositionDataSchema,
+  SignaturePositionDataSchema,
+  ImagePositionDataSchema,
+  CloudPositionDataSchema,
 ])
 
 // ─── Annotation type enum ──────────────────────────────────────────────────────
@@ -86,6 +150,13 @@ export const AnnotationTypeSchema = z.enum([
   "ARROW",
   "TEXTBOX",
   "IMAGE_SHAPE",
+  "SIGNATURE",
+  "REDACTION",
+  "CHECKMARK",
+  "CROSS",
+  "LINE",
+  "STAMP",
+  "CLOUD",
 ])
 
 export const AnnotationStatusSchema = z.enum([
@@ -135,3 +206,35 @@ export const AddTagSchema = z.object({
 })
 
 export type AddTagInput = z.infer<typeof AddTagSchema>
+
+// ─── Bulk Sync Schema ─────────────────────────────────────────────────────────
+
+export const SyncOperationSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("create"),
+    clientId: z.string().uuid(),
+    payload: CreateAnnotationSchema,
+  }),
+  z.object({
+    type: z.literal("update"),
+    id: z.string(),
+    payload: UpdateAnnotationSchema,
+  }),
+  z.object({
+    type: z.literal("delete"),
+    id: z.string(),
+  }),
+  z.object({
+    type: z.literal("restore"),
+    id: z.string(),
+  }),
+])
+
+export const BulkSyncSchema = z.object({
+  documentId: z.string().uuid(),
+  operations: z.array(SyncOperationSchema).min(1).max(100),
+})
+
+export type SyncOperationInput = z.infer<typeof SyncOperationSchema>
+export type BulkSyncInput = z.infer<typeof BulkSyncSchema>
+

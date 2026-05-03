@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc:*)",
+      "Bash(git restore:*)",
+      "Bash(npx tsx:*)",
+      "WebFetch(domain:res.cloudinary.com)",
+      "PowerShell(Select-String *)",
+      "PowerShell([System.IO.File]::WriteAllText\\('.graphify_detect_utf8.json', [System.IO.File]::ReadAllText\\('.graphify_detect.json', [System.Text.Encoding]::UTF8\\), [System.Text.Encoding]::UTF8\\))",
+      "Bash(graphify hook *)",
+      "PowerShell(python -m graphify hook install)",
+      "PowerShell(Copy-Item *)",
+      "PowerShell(python -m graphify claude install)",
+      "PowerShell(git *)",
+      "Bash(git -C /c/projects/pdf-annotator status --short)",
+      "Bash(git -C /c/projects/pdf-annotator log --oneline -3)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git rm *)",
+      "Bash(npm run *)",
+      "Bash(npx prisma *)"
+    ]
+  }
+}

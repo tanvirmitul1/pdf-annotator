@@ -58,6 +58,13 @@ enum AnnotationType {
   ARROW
   TEXTBOX
   IMAGE_SHAPE
+  SIGNATURE
+  REDACTION
+  CHECKMARK
+  CROSS
+  LINE
+  STAMP
+  CLOUD
 }
 
 enum AnnotationStatus {
@@ -224,6 +231,7 @@ model Document {
   members       DocumentMember[]
   textPages     DocumentText[]
   outline       DocumentOutline?
+  pageOrder     Json? // Array of { originalIndex: number, rotation: number, deleted: boolean }
 
   @@index([userId])
   @@index([userId, deletedAt])
@@ -390,6 +398,7 @@ model DocumentText {
   documentId String
   pageNumber Int
   text       String
+  objects    Json?                   // Array of { type: 'text'|'image', x, y, width, height, id, ... }
   tsv        Unsupported("tsvector")?
   createdAt  DateTime                @default(now())
   updatedAt  DateTime                @updatedAt

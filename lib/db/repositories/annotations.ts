@@ -38,7 +38,7 @@ const annotationInclude = {
       },
     },
   },
-} satisfies Prisma.AnnotationInclude
+} as const
 
 type AnnotationRow = Prisma.AnnotationGetPayload<{
   include: typeof annotationInclude
@@ -156,7 +156,7 @@ export function annotationsFor(userId: string) {
           include: annotationInclude,
         })
 
-        return toClient(row)
+        return toClient(row as AnnotationRow)
       }
 
       // Fallback to regular create (backward compatibility)
@@ -175,7 +175,7 @@ export function annotationsFor(userId: string) {
         include: annotationInclude,
       })
 
-      return toClient(row)
+      return toClient(row as AnnotationRow)
     },
     update: async (
       annotationId: string,
@@ -197,7 +197,7 @@ export function annotationsFor(userId: string) {
         include: annotationInclude,
       })
 
-      return toClient(row)
+      return toClient(row as AnnotationRow)
     },
     softDelete: async (annotationId: string): Promise<AnnotationWithTags> => {
       const row = await prisma.annotation.update({
@@ -206,7 +206,21 @@ export function annotationsFor(userId: string) {
         include: annotationInclude,
       })
 
-      return toClient(row)
+      return toClient(row as AnnotationRow)
+    },
+    restore: async (annotationId: string): Promise<AnnotationWithTags> => {
+      const row = await prisma.annotation.findFirst({
+        where: { id: annotationId, userId },
+      })
+      if (!row) throw new Error("Annotation not found")
+      
+      const updated = await prisma.annotation.update({
+        where: { id: annotationId },
+        data: { deletedAt: null },
+        include: annotationInclude,
+      })
+
+      return toClient(updated as AnnotationRow)
     },
     addTag: async (
       annotationId: string,

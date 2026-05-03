@@ -64,9 +64,25 @@ export const annotationsApi = api.injectEndpoints({
         },
       }),
       transformResponse: (res: { data: Array<{ id: string; clientId?: string; status: string }>; count: number }) => res.data,
-      // No onQueryStarted — cache already has the annotations locally
       invalidatesTags: [],
     }),
+
+    bulkSyncAnnotations: b.mutation<
+      any[],
+      { documentId: string; operations: any[] }
+    >({
+      query: ({ documentId, operations }) => ({
+        url: `/annotations/sync`,
+        method: "POST",
+        body: {
+          documentId,
+          operations,
+        },
+      }),
+      transformResponse: (res: { data: any[] }) => res.data,
+      invalidatesTags: [],
+    }),
+
 
     // ─── Create annotation (optimistic) ─────────────────────────────────────
     createAnnotation: b.mutation<
@@ -189,6 +205,7 @@ export const annotationsApi = api.injectEndpoints({
     }),
 
     // ─── Delete annotation (optimistic) ──────────────────────────────────────
+    // ─── Delete annotation (optimistic) ──────────────────────────────────────
     deleteAnnotation: b.mutation<AnnotationWithTags, DeleteAnnotationArg>({
       query: ({ id }) => ({ url: `/annotations/${id}`, method: "DELETE" }),
       transformResponse: (res: { data: AnnotationWithTags }) => res.data,
@@ -213,6 +230,33 @@ export const annotationsApi = api.injectEndpoints({
         { type: "Annotation", id },
         { type: "Annotation", id: `LIST-${documentId}` },
       ],
+    }),
+
+    // ─── Restore annotation (undo delete) ───────────────────────────────────
+    restoreAnnotation: b.mutation<AnnotationWithTags, DeleteAnnotationArg>({
+      query: ({ id }) => ({
+        url: `/annotations/${id}/restore`,
+        method: "POST",
+      }),
+      transformResponse: (res: { data: AnnotationWithTags }) => res.data,
+      async onQueryStarted({ id, documentId }, { dispatch, queryFulfilled }) {
+        try {
+          const { data: restoredAnnotation } = await queryFulfilled
+          dispatch(
+            annotationsApi.util.updateQueryData("listByDocument", documentId, (draft) => {
+              const existing = draft.find((a) => a.id === id)
+              if (existing) {
+                Object.assign(existing, restoredAnnotation)
+              } else {
+                draft.push(restoredAnnotation)
+              }
+            })
+          )
+        } catch {
+          // Failure handles invalidation natively
+        }
+      },
+      invalidatesTags: (_r, _e, arg) => [{ type: "Annotation", id: `LIST-${arg.documentId}` }],
     }),
 
     // ─── Add tag to annotation (optimistic) ──────────────────────────────────
@@ -290,8 +334,11 @@ export const {
   useListByDocumentQuery,
   useCreateAnnotationMutation,
   useBulkCreateAnnotationsMutation,
+  useBulkSyncAnnotationsMutation,
   useUpdateAnnotationMutation,
+
   useDeleteAnnotationMutation,
+  useRestoreAnnotationMutation,
   useAddTagMutation,
   useRemoveTagMutation,
 } = annotationsApi

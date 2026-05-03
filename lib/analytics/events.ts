@@ -18,6 +18,7 @@ export type AnalyticsEvent =
       props: { field: "comment" | "tags" | "color" | "status" | "assignee" }
     }
   | { name: "annotation_deleted"; props: { type: string } }
+  | { name: "annotation_restored"; props: { type: string } }
   | { name: "annotations_exported"; props: { format: "json" | "csv" | "md"; count: number } }
   | { name: "tag_created"; props: Record<string, never> }
   | { name: "collection_created"; props: Record<string, never> }

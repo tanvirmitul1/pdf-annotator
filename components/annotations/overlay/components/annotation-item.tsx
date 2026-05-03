@@ -1,0 +1,562 @@
+"use client"
+
+import React from "react"
+import { cn } from "@/lib/utils"
+import { srcToScreen } from "@/features/annotations/types"
+import type { 
+  AnnotationWithTags, 
+  PositionData 
+} from "@/features/annotations/types"
+import { generateCloudPath } from "../utils"
+import { SquigglyLine } from "./squiggly-line"
+import { ResizeHandles } from "./resize-handles"
+import type { ResizeHandle } from "@/features/annotations/geometry"
+
+interface AnnotationItemProps {
+  annotation: AnnotationWithTags
+  resolvedPosition: PositionData
+  isSelected: boolean
+  isHovered: boolean
+  ringColor: string
+  opacity: number
+  zoom: number
+  rotation: 0 | 90 | 180 | 270
+  srcW: number
+  srcH: number
+  activeTool: string
+  selectedAnnotationId: string | null
+  handleRadius: number
+  textboxPadding: number
+  onMouseEnter: (event: React.MouseEvent) => void
+  onMouseLeave: () => void
+  onFocus: (event: React.FocusEvent) => void
+  onBlur: () => void
+  onClick: (event: React.MouseEvent) => void
+  onDoubleClick: (event: React.MouseEvent) => void
+  onPointerDown: (event: React.PointerEvent) => void
+  onBeginManipulation: (
+    annotation: AnnotationWithTags,
+    mode: "move" | "resize",
+    clientX: number,
+    clientY: number,
+    handle?: ResizeHandle
+  ) => void
+  editingAnnotationId: string | null
+  onStartEditing: (id: string) => void
+  onStopEditing: () => void
+  onContentUpdate: (id: string, content: string) => void
+}
+
+export function AnnotationItem({
+  annotation,
+  resolvedPosition,
+  isSelected,
+  isHovered,
+  ringColor,
+  opacity,
+  zoom,
+  rotation,
+  srcW,
+  srcH,
+  activeTool,
+  selectedAnnotationId,
+  handleRadius,
+  textboxPadding,
+  onMouseEnter,
+  onMouseLeave,
+  onFocus,
+  onBlur,
+  onClick,
+  onDoubleClick,
+  onPointerDown,
+  onBeginManipulation,
+  editingAnnotationId,
+  onStartEditing,
+  onStopEditing,
+  onContentUpdate,
+}: AnnotationItemProps) {
+  const sharedProps = {
+    "data-annotation": annotation.id,
+    role: "button",
+    tabIndex: 0,
+    "aria-label": `${annotation.type.toLowerCase()} annotation`,
+    className: cn(
+      "cursor-black-pointer transition-opacity duration-100",
+      isHovered && "opacity-80"
+    ),
+    style: { pointerEvents: "auto" } as React.CSSProperties,
+    onMouseEnter,
+    onMouseLeave,
+    onFocus,
+    onBlur,
+    onClick,
+    onDoubleClick,
+    onPointerDown,
+  }
+
+  if (resolvedPosition.kind === "TEXT") {
+    return (
+      <g key={annotation.id} {...sharedProps}>
+        {resolvedPosition.anchor.rects.map((rect, index) => {
+          const topLeft = srcToScreen(rect.x, rect.y, srcW, srcH, zoom, rotation)
+          const bottomRight = srcToScreen(
+            rect.x + rect.width,
+            rect.y + rect.height,
+            srcW,
+            srcH,
+            zoom,
+            rotation
+          )
+
+          const x = Math.min(topLeft.x, bottomRight.x)
+          const y = Math.min(topLeft.y, bottomRight.y)
+          const width = Math.abs(bottomRight.x - topLeft.x)
+          const height = Math.abs(bottomRight.y - topLeft.y)
+
+          if (annotation.type === "HIGHLIGHT") {
+            return (
+              <rect
+                key={index}
+                x={x}
+                y={y}
+                width={width}
+                height={height}
+                fill={annotation.color}
+                opacity={isHovered ? 0.4 : 0.28}
+                style={{ mixBlendMode: "multiply" }}
+              />
+            )
+          }
+
+          if (annotation.type === "UNDERLINE") {
+            return (
+              <line
+                key={index}
+                x1={x}
+                y1={y + height}
+                x2={x + width}
+                y2={y + height}
+                stroke={annotation.color}
+                strokeWidth={1.5}
+                opacity={opacity}
+              />
+            )
+          }
+
+          if (annotation.type === "STRIKETHROUGH") {
+            return (
+              <line
+                key={index}
+                x1={x}
+                y1={y + height / 2}
+                x2={x + width}
+                y2={y + height / 2}
+                stroke={annotation.color}
+                strokeWidth={1.5}
+                opacity={opacity}
+              />
+            )
+          }
+
+          if (annotation.type === "SQUIGGLY") {
+            return (
+              <SquigglyLine
+                key={index}
+                x={x}
+                y={y + height}
+                width={width}
+                color={annotation.color}
+                amplitude={1.5}
+              />
+            )
+          }
+
+          return null
+        })}
+        {renderResizeHandles(annotation, resolvedPosition)}
+      </g>
+    )
+  }
+
+  if (resolvedPosition.kind === "POINT") {
+    const point = srcToScreen(
+      resolvedPosition.x,
+      resolvedPosition.y,
+      srcW,
+      srcH,
+      zoom,
+      rotation
+    )
+    const size = 14 * zoom
+
+    return (
+      <g key={annotation.id} {...sharedProps}>
+        {annotation.type === "CHECKMARK" ? (
+          <path
+            d={`M ${point.x - size * 0.5} ${point.y} L ${point.x - size * 0.1} ${point.y + size * 0.4} L ${point.x + size * 0.5} ${point.y - size * 0.35}`}
+            fill="none"
+            stroke={annotation.color}
+            strokeWidth={3 * zoom}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            opacity={opacity}
+          />
+        ) : annotation.type === "CROSS" ? (
+          <g>
+            <line
+              x1={point.x - size * 0.35} y1={point.y - size * 0.35}
+              x2={point.x + size * 0.35} y2={point.y + size * 0.35}
+              stroke={annotation.color}
+              strokeWidth={3 * zoom}
+              strokeLinecap="round"
+              opacity={opacity}
+            />
+            <line
+              x1={point.x + size * 0.35} y1={point.y - size * 0.35}
+              x2={point.x - size * 0.35} y2={point.y + size * 0.35}
+              stroke={annotation.color}
+              strokeWidth={3 * zoom}
+              strokeLinecap="round"
+              opacity={opacity}
+            />
+          </g>
+        ) : (
+          /* STAMP or generic point */
+          <circle
+            cx={point.x}
+            cy={point.y}
+            r={isHovered ? 10 * zoom : 8 * zoom}
+            fill={annotation.color}
+            fillOpacity={0.9}
+          />
+        )}
+        {isSelected || isHovered ? (
+          <circle
+            cx={point.x}
+            cy={point.y}
+            r={size + 4 * zoom}
+            fill="none"
+            stroke={ringColor}
+            strokeWidth={2}
+            strokeOpacity={isSelected ? 0.95 : 0.7}
+          />
+        ) : null}
+      </g>
+    )
+  }
+
+  if (resolvedPosition.kind === "RECT" || resolvedPosition.kind === "TEXT_BOX" || resolvedPosition.kind === "CLOUD") {
+    const pos = resolvedPosition as { x: number; y: number; width: number; height: number }
+    const topLeft = srcToScreen(
+      pos.x,
+      pos.y,
+      srcW,
+      srcH,
+      zoom,
+      rotation
+    )
+    const bottomRight = srcToScreen(
+      pos.x + pos.width,
+      pos.y + pos.height,
+      srcW,
+      srcH,
+      zoom,
+      rotation
+    )
+
+    const x = Math.min(topLeft.x, bottomRight.x)
+    const y = Math.min(topLeft.y, bottomRight.y)
+    const width = Math.abs(bottomRight.x - topLeft.x)
+    const height = Math.abs(bottomRight.y - topLeft.y)
+    const centerX = x + width / 2
+    const centerY = y + height / 2
+
+    return (
+      <g 
+        key={annotation.id} 
+        {...sharedProps}
+        transform={`rotate(${resolvedPosition.rotation || 0} ${centerX} ${centerY})`}
+      >
+        {annotation.type === "CLOUD" ? (
+           <path
+             d={generateCloudPath(x, y, width, height, 8 * zoom)}
+             fill={annotation.color}
+             fillOpacity={0.12}
+             stroke={annotation.color}
+             strokeWidth={isHovered ? 2.5 * zoom : 2 * zoom}
+             opacity={opacity}
+           />
+        ) : annotation.type === "CHECKMARK" ? (
+          <path
+            d={`M ${x + width * 0.15} ${y + height * 0.5} L ${x + width * 0.4} ${y + height * 0.78} L ${x + width * 0.85} ${y + height * 0.22}`}
+            fill="none"
+            stroke={annotation.color}
+            strokeWidth={Math.max(2, 3 * zoom)}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            opacity={opacity}
+          />
+        ) : annotation.type === "CROSS" ? (
+          <g>
+            <line
+              x1={x + width * 0.2} y1={y + height * 0.2}
+              x2={x + width * 0.8} y2={y + height * 0.8}
+              stroke={annotation.color}
+              strokeWidth={Math.max(2, 3 * zoom)}
+              strokeLinecap="round"
+              opacity={opacity}
+            />
+            <line
+              x1={x + width * 0.8} y1={y + height * 0.2}
+              x2={x + width * 0.2} y2={y + height * 0.8}
+              stroke={annotation.color}
+              strokeWidth={Math.max(2, 3 * zoom)}
+              strokeLinecap="round"
+              opacity={opacity}
+            />
+          </g>
+        ) : annotation.type === "CIRCLE" ? (
+          <ellipse
+            cx={centerX}
+            cy={centerY}
+            rx={width / 2}
+            ry={height / 2}
+            fill={annotation.color}
+            fillOpacity={0.12}
+            stroke={annotation.color}
+            strokeWidth={isHovered ? 2.5 * zoom : 2 * zoom}
+            opacity={opacity}
+          />
+        ) : (
+          <rect
+            x={x}
+            y={y}
+            width={width}
+            height={height}
+            fill={annotation.color}
+            fillOpacity={annotation.type === "TEXTBOX" ? 0.08 : 0.1}
+            stroke={annotation.color}
+            strokeWidth={isHovered ? 2.5 * zoom : 2 * zoom}
+            rx={annotation.type === "TEXTBOX" ? 4 : 2}
+            opacity={opacity}
+          />
+        )}
+        {isSelected || isHovered ? (
+          <rect
+            x={x - 3}
+            y={y - 3}
+            width={width + 6}
+            height={height + 6}
+            fill="none"
+            stroke={ringColor}
+            strokeWidth={2}
+            rx={6}
+            strokeOpacity={isSelected ? 0.95 : 0.7}
+          />
+        ) : null}
+        {annotation.type === "TEXTBOX" && resolvedPosition.kind === "TEXT_BOX" ? (
+          <foreignObject
+            x={x + textboxPadding}
+            y={y + textboxPadding}
+            width={Math.max(width - textboxPadding * 2, 1)}
+            height={Math.max(height - textboxPadding * 2, 1)}
+            style={{ pointerEvents: "auto", overflow: "visible" }}
+          >
+            {editingAnnotationId === annotation.id ? (
+              <textarea
+                autoFocus
+                placeholder="Type something..."
+                defaultValue={annotation.content ?? ""}
+                className="h-full w-full resize-none border-none bg-transparent p-0 outline-none focus:ring-0"
+                style={{
+                  color: annotation.color,
+                  fontSize: resolvedPosition.fontSize ? `${resolvedPosition.fontSize * zoom}px` : undefined,
+                  fontFamily: "inherit",
+                  textAlign: resolvedPosition.textAlign ?? "left",
+                  lineHeight: 1.3,
+                  caretColor: annotation.color,
+                }}
+                onFocus={(e) => {
+                  // Select all text on focus to make it easy to replace "Click to type" or existing text
+                  e.currentTarget.select()
+                }}
+                onBlur={(e) => {
+                  onContentUpdate(annotation.id, e.currentTarget.value)
+                  onStopEditing()
+                }}
+                onKeyDown={(e) => {
+                  e.stopPropagation()
+                  if (e.key === "Escape") {
+                    onContentUpdate(annotation.id, e.currentTarget.value)
+                    onStopEditing()
+                  }
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault()
+                    onContentUpdate(annotation.id, e.currentTarget.value)
+                    onStopEditing()
+                  }
+                }}
+                onPointerDown={(e) => e.stopPropagation()}
+                onClick={(e) => e.stopPropagation()}
+              />
+            ) : (
+              <div
+                className={cn(
+                  "h-full w-full overflow-hidden leading-tight break-words whitespace-pre-wrap cursor-black-text",
+                  resolvedPosition.fontFamily
+                )}
+                style={{
+                  color: annotation.color,
+                  fontSize: resolvedPosition.fontSize ? `${resolvedPosition.fontSize * zoom}px` : undefined,
+                  textAlign: resolvedPosition.textAlign ?? "left",
+                  opacity: resolvedPosition.opacity ?? 1,
+                  overflowWrap: "anywhere",
+                }}
+
+                onDoubleClick={(e) => {
+                  e.stopPropagation()
+                  onStartEditing(annotation.id)
+                }}
+              >
+                {annotation.content || "Click to type..."}
+              </div>
+            )}
+          </foreignObject>
+        ) : null}
+
+        {renderResizeHandles(annotation, resolvedPosition)}
+      </g>
+    )
+  }
+
+  if (resolvedPosition.kind === "PATH") {
+    if (resolvedPosition.points.length < 2) return null
+    const pathData = resolvedPosition.points
+      .map((point, index) => {
+        const screenPoint = srcToScreen(point.x, point.y, srcW, srcH, zoom, rotation)
+        return `${index === 0 ? "M" : "L"} ${screenPoint.x} ${screenPoint.y}`
+      })
+      .join(" ")
+
+    const isHighlighterStroke = "style" in resolvedPosition && resolvedPosition.style === "highlighter"
+
+    return (
+      <g key={annotation.id} {...sharedProps}>
+        {isSelected || isHovered ? (
+          <path
+            d={pathData}
+            fill="none"
+            stroke={ringColor}
+            strokeWidth={Math.max(
+              isHighlighterStroke ? 10 : 4,
+              resolvedPosition.strokeWidth * zoom + (isHighlighterStroke ? 5 : 3)
+            )}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeOpacity={isSelected ? 0.35 : 0.2}
+          />
+        ) : null}
+        <path
+          d={pathData}
+          fill="none"
+          stroke={annotation.color}
+          strokeWidth={resolvedPosition.strokeWidth * zoom}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          opacity={isHighlighterStroke ? 0.28 : opacity}
+          style={isHighlighterStroke ? { mixBlendMode: "multiply" } : undefined}
+        />
+      </g>
+    )
+  }
+
+  if (resolvedPosition.kind === "ARROW") {
+    const from = srcToScreen(resolvedPosition.from.x, resolvedPosition.from.y, srcW, srcH, zoom, rotation)
+    const to = srcToScreen(resolvedPosition.to.x, resolvedPosition.to.y, srcW, srcH, zoom, rotation)
+    const markerId = `arrow-${annotation.id}`
+
+    return (
+      <g key={annotation.id} {...sharedProps}>
+        <defs>
+          <marker id={markerId} markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+            <path d="M0,0 L0,6 L8,3 z" fill={annotation.color} />
+          </marker>
+        </defs>
+        <line
+          x1={from.x} y1={from.y} x2={to.x} y2={to.y}
+          stroke={annotation.color}
+          strokeWidth={resolvedPosition.strokeWidth * zoom}
+          strokeLinecap="round"
+          markerEnd={annotation.type === "ARROW" ? `url(#${markerId})` : undefined}
+          opacity={opacity}
+        />
+        {isSelected || isHovered ? (
+          <line
+            x1={from.x} y1={from.y} x2={to.x} y2={to.y}
+            stroke={ringColor}
+            strokeWidth={Math.max(4, resolvedPosition.strokeWidth * zoom + 3)}
+            strokeLinecap="round"
+            strokeOpacity={isSelected ? 0.35 : 0.2}
+          />
+        ) : null}
+        {renderResizeHandles(annotation, resolvedPosition)}
+      </g>
+    )
+  }
+
+  if (resolvedPosition.kind === "IMAGE" || resolvedPosition.kind === "SIGNATURE") {
+    const x = resolvedPosition.x * zoom
+    const y = resolvedPosition.y * zoom
+    const width = resolvedPosition.width * zoom
+    const height = resolvedPosition.height * zoom
+
+    return (
+      <g 
+        key={annotation.id} 
+        {...sharedProps}
+        transform={`rotate(${"rotation" in resolvedPosition ? (resolvedPosition.rotation || 0) : 0} ${x + width / 2} ${y + height / 2})`}
+      >
+        {resolvedPosition.kind === "IMAGE" ? (
+          <image
+            href={resolvedPosition.url}
+            x={x} y={y} width={width} height={height}
+            opacity={opacity}
+          />
+        ) : (
+          <path
+            d={"data" in resolvedPosition ? (resolvedPosition.data as string) : ""}
+            fill={annotation.color}
+            opacity={opacity}
+            transform={`translate(${x}, ${y}) scale(${width / 100}, ${height / 100})`}
+          />
+        )}
+        {isSelected || isHovered ? (
+          <rect
+            x={x - 2} y={y - 2} width={width + 4} height={height + 4}
+            fill="none" stroke={ringColor} strokeWidth={2} rx={4}
+          />
+        ) : null}
+        {renderResizeHandles(annotation, resolvedPosition)}
+      </g>
+    )
+  }
+
+  return null
+
+  function renderResizeHandles(ann: AnnotationWithTags, pos: PositionData) {
+    return (
+      <ResizeHandles
+        annotation={ann}
+        positionData={pos}
+        activeTool={activeTool}
+        selectedAnnotationId={selectedAnnotationId}
+        zoom={zoom}
+        rotation={rotation}
+        srcW={srcW}
+        srcH={srcH}
+        handleRadius={handleRadius}
+        onBeginManipulation={onBeginManipulation}
+      />
+    )
+  }
+}
