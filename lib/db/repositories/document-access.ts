@@ -17,8 +17,9 @@ export interface AccessibleDocument {
     image: string | null
   }
   role: DocumentMemberRole | "OWNER"
-  pageOrder: any
+  pageOrder: unknown
 }
+
 
 export interface CollaboratorSummary {
   id: string

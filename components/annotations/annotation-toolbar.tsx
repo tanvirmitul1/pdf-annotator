@@ -23,7 +23,6 @@ import {
   ShieldAlert,
   ChevronDown,
   Cloud,
-  Spline,
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { toast } from "sonner"
@@ -36,6 +35,7 @@ import {
 } from "@/components/ui/tooltip"
 import { useViewer } from "@/features/viewer/provider"
 import type { ToolId } from "@/features/annotations/types"
+import { SHORTCUTS } from "@/features/shortcuts/definitions"
 import { cn } from "@/lib/utils"
 
 import { SignatureDialog } from "./signature-dialog"
@@ -60,7 +60,7 @@ interface ToolGroupDef {
 const TOOL_GROUPS: ToolGroupDef[] = [
   {
     id: "select",
-    items: [{ id: "select", label: "Select", shortcut: "V", icon: <MousePointer2 className="size-4" /> }],
+    items: [{ id: "select", label: SHORTCUTS.TOOL_SELECT.description, shortcut: SHORTCUTS.TOOL_SELECT.label, icon: <MousePointer2 className="size-4" /> }],
   },
   {
     id: "edit",
@@ -70,55 +70,56 @@ const TOOL_GROUPS: ToolGroupDef[] = [
     id: "draw",
     icon: <Pencil className="size-4" />,
     items: [
-      { id: "freehand", label: "Draw", shortcut: "P", icon: <Pencil className="size-4" />, hasColor: true, hasThickness: true, desktopOnly: true },
-      { id: "freehandHighlight", label: "Marker", shortcut: "G", icon: <Highlighter className="size-4" />, hasColor: true, hasThickness: true, desktopOnly: true },
-      { id: "highlight", label: "Highlight Text", shortcut: "H", icon: <Highlighter className="size-4 text-yellow-500" />, hasColor: true },
+      { id: "freehand", label: SHORTCUTS.TOOL_PEN.description, shortcut: SHORTCUTS.TOOL_PEN.label, icon: <Pencil className="size-4" />, hasColor: true, hasThickness: true, desktopOnly: true },
+      { id: "freehandHighlight", label: SHORTCUTS.TOOL_FREEHAND_HIGHLIGHTER.description, shortcut: SHORTCUTS.TOOL_FREEHAND_HIGHLIGHTER.label, icon: <Highlighter className="size-4" />, hasColor: true, hasThickness: true, desktopOnly: true },
+      { id: "highlight", label: SHORTCUTS.TOOL_HIGHLIGHT.description, shortcut: SHORTCUTS.TOOL_HIGHLIGHT.label, icon: <Highlighter className="size-4 text-yellow-500" />, hasColor: true },
     ],
   },
   {
     id: "text",
     icon: <Type className="size-4" />,
     items: [
-      { id: "textbox", label: "Add Text", shortcut: "T", icon: <Type className="size-4" />, hasColor: true },
-      { id: "underline", label: "Underline", shortcut: "U", icon: <Underline className="size-4" />, hasColor: true },
-      { id: "strikethrough", label: "Strikethrough", shortcut: "S", icon: <Strikethrough className="size-4" />, hasColor: true },
-      { id: "squiggly", label: "Squiggly", shortcut: "Q", icon: <Waves className="size-4" />, hasColor: true },
+      { id: "textbox", label: SHORTCUTS.TOOL_TEXTBOX.description, shortcut: SHORTCUTS.TOOL_TEXTBOX.label, icon: <Type className="size-4" />, hasColor: true },
+      { id: "underline", label: SHORTCUTS.TOOL_UNDERLINE.description, shortcut: SHORTCUTS.TOOL_UNDERLINE.label, icon: <Underline className="size-4" />, hasColor: true },
+      { id: "strikethrough", label: SHORTCUTS.TOOL_STRIKETHROUGH.description, shortcut: SHORTCUTS.TOOL_STRIKETHROUGH.label, icon: <Strikethrough className="size-4" />, hasColor: true },
+      { id: "squiggly", label: SHORTCUTS.TOOL_SQUIGGLY.description, shortcut: SHORTCUTS.TOOL_SQUIGGLY.label, icon: <Waves className="size-4" />, hasColor: true },
     ],
   },
   {
     id: "note",
-    items: [{ id: "note", label: "Sticky Note", shortcut: "N", icon: <StickyNote className="size-4" />, hasColor: true }],
+    items: [{ id: "note", label: SHORTCUTS.TOOL_NOTE.description, shortcut: SHORTCUTS.TOOL_NOTE.label, icon: <StickyNote className="size-4" />, hasColor: true }],
   },
   {
     id: "shapes",
     icon: <Square className="size-4" />,
     items: [
-      { id: "rectangle", label: "Rectangle", shortcut: "R", icon: <Square className="size-4" />, hasColor: true, hasThickness: true, desktopOnly: true },
-      { id: "circle", label: "Circle", shortcut: "O", icon: <Circle className="size-4" />, hasColor: true, hasThickness: true, desktopOnly: true },
-      { id: "line", label: "Line", shortcut: "L", icon: <Minus className="size-4" />, hasColor: true, hasThickness: true },
-      { id: "arrow", label: "Arrow", shortcut: "A", icon: <MoveRight className="size-4" />, hasColor: true, hasThickness: true, desktopOnly: true },
-      { id: "cloud", label: "Cloud", shortcut: "C", icon: <Cloud className="size-4" />, hasColor: true, hasThickness: true },
+      { id: "rectangle", label: SHORTCUTS.TOOL_RECTANGLE.description, shortcut: SHORTCUTS.TOOL_RECTANGLE.label, icon: <Square className="size-4" />, hasColor: true, hasThickness: true, desktopOnly: true },
+      { id: "circle", label: SHORTCUTS.TOOL_CIRCLE.description, shortcut: SHORTCUTS.TOOL_CIRCLE.label, icon: <Circle className="size-4" />, hasColor: true, hasThickness: true, desktopOnly: true },
+      { id: "line", label: SHORTCUTS.TOOL_LINE.description, shortcut: SHORTCUTS.TOOL_LINE.label, icon: <Minus className="size-4" />, hasColor: true, hasThickness: true },
+      { id: "arrow", label: SHORTCUTS.TOOL_ARROW.description, shortcut: SHORTCUTS.TOOL_ARROW.label, icon: <MoveRight className="size-4" />, hasColor: true, hasThickness: true, desktopOnly: true },
+      { id: "cloud", label: SHORTCUTS.TOOL_CIRCLE.description, shortcut: SHORTCUTS.TOOL_CIRCLE.label, icon: <Cloud className="size-4" />, hasColor: true, hasThickness: true },
     ],
   },
   {
     id: "media",
-    items: [{ id: "image", label: "Insert Image", shortcut: "M", icon: <ImageIcon className="size-4" /> }],
+    items: [{ id: "image", label: SHORTCUTS.TOOL_IMAGE.description, shortcut: SHORTCUTS.TOOL_IMAGE.label, icon: <ImageIcon className="size-4" /> }],
   },
   {
     id: "stamps",
     icon: <Check className="size-4" />,
     items: [
-      { id: "checkmark", label: "Checkmark", shortcut: "K", icon: <Check className="size-4" />, hasColor: true },
-      { id: "cross", label: "Cross mark", shortcut: "X", icon: <X className="size-4" />, hasColor: true },
-      { id: "signature", label: "Signature", shortcut: "I", icon: <PenTool className="size-4" />, hasColor: true },
-      { id: "redact", label: "Redact", shortcut: "D", icon: <ShieldAlert className="size-4" /> },
+      { id: "checkmark", label: SHORTCUTS.TOOL_CHECKMARK.description, shortcut: SHORTCUTS.TOOL_CHECKMARK.label, icon: <Check className="size-4" />, hasColor: true },
+      { id: "cross", label: SHORTCUTS.TOOL_CROSSMARK.description, shortcut: SHORTCUTS.TOOL_CROSSMARK.label, icon: <X className="size-4" />, hasColor: true },
+      { id: "signature", label: SHORTCUTS.TOOL_SIGNATURE.description, shortcut: SHORTCUTS.TOOL_SIGNATURE.label, icon: <PenTool className="size-4" />, hasColor: true },
+      { id: "redact", label: SHORTCUTS.TOOL_REDACT.description, shortcut: SHORTCUTS.TOOL_REDACT.label, icon: <ShieldAlert className="size-4" /> },
     ],
   },
   {
     id: "eraser",
-    items: [{ id: "eraser", label: "Eraser", shortcut: "E", icon: <Eraser className="size-4" />, hasThickness: true }],
+    items: [{ id: "eraser", label: SHORTCUTS.TOOL_ERASER.description, shortcut: SHORTCUTS.TOOL_ERASER.label, icon: <Eraser className="size-4" />, hasThickness: true }],
   },
 ]
+
 
 export function AnnotationToolbar() {
   const activeTool = useViewer((state) => state.activeTool)

@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client"
 import { NextRequest, NextResponse } from "next/server"
 import { z } from "zod"
 
@@ -33,9 +34,10 @@ async function putHandler(
   await prisma.document.update({
     where: { id },
     data: {
-      pageOrder: pageOrder as any,
+      pageOrder: pageOrder as unknown as Prisma.InputJsonValue,
     },
   })
+
 
   await logAudit({
     userId: identity.userId,

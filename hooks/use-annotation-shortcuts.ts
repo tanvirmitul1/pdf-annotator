@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef } from "react"
 import { useShortcuts } from "@/hooks/use-shortcuts"
 import { useViewer, useViewerStore } from "@/features/viewer/provider"
 import type { ToolId } from "@/features/annotations/types"
+import { SHORTCUTS } from "@/features/shortcuts/definitions"
 
 /**
  * Registers annotation keyboard shortcuts (V, H, U, S, N, P, R, C, A, X, Delete).
@@ -73,181 +74,39 @@ export function useAnnotationShortcuts(
     [setTool]
   )
 
-  useShortcuts([
-    {
-      key: "v",
-      label: "V",
-      category: "Annotation",
-      description: "Select tool",
-      handler: makeTool("select"),
-    },
-    {
-      key: "h",
-      label: "H",
-      category: "Annotation",
-      description: "Highlight",
-      handler: makeTool("highlight"),
-    },
-    {
-      key: "g",
-      label: "G",
-      category: "Annotation",
-      description: "Freehand highlighter",
-      handler: makeTool("freehandHighlight"),
-    },
-    {
-      key: "u",
-      label: "U",
-      category: "Annotation",
-      description: "Underline",
-      handler: makeTool("underline"),
-    },
-    {
-      key: "s",
-      label: "S",
-      category: "Annotation",
-      description: "Strikethrough",
-      handler: makeTool("strikethrough"),
-    },
-    {
-      key: "n",
-      label: "N",
-      category: "Annotation",
-      description: "Sticky note",
-      handler: makeTool("note"),
-    },
-    {
-      key: "p",
-      label: "P",
-      category: "Annotation",
-      description: "Freehand pen",
-      handler: makeTool("freehand"),
-    },
-    {
-      key: "r",
-      label: "R",
-      category: "Annotation",
-      description: "Rectangle",
-      handler: makeTool("rectangle"),
-    },
-    {
-      key: "c",
-      label: "C",
-      category: "Annotation",
-      description: "Circle",
-      handler: makeTool("circle"),
-    },
-    {
-      key: "o",
-      label: "O",
-      category: "Annotation",
-      description: "Circle",
-      handler: makeTool("circle"),
-    },
-    {
-      key: "q",
-      label: "Q",
-      category: "Annotation",
-      description: "Squiggly",
-      handler: makeTool("squiggly"),
-    },
-    {
-      key: "l",
-      label: "L",
-      category: "Annotation",
-      description: "Line",
-      handler: makeTool("line"),
-    },
-    {
-      key: "k",
-      label: "K",
-      category: "Annotation",
-      description: "Checkmark",
-      handler: makeTool("checkmark"),
-    },
-    {
-      key: "x",
-      label: "X",
-      category: "Annotation",
-      description: "Cross mark",
-      handler: makeTool("cross"),
-    },
-    {
-      key: "i",
-      label: "I",
-      category: "Annotation",
-      description: "Signature",
-      handler: makeTool("signature"),
-    },
-    {
-      key: "m",
-      label: "M",
-      category: "Annotation",
-      description: "Insert Image",
-      handler: makeTool("image"),
-    },
-    {
-      key: "d",
-      label: "D",
-      category: "Annotation",
-      description: "Redact",
-      handler: makeTool("redact"),
-    },
-    {
-      key: "e",
-      label: "E",
-      category: "Annotation",
-      description: "Eraser",
-      handler: makeTool("eraser"),
-    },
-    {
-      key: "a",
-      label: "A",
-      category: "Annotation",
-      description: "Arrow",
-      handler: makeTool("arrow"),
-    },
-    {
-      key: "t",
-      label: "T",
-      category: "Annotation",
-      description: "Text box",
-      handler: makeTool("textbox"),
-    },
-    {
-      key: "shift+t",
-      label: "Shift+T",
-      category: "Annotation",
-      description: "Edit Text Pro",
-      handler: makeTool("editText"),
-    },
-    {
-      key: "delete",
-      label: "Delete",
-      category: "Annotation",
-      description: "Delete selected annotation",
-      handler: () => onDeleteSelected?.(),
-    },
-    {
-      key: "backspace",
-      label: "Backspace",
-      category: "Annotation",
-      description: "Delete selected annotation",
-      handler: () => onDeleteSelected?.(),
-    },
-    {
-      key: "ctrl+z",
-      label: "Ctrl+Z",
-      category: "Annotation",
-      description: "Undo",
-      handler: () => onUndo?.(),
-    },
-    {
-      key: "ctrl+shift+z",
-      label: "Ctrl+Shift+Z",
-      category: "Annotation",
-      description: "Redo",
-      handler: () => onRedo?.(),
-    },
-  ])
+
+  const editingAnnotationId = useViewer((s) => s.editingAnnotationId)
+  const isEditing = editingAnnotationId !== null
+
+  useShortcuts(
+    [
+      { ...SHORTCUTS.TOOL_SELECT, handler: makeTool("select") },
+      { ...SHORTCUTS.TOOL_HIGHLIGHT, handler: makeTool("highlight") },
+      { ...SHORTCUTS.TOOL_FREEHAND_HIGHLIGHTER, handler: makeTool("freehandHighlight") },
+      { ...SHORTCUTS.TOOL_UNDERLINE, handler: makeTool("underline") },
+      { ...SHORTCUTS.TOOL_STRIKETHROUGH, handler: makeTool("strikethrough") },
+      { ...SHORTCUTS.TOOL_SQUIGGLY, handler: makeTool("squiggly") },
+      { ...SHORTCUTS.TOOL_NOTE, handler: makeTool("note") },
+      { ...SHORTCUTS.TOOL_PEN, handler: makeTool("freehand") },
+      { ...SHORTCUTS.TOOL_RECTANGLE, handler: makeTool("rectangle") },
+      { ...SHORTCUTS.TOOL_CIRCLE, handler: makeTool("circle") },
+      { ...SHORTCUTS.TOOL_LINE, handler: makeTool("line") },
+      { ...SHORTCUTS.TOOL_ARROW, handler: makeTool("arrow") },
+      { ...SHORTCUTS.TOOL_TEXTBOX, handler: makeTool("textbox") },
+      { ...SHORTCUTS.TOOL_CHECKMARK, handler: makeTool("checkmark") },
+      { ...SHORTCUTS.TOOL_CROSSMARK, handler: makeTool("cross") },
+      { ...SHORTCUTS.TOOL_SIGNATURE, handler: makeTool("signature") },
+      { ...SHORTCUTS.TOOL_IMAGE, handler: makeTool("image") },
+      { ...SHORTCUTS.TOOL_REDACT, handler: makeTool("redact") },
+      { ...SHORTCUTS.TOOL_ERASER, handler: makeTool("eraser") },
+      { ...SHORTCUTS.DELETE_SELECTED, handler: () => onDeleteSelected?.() },
+      { ...SHORTCUTS.BACKSPACE_SELECTED, handler: () => onDeleteSelected?.() },
+      { ...SHORTCUTS.UNDO, handler: () => onUndo?.() },
+      { ...SHORTCUTS.REDO, handler: () => onRedo?.() },
+    ],
+    !isEditing
+  )
+
+
+
 }
