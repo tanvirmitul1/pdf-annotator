@@ -31,7 +31,7 @@ import { ViewerSkeleton } from "./viewer-skeleton"
 import { AnnotationToolbar } from "@/components/annotations/annotation-toolbar"
 import { SecondaryToolbar } from "@/components/annotations/secondary-toolbar"
 import { BottomBar } from "@/components/annotations/bottom-bar"
-import { AnnotationPanel } from "@/components/annotations/annotation-panel"
+import { AnnotationSidebar } from "@/components/annotations/annotation-sidebar"
 import { SaveStatus } from "@/components/annotations/save-status"
 import { LoginGateModal } from "./login-gate-modal"
 import { SHORTCUTS } from "@/features/shortcuts/definitions"
@@ -583,28 +583,21 @@ export function ViewerShellInner({
           </div>
         </div>
 
-        {/* Right Annotation Panel: Modern Inspector / Mobile Drawer */}
-        <AnimatePresence>
-          {rightPanelAnnotationId && (
-            <motion.div
-              initial={{ width: 0, opacity: 0 }}
-              animate={{ width: 304, opacity: 1 }}
-              exit={{ width: 0, opacity: 0 }}
-              transition={{ type: "spring", damping: 30, stiffness: 300 }}
-              className={cn(
-                "z-[55] h-full border-l border-border/40 bg-card/30 backdrop-blur-2xl shadow-2xl flex-shrink-0 overflow-hidden",
-                "fixed inset-y-0 right-0 w-full md:relative md:w-[19rem]"
-              )}
-            >
-              <div className="absolute top-4 right-4 z-50 md:hidden">
-                <Button variant="outline" size="icon" className="rounded-full" onClick={() => closeAnnotation()}>
-                   <X className="size-4" />
-                </Button>
-              </div>
-              <AnnotationPanel documentId={documentId} />
-            </motion.div>
+        {/* Right Annotation Sidebar */}
+        <div
+          className={cn(
+            "z-[55] h-full border-l border-border/40 bg-card/10 backdrop-blur-3xl shadow-sm flex-shrink-0 overflow-hidden transition-all duration-300 ease-in-out",
+            "fixed inset-y-0 right-0 w-[20rem] translate-x-[100%] md:translate-x-0 md:relative",
+            rightPanelAnnotationId && "translate-x-0"
           )}
-        </AnimatePresence>
+        >
+          <div className="absolute top-2 right-4 z-50 md:hidden">
+            <Button variant="outline" size="icon" className="rounded-full h-8 w-8" onClick={() => closeAnnotation()}>
+               <X className="size-4" />
+            </Button>
+          </div>
+          <AnnotationSidebar documentId={documentId} />
+        </div>
       </main>
 
       {/* Overlays */}

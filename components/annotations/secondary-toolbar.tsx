@@ -60,7 +60,8 @@ export function SecondaryToolbar() {
   const hasTextOptions = ["textbox", "editText"].includes(activeTool) || !!selectedAnnotationId
   const isSelectionMode = activeTool === "select" || activeTool === "hand"
 
-  if (isSelectionMode && !selectedAnnotationId) return null
+  if (selectedAnnotationId) return null
+  if (isSelectionMode) return null
 
   return (
     <TooltipProvider delayDuration={400}>

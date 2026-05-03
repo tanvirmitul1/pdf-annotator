@@ -8,6 +8,7 @@ interface ColorPickerProps {
   onChange: (hex: string) => void
   className?: string
   size?: "sm" | "md"
+  showTransparent?: boolean
 }
 
 export function ColorPicker({
@@ -15,6 +16,7 @@ export function ColorPicker({
   onChange,
   className,
   size = "md",
+  showTransparent = false,
 }: ColorPickerProps) {
   return (
     <div
@@ -41,6 +43,26 @@ export function ColorPicker({
           style={{ backgroundColor: c.hex }}
         />
       ))}
+      {showTransparent && (
+        <button
+          type="button"
+          role="radio"
+          aria-checked={value === "transparent" || value === "" || !value}
+          aria-label="No fill"
+          title="No fill"
+          onClick={() => onChange("transparent")}
+          className={cn(
+            "rounded-full border-2 transition-transform duration-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 flex items-center justify-center",
+            size === "sm" ? "size-4" : "size-5",
+            (value === "transparent" || value === "" || !value)
+              ? "scale-110 border-foreground/80"
+              : "border-transparent hover:scale-110 hover:border-foreground/30",
+            "bg-muted/50 overflow-hidden"
+          )}
+        >
+          <div className="w-full h-[1px] bg-destructive rotate-45" />
+        </button>
+      )}
     </div>
   )
 }

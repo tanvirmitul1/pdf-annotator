@@ -25,7 +25,6 @@ const THUMB_HEIGHT = 150
 
 export function ThumbnailsPanel({
   pdfDocument,
-  totalPages: _totalPages,
 }: ThumbnailsPanelProps) {
   const currentPage = useViewer((s) => s.currentPage)
   const setPage = useViewer((s) => s.setPage)
