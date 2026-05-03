@@ -72,10 +72,12 @@ export function AnnotationOverlay(props: AnnotationOverlayProps) {
       className={cn(
         "absolute inset-0 z-10 overflow-visible touch-none",
         isDrawingMode || isDrawing || isManipulating ? "pointer-events-auto" : "pointer-events-none",
-        activeTool === "hand" ? "cursor-grab active:cursor-grabbing" :
-          activeTool === "select" ? "cursor-default" :
-            activeTool === "eraser" ? "cursor-crosshair" : "cursor-crosshair"
+        activeTool === "hand" ? (isDrawing || isManipulating ? "cursor-black-grabbing" : "cursor-black-grab") :
+
+          activeTool === "select" ? "cursor-black-default" :
+            "cursor-black-crosshair"
       )}
+
       onPointerMove={handlePointerMove}
       onPointerDown={(e) => {
         if (isDrawingMode || isManipulating) {

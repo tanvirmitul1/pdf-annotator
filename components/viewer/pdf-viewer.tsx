@@ -49,7 +49,12 @@ export function PdfViewer({
   const displayPages = useMemo(() => {
     const visible = pageOrder.filter(p => !p.deleted)
     if (visible.length > 0) return visible
-    return Array.from({ length: totalPages }, (_, i) => ({ originalIndex: i + 1, rotation: 0 as const }))
+    return Array.from({ length: totalPages }, (_, i) => ({ 
+      originalIndex: i + 1, 
+      type: "original" as const, 
+      rotation: 0 as const 
+    }))
+
   }, [pageOrder, totalPages])
 
   const [pageDimensions, setPageDimensions] = useState<PageDimension[]>([])

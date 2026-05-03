@@ -61,7 +61,8 @@ export function ResizeHandles({
       fill="hsl(var(--background))"
       stroke={annotation.color}
       strokeWidth={2}
-      style={{ cursor: cursorStyle, pointerEvents: "auto" }}
+      className={cursorStyle.startsWith("cursor-") ? cursorStyle : undefined}
+      style={{ cursor: cursorStyle.startsWith("cursor-") ? undefined : cursorStyle, pointerEvents: "auto" }}
       onPointerDown={(event) => {
         event.preventDefault()
         event.stopPropagation()
@@ -119,7 +120,9 @@ export function ResizeHandles({
         />
         <g
           data-annotation-handle="true"
-          style={{ cursor: "grab", pointerEvents: "auto" }}
+          className="cursor-black-grab"
+          style={{ pointerEvents: "auto" }}
+
           onPointerDown={(event) => {
             event.preventDefault()
             event.stopPropagation()
@@ -178,7 +181,9 @@ export function ResizeHandles({
         />
         <g
           data-annotation-handle="true"
-          style={{ cursor: "grab", pointerEvents: "auto" }}
+          className="cursor-black-grab"
+          style={{ pointerEvents: "auto" }}
+
           onPointerDown={(event) => {
             event.preventDefault()
             event.stopPropagation()
@@ -233,8 +238,8 @@ export function ResizeHandles({
 
     return (
       <g>
-        {handleProps("start", from.x, from.y, "grab")}
-        {handleProps("end", to.x, to.y, "grab")}
+        {handleProps("start", from.x, from.y, "cursor-black-grab")}
+        {handleProps("end", to.x, to.y, "cursor-black-grab")}
       </g>
     )
   }

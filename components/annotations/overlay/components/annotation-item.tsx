@@ -81,7 +81,7 @@ export function AnnotationItem({
     tabIndex: 0,
     "aria-label": `${annotation.type.toLowerCase()} annotation`,
     className: cn(
-      "cursor-pointer transition-opacity duration-100",
+      "cursor-black-pointer transition-opacity duration-100",
       isHovered && "opacity-80"
     ),
     style: { pointerEvents: "auto" } as React.CSSProperties,
@@ -402,7 +402,7 @@ export function AnnotationItem({
             ) : (
               <div
                 className={cn(
-                  "h-full w-full overflow-hidden leading-tight break-words whitespace-pre-wrap",
+                  "h-full w-full overflow-hidden leading-tight break-words whitespace-pre-wrap cursor-black-text",
                   resolvedPosition.fontFamily
                 )}
                 style={{
@@ -411,8 +411,8 @@ export function AnnotationItem({
                   textAlign: resolvedPosition.textAlign ?? "left",
                   opacity: resolvedPosition.opacity ?? 1,
                   overflowWrap: "anywhere",
-                  cursor: "text",
                 }}
+
                 onDoubleClick={(e) => {
                   e.stopPropagation()
                   onStartEditing(annotation.id)
