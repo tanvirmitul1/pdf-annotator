@@ -20,7 +20,8 @@ interface ThumbnailsPanelProps {
   totalPages: number
 }
 
-const THUMB_HEIGHT = 120
+const THUMB_HEIGHT = 150
+
 
 export function ThumbnailsPanel({
   pdfDocument,
@@ -41,12 +42,13 @@ export function ThumbnailsPanel({
   const containerRef = useRef<HTMLDivElement>(null)
 
   const visiblePages = pageOrder.filter(p => !p.deleted)
-  const displayPages = visiblePages.length > 0 ? visiblePages : Array.from({ length: totalPages }, (_, i) => ({ originalIndex: i + 1, rotation: 0 as const }))
+  const displayPages = visiblePages
 
   const virtualizer = useVirtualizer({
     count: displayPages.length,
     getScrollElement: () => containerRef.current,
-    estimateSize: () => THUMB_HEIGHT + 40, // Increased for spacing and footer
+    estimateSize: () => THUMB_HEIGHT + 70, // Increased for spacing, footer, and insertion buttons
+
     overscan: 3,
   })
 
@@ -73,7 +75,10 @@ export function ThumbnailsPanel({
                        variant="ghost" 
                        size="icon" 
                        className="size-7 rounded-lg hover:bg-primary/10 hover:text-primary transition-all"
-                       onClick={() => addBlankPage(displayPages.length - 1)}
+                       onClick={() => {
+                         const idx = pageOrder.indexOf(displayPages[displayPages.length - 1])
+                         addBlankPage(idx >= 0 ? idx : displayPages.length - 1)
+                       }}
                     >
                        <Plus className="size-4" />
                     </Button>
@@ -102,10 +107,11 @@ export function ThumbnailsPanel({
         >
           {virtualizer.getVirtualItems().map((vi) => {
             const pageRecord = displayPages[vi.index]
-            if (!pageRecord || pageRecord.originalIndex === undefined) return null
-            const pageNum = pageRecord.originalIndex
+            if (!pageRecord) return null
+            const actualIndex = pageOrder.indexOf(pageRecord)
+            const pageNum = pageRecord.originalIndex ?? vi.index + 1
             const isCurrent = pageNum === currentPage
-            const isSelected = selectedPageIndices.includes(vi.index)
+            const isSelected = selectedPageIndices.includes(actualIndex)
 
             return (
               <div
@@ -116,28 +122,41 @@ export function ThumbnailsPanel({
                   left: 0,
                   width: "100%",
                   transform: `translateY(${vi.start}px)`,
-                  padding: "12px 0",
+                  height: `${vi.size}px`,
+                  padding: "16px 0",
                 }}
               >
                 <div className="group relative flex flex-col items-center">
                   {/* Top Insertion Point */}
                   <div className="absolute -top-4 left-0 right-0 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20">
                     <button 
-                      onClick={() => addBlankPage(vi.index - 1)}
+                      onClick={() => addBlankPage(actualIndex - 1)}
                       className="size-6 rounded-full bg-primary text-white shadow-lg flex items-center justify-center hover:scale-110 active:scale-95 transition-transform"
                     >
                       <Plus className="size-4" />
                     </button>
                   </div>
 
+
                   <div className="relative w-full max-w-[140px]">
-                    <button
-                      type="button"
+                    <div
+                      role="button"
+                      tabIndex={0}
                       onClick={() => {
                         if (selectedPageIndices.length > 0) {
-                          togglePageSelection?.(vi.index)
+                          togglePageSelection?.(actualIndex)
                         } else {
                           setPage(pageNum)
+                        }
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault()
+                          if (selectedPageIndices.length > 0) {
+                            togglePageSelection?.(actualIndex)
+                          } else {
+                            setPage(pageNum)
+                          }
                         }
                       }}
                       className={cn(
@@ -155,12 +174,22 @@ export function ThumbnailsPanel({
                         className="aspect-[3/4] w-full bg-white dark:bg-zinc-900/50 origin-center transition-transform duration-300" 
                         style={{ transform: `rotate(${pageRecord.rotation}deg)` }}
                       >
-                        <ThumbnailCanvas
-                          pdfDocument={pdfDocument}
-                          pageNum={pageNum}
-                          active={Math.abs(pageNum - currentPage) <= 8}
-                        />
+                        {pageRecord.type === "original" ? (
+                          <ThumbnailCanvas
+                            pdfDocument={pdfDocument}
+                            pageNum={pageNum}
+                            active={Math.abs(pageNum - currentPage) <= 8}
+                          />
+                        ) : (
+                          <div className="flex h-full w-full flex-col items-center justify-center border-2 border-dashed border-border/20 bg-muted/5 shadow-inner">
+                             <div className="size-10 rounded-full bg-primary/5 flex items-center justify-center mb-2">
+                                <Plus className="size-5 text-primary/40" />
+                             </div>
+                             <span className="text-[9px] text-muted-foreground uppercase font-bold tracking-widest opacity-60">Blank Page</span>
+                          </div>
+                        )}
                       </div>
+
 
                       {/* Checkbox for selection */}
                       {(isSelected || selectedPageIndices.length > 0) && (
@@ -184,7 +213,7 @@ export function ThumbnailsPanel({
                                       variant="ghost" 
                                       size="icon" 
                                       className="size-7 rounded-full hover:bg-primary/10 hover:text-primary transition-all"
-                                      onClick={(e) => { e.stopPropagation(); rotatePage(vi.index, 90); }}
+                                      onClick={(e) => { e.stopPropagation(); rotatePage(actualIndex, 90); }}
                                    >
                                       <RotateCw className="size-3.5" />
                                    </Button>
@@ -198,7 +227,7 @@ export function ThumbnailsPanel({
                                       variant="ghost" 
                                       size="icon" 
                                       className="size-7 rounded-full hover:bg-destructive/10 hover:text-destructive transition-all"
-                                      onClick={(e) => { e.stopPropagation(); deletePage(vi.index); }}
+                                      onClick={(e) => { e.stopPropagation(); deletePage(actualIndex); }}
                                    >
                                       <Trash2 className="size-3.5" />
                                    </Button>
@@ -215,7 +244,7 @@ export function ThumbnailsPanel({
                                         "size-7 rounded-full transition-all",
                                         isSelected ? "bg-primary text-white hover:bg-primary/90" : "hover:bg-primary/10 hover:text-primary"
                                       )}
-                                      onClick={(e) => { e.stopPropagation(); togglePageSelection?.(vi.index); }}
+                                      onClick={(e) => { e.stopPropagation(); togglePageSelection?.(actualIndex); }}
                                    >
                                       <Check className="size-3.5" />
                                    </Button>
@@ -225,7 +254,8 @@ export function ThumbnailsPanel({
                            </div>
                         </TooltipProvider>
                       </div>
-                    </button>
+                    </div>
+
                     
                     {/* Centered Page Number */}
                     <div className="mt-3 text-center">
@@ -233,7 +263,7 @@ export function ThumbnailsPanel({
                           "text-[11px] font-bold transition-colors",
                           isCurrent ? "text-primary" : "text-muted-foreground/60"
                        )}>
-                          {vi.index + 1}
+                          {actualIndex + 1}
                        </span>
                     </div>
                   </div>
@@ -242,13 +272,14 @@ export function ThumbnailsPanel({
                   {vi.index === displayPages.length - 1 && (
                     <div className="absolute -bottom-8 left-0 right-0 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20">
                       <button 
-                        onClick={() => addBlankPage(vi.index)}
+                        onClick={() => addBlankPage(actualIndex)}
                         className="size-6 rounded-full bg-primary text-white shadow-lg flex items-center justify-center hover:scale-110 active:scale-95 transition-transform"
                       >
                         <Plus className="size-4" />
                       </button>
                     </div>
                   )}
+
                 </div>
               </div>
             )
@@ -347,7 +378,7 @@ function ThumbnailCanvas({
       if (cancelled || !canvasRef.current) return
 
       const viewport = page.getViewport({ scale: 1 })
-      const scale = 120 / viewport.width
+      const scale = (THUMB_HEIGHT - 20) / viewport.height
       const scaledVp = page.getViewport({ scale })
 
       const canvas = canvasRef.current
@@ -375,15 +406,15 @@ function ThumbnailCanvas({
   }, [pdfDocument, pageNum, active])
 
   if (!active) {
-    return <div className="h-[90px] w-full animate-pulse bg-muted" />
+    return <div className="w-full animate-pulse bg-muted" style={{ height: THUMB_HEIGHT - 20 }} />
   }
 
   return (
     <canvas
       ref={canvasRef}
-      className="block w-full"
-      style={{ height: THUMB_HEIGHT - 20 }}
+      className="mx-auto block h-full object-contain shadow-sm"
       aria-hidden
     />
   )
 }
+

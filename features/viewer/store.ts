@@ -205,7 +205,19 @@ export const createViewerStore = (documentId: string, isAuthenticated = false, o
         set((s) => ({
           currentPage: Math.max(1, Math.min(s.totalPages || 1, currentPage)),
         })),
-      setTotalPages: (totalPages) => set({ totalPages }),
+      setTotalPages: (totalPages) =>
+        set((s) => {
+          const newState: Partial<ViewerState> = { totalPages }
+          if (s.pageOrder.length === 0 && totalPages > 0) {
+            newState.pageOrder = Array.from({ length: totalPages }, (_, i) => ({
+              originalIndex: i + 1,
+              type: "original" as const,
+              rotation: 0 as const,
+            }))
+          }
+          return newState
+        }),
+
       setRotation: (rotation) => set({ rotation }),
       setSidebarTab: (sidebarTab) => set({ sidebarTab, sidebarOpen: true }),
       toggleSidebar: () => set((s) => ({ sidebarOpen: !s.sidebarOpen })),

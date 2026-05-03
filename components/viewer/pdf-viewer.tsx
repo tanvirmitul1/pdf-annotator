@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState, useCallback, useMemo } from "react"
 import { useVirtualizer } from "@tanstack/react-virtual"
+import { Plus } from "lucide-react"
 import type { PDFDocumentProxy, PDFPageProxy } from "pdfjs-dist"
+
 
 import { useViewer, useViewerStore } from "@/features/viewer/provider"
 import { PdfCanvas } from "./pdf-canvas"
@@ -229,44 +231,57 @@ export function PdfViewer({
       >
         {virtualItems.map((vi) => {
           const pageRec = displayPages[vi.index]
-          if (!pageRec || pageRec.originalIndex === undefined) return null
+          if (!pageRec) return null
+          
+          const isBlank = pageRec.type === "blank"
           const pageNum = pageRec.originalIndex
-          const dim = pageDimensions[pageNum - 1]
+          const dim = isBlank ? { width: 612, height: 792 } : (pageNum ? pageDimensions[pageNum - 1] : null)
+          
           if (!dim) return null
 
           const totalRot = (rotation + pageRec.rotation) % 360 as 0 | 90 | 180 | 270
           const isRotated = totalRot === 90 || totalRot === 270
           const scaledW = Math.round((isRotated ? dim.height : dim.width) * displayZoom)
           const scaledH = Math.round((isRotated ? dim.width : dim.height) * displayZoom)
-          const objects = (pagesData?.find(p => p.pageNumber === pageNum)?.objects ?? []) as PdfObject[]
+          const objects = (pageNum ? pagesData?.find(p => p.pageNumber === pageNum)?.objects : []) as PdfObject[]
 
           return (
-            <div key={vi.key} data-index={vi.index} data-testid={`pdf-page-${pageNum}`} style={{ position: "absolute", top: 0, left: 0, width: "100%", transform: `translateY(${vi.start}px)` }}>
+            <div key={vi.key} data-index={vi.index} data-testid={`pdf-page-${vi.index + 1}`} style={{ position: "absolute", top: 0, left: 0, width: "100%", transform: `translateY(${vi.start}px)` }}>
               <div className="flex flex-col items-center" style={{ paddingBottom: PAGE_GAP }}>
-                <div className="mb-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground/40">{pageNum}</div>
+                <div className="mb-2 text-[10px] font-black uppercase tracking-widest text-muted-foreground/40">{vi.index + 1}</div>
                 <div className="relative bg-white dark:bg-zinc-900 shadow-[0_0_50px_-12px_rgba(0,0,0,0.25)] dark:shadow-[0_0_50px_-12px_rgba(0,0,0,0.6)] ring-1 ring-border/5">
                   <div className="relative" style={{ width: scaledW, height: scaledH }}>
-                    <PdfCanvas
-                      page={loadedPages.get(pageNum) ?? null}
-                      zoom={displayZoom}
-                      rotation={totalRot}
-                      active={true}
-                      naturalWidth={isRotated ? dim.height : dim.width}
-                      naturalHeight={isRotated ? dim.width : dim.height}
-                      textLayerGenerationKey={`${textLayerGenerationKey}:${pageRec.rotation}`}
-                      onTextLayerReady={handleTextLayerReady}
-                      onTextClick={handleTextClick}
-                      searchMatches={searchMatches.filter(m => m.pageNumber === pageNum)}
-                      isCurrentMatch={currentMatch?.pageNumber === pageNum}
-                    />
-                    <PdfObjectLayer pageNumber={pageNum} objects={objects} zoom={displayZoom} rotation={totalRot} screenWidth={scaledW} screenHeight={scaledH} />
-                    <AnnotationOverlay documentId={documentId} pageNumber={pageNum} zoom={displayZoom} rotation={totalRot} srcW={dim.width} srcH={dim.height} screenW={scaledW} screenH={scaledH} textLayerGenerationKey={`${textLayerGenerationKey}:${pageRec.rotation}`} textLayerReadyKey={textLayerReadyByPage[pageNum] ?? null} />
+                    {!isBlank && pageNum ? (
+                      <>
+                        <PdfCanvas
+                          page={loadedPages.get(pageNum) ?? null}
+                          zoom={displayZoom}
+                          rotation={totalRot}
+                          active={true}
+                          naturalWidth={isRotated ? dim.height : dim.width}
+                          naturalHeight={isRotated ? dim.width : dim.height}
+                          textLayerGenerationKey={`${textLayerGenerationKey}:${pageRec.rotation}`}
+                          onTextLayerReady={handleTextLayerReady}
+                          onTextClick={handleTextClick}
+                          searchMatches={searchMatches.filter(m => m.pageNumber === pageNum)}
+                          isCurrentMatch={currentMatch?.pageNumber === pageNum}
+                        />
+                        <PdfObjectLayer pageNumber={pageNum} objects={objects} zoom={displayZoom} rotation={totalRot} screenWidth={scaledW} screenHeight={scaledH} />
+                        <AnnotationOverlay documentId={documentId} pageNumber={pageNum} zoom={displayZoom} rotation={totalRot} srcW={dim.width} srcH={dim.height} screenW={scaledW} screenH={scaledH} textLayerGenerationKey={`${textLayerGenerationKey}:${pageRec.rotation}`} textLayerReadyKey={textLayerReadyByPage[pageNum] ?? null} />
+                      </>
+                    ) : (
+                      <div className="flex h-full w-full flex-col items-center justify-center bg-muted/5 border-2 border-dashed border-border/10">
+                        <Plus className="size-10 text-muted-foreground/20" />
+                        <span className="mt-2 text-xs font-bold uppercase tracking-widest text-muted-foreground/30">Blank Page</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
             </div>
           )
         })}
+
       </div>
     </ScrollArea>
   )

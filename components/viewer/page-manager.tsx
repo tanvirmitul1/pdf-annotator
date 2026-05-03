@@ -1,7 +1,8 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { motion } from "framer-motion"
+import { motion, Reorder } from "framer-motion"
+
 import { RotateCw, Trash2, Copy, Plus } from "lucide-react"
 import type { PDFDocumentProxy } from "pdfjs-dist"
 
@@ -84,15 +85,20 @@ export function PageManager({ pdfDocument }: PageManagerProps) {
       </div>
       
       <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-8">
+        <Reorder.Group
+          axis="x"
+          values={pageOrder}
+          onReorder={setPageOrder}
+          className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-8"
+        >
           {pageOrder.map((page, index) => (
             !page.deleted && (
-              <motion.div
-                layout
+              <Reorder.Item
                 key={`${page.originalIndex}-${index}`}
+                value={page}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="group relative"
+                className="group relative cursor-grab active:cursor-grabbing"
               >
                 <div className={cn(
                   "relative aspect-[3/4] rounded-2xl border-2 bg-card shadow-md transition-all duration-300 overflow-hidden",
@@ -145,7 +151,7 @@ export function PageManager({ pdfDocument }: PageManagerProps) {
                   
                   {/* Page Preview */}
                   <div 
-                    className="w-full h-full bg-card transition-transform duration-500 ease-out"
+                    className="w-full h-full bg-card transition-transform duration-500 ease-out pointer-events-none"
                     style={{ transform: `rotate(${page.rotation}deg)` }}
                   >
                     {page.type === "original" ? (
@@ -168,25 +174,23 @@ export function PageManager({ pdfDocument }: PageManagerProps) {
                     {index + 1}
                   </div>
                 </div>
-              </motion.div>
+              </Reorder.Item>
             )
           ))}
           
-          <motion.button
-            layout
+          <button
             type="button"
             onClick={() => addBlankPage(null)}
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-            className="aspect-[3/4] rounded-2xl border-2 border-dashed border-border/40 hover:border-primary/40 hover:bg-primary/5 transition-all flex flex-col items-center justify-center gap-3 text-muted-foreground group"
+            className="aspect-[3/4] rounded-2xl border-2 border-dashed border-border/40 hover:border-primary/40 hover:bg-primary/5 transition-all flex flex-col items-center justify-center gap-3 text-muted-foreground group h-full"
           >
             <div className="size-12 rounded-full border-2 border-dashed border-border/60 flex items-center justify-center group-hover:border-primary/40 group-hover:bg-primary/10 transition-all">
               <Plus className="size-6 transition-transform group-hover:scale-110" />
             </div>
             <span className="text-sm font-semibold tracking-tight">Add Blank Page</span>
-          </motion.button>
-        </div>
+          </button>
+        </Reorder.Group>
       </div>
+
     </div>
   )
 }
