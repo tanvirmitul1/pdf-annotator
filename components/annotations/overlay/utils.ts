@@ -70,8 +70,8 @@ export function getScreenBounds(
       rotation
     )
     const bottomRight = srcToScreen(
-      positionData.x + (positionData as any).width,
-      positionData.y + (positionData as any).height,
+      positionData.x + (positionData as { width: number }).width,
+      positionData.y + (positionData as { height: number }).height,
       srcW,
       srcH,
       zoom,

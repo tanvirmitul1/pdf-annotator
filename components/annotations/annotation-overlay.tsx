@@ -2,7 +2,6 @@
 
 import { AlertTriangle, Trash2 } from "lucide-react"
 import { srcToScreen } from "@/features/annotations/types"
-import { useViewer } from "@/features/viewer/provider"
 import { cn } from "@/lib/utils"
 
 
@@ -34,20 +33,17 @@ export function AnnotationOverlay(props: AnnotationOverlayProps) {
     overlayRef,
     pageAnnotations,
     resolvedMap,
-    hoverPos,
     hoveredAnnotation,
     selectionInfo,
     drawRect,
     drawPath,
     arrowDraw,
-    contextMenu,
     activeTool,
     selectedColor,
     selectedAnnotationId,
     draft,
     coarsePointer,
     setSelectionInfo,
-    setContextMenu,
     handlePointerMove,
     handlePointerDown,
     handlePointerUp,
@@ -58,7 +54,6 @@ export function AnnotationOverlay(props: AnnotationOverlayProps) {
     setSelectedColor,
     deleteAnnotationImmediate,
     updateAnnotation,
-    openAnnotation,
     addAnnotation,
     isDrawingMode,
     isDrawing,
@@ -116,19 +111,16 @@ export function AnnotationOverlay(props: AnnotationOverlayProps) {
               resolvedPosition={effectivePosition}
               isSelected={isSelected}
               isHovered={isHovered}
-              isEraser={isEraser}
               ringColor={ringColor}
-              opacity={effectivePosition.kind === "TEXT" ? 1 : (effectivePosition as any).opacity ?? 1}
+              opacity={"opacity" in effectivePosition ? (effectivePosition.opacity ?? 1) : 1}
               zoom={zoom}
               rotation={rotation}
               srcW={srcW}
               srcH={srcH}
               activeTool={activeTool}
               selectedAnnotationId={selectedAnnotationId}
-              canEdit={canEditAnnotation(annotation)}
               handleRadius={HANDLE_RADIUS}
               textboxPadding={TEXTBOX_PADDING}
-              draftId={draft?.id ?? null}
               onMouseEnter={() => { }}
               onMouseLeave={() => { }}
               onFocus={() => { }}
@@ -283,8 +275,8 @@ export function AnnotationOverlay(props: AnnotationOverlayProps) {
             btnY = screen.y + 12
           }
         } else if (effectivePos.kind === "ARROW") {
-          const midX = ((effectivePos as any).from.x + (effectivePos as any).to.x) / 2
-          const maxY = Math.max((effectivePos as any).from.y, (effectivePos as any).to.y)
+          const midX = (effectivePos.from.x + effectivePos.to.x) / 2
+          const maxY = Math.max(effectivePos.from.y, effectivePos.to.y)
           const screen = srcToScreen(midX, maxY, srcW, srcH, zoom, rotation)
           btnX = screen.x
           btnY = screen.y + 12
@@ -345,15 +337,15 @@ export function AnnotationOverlay(props: AnnotationOverlayProps) {
       {draft && draft.pageNumber === pageNumber && (
         <InlineToolbar
           position={srcToScreen(
-            (draft.positionData as any).x,
-            (draft.positionData as any).y,
+            (draft.positionData as { x: number }).x ?? 0,
+            (draft.positionData as { y: number }).y ?? 0,
             srcW,
             srcH,
             zoom,
             rotation
           )}
           selectedColor={selectedColor as string}
-          onColorSelect={(color) => updateAnnotation({ id: (draft as any).id, documentId, color: (color || selectedColor) as string })}
+          onColorSelect={(color) => updateAnnotation({ id: draft.id!, documentId, color: (color || selectedColor) as string })}
           onDismiss={discardDraft}
         />
       )}

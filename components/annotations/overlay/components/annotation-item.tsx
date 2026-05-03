@@ -17,7 +17,6 @@ interface AnnotationItemProps {
   resolvedPosition: PositionData
   isSelected: boolean
   isHovered: boolean
-  isEraser: boolean
   ringColor: string
   opacity: number
   zoom: number
@@ -26,10 +25,8 @@ interface AnnotationItemProps {
   srcH: number
   activeTool: string
   selectedAnnotationId: string | null
-  canEdit: boolean
   handleRadius: number
   textboxPadding: number
-  draftId: string | null
   onMouseEnter: (event: React.MouseEvent) => void
   onMouseLeave: () => void
   onFocus: (event: React.FocusEvent) => void
@@ -55,7 +52,6 @@ export function AnnotationItem({
   resolvedPosition,
   isSelected,
   isHovered,
-  isEraser,
   ringColor,
   opacity,
   zoom,
@@ -64,10 +60,8 @@ export function AnnotationItem({
   srcH,
   activeTool,
   selectedAnnotationId,
-  canEdit,
   handleRadius,
   textboxPadding,
-  draftId,
   onMouseEnter,
   onMouseLeave,
   onFocus,
@@ -252,22 +246,24 @@ export function AnnotationItem({
   }
 
   if (resolvedPosition.kind === "RECT" || resolvedPosition.kind === "TEXT_BOX" || resolvedPosition.kind === "CLOUD") {
+    const pos = resolvedPosition as { x: number; y: number; width: number; height: number }
     const topLeft = srcToScreen(
-      resolvedPosition.x,
-      resolvedPosition.y,
+      pos.x,
+      pos.y,
       srcW,
       srcH,
       zoom,
       rotation
     )
     const bottomRight = srcToScreen(
-      resolvedPosition.x + (resolvedPosition as any).width,
-      resolvedPosition.y + (resolvedPosition as any).height,
+      pos.x + pos.width,
+      pos.y + pos.height,
       srcW,
       srcH,
       zoom,
       rotation
     )
+
     const x = Math.min(topLeft.x, bottomRight.x)
     const y = Math.min(topLeft.y, bottomRight.y)
     const width = Math.abs(bottomRight.x - topLeft.x)
@@ -369,6 +365,7 @@ export function AnnotationItem({
             {editingAnnotationId === annotation.id ? (
               <textarea
                 autoFocus
+                placeholder="Type something..."
                 defaultValue={annotation.content ?? ""}
                 className="h-full w-full resize-none border-none bg-transparent p-0 outline-none focus:ring-0"
                 style={{
@@ -379,6 +376,10 @@ export function AnnotationItem({
                   lineHeight: 1.3,
                   caretColor: annotation.color,
                 }}
+                onFocus={(e) => {
+                  // Select all text on focus to make it easy to replace "Click to type" or existing text
+                  e.currentTarget.select()
+                }}
                 onBlur={(e) => {
                   onContentUpdate(annotation.id, e.currentTarget.value)
                   onStopEditing()
@@ -386,6 +387,11 @@ export function AnnotationItem({
                 onKeyDown={(e) => {
                   e.stopPropagation()
                   if (e.key === "Escape") {
+                    onContentUpdate(annotation.id, e.currentTarget.value)
+                    onStopEditing()
+                  }
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault()
                     onContentUpdate(annotation.id, e.currentTarget.value)
                     onStopEditing()
                   }
@@ -417,6 +423,7 @@ export function AnnotationItem({
             )}
           </foreignObject>
         ) : null}
+
         {renderResizeHandles(annotation, resolvedPosition)}
       </g>
     )
@@ -431,7 +438,7 @@ export function AnnotationItem({
       })
       .join(" ")
 
-    const isHighlighterStroke = (resolvedPosition as any).style === "highlighter"
+    const isHighlighterStroke = "style" in resolvedPosition && resolvedPosition.style === "highlighter"
 
     return (
       <g key={annotation.id} {...sharedProps}>
@@ -507,7 +514,7 @@ export function AnnotationItem({
       <g 
         key={annotation.id} 
         {...sharedProps}
-        transform={`rotate(${(resolvedPosition as any).rotation || 0} ${x + width / 2} ${y + height / 2})`}
+        transform={`rotate(${"rotation" in resolvedPosition ? (resolvedPosition.rotation || 0) : 0} ${x + width / 2} ${y + height / 2})`}
       >
         {resolvedPosition.kind === "IMAGE" ? (
           <image
@@ -517,7 +524,7 @@ export function AnnotationItem({
           />
         ) : (
           <path
-            d={(resolvedPosition as any).data}
+            d={"data" in resolvedPosition ? (resolvedPosition.data as string) : ""}
             fill={annotation.color}
             opacity={opacity}
             transform={`translate(${x}, ${y}) scale(${width / 100}, ${height / 100})`}
