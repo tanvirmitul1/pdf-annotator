@@ -6,12 +6,11 @@ import { toast } from "sonner"
 
 import {
   useAddTagMutation,
-  useCreateAnnotationMutation,
-  useDeleteAnnotationMutation,
   useListByDocumentQuery,
   useRemoveTagMutation,
-  useUpdateAnnotationMutation,
 } from "@/features/annotations/api"
+import { useAnnotationManager } from "@/features/annotations/use-annotation-manager"
+import type { AnnotationWithTags } from "@/features/annotations/types"
 import type {
   AnnotationStatus,
   AnnotationType,
@@ -143,11 +142,9 @@ export function AnnotationPanel({ documentId }: AnnotationPanelProps) {
   const panelRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  const [updateAnnotation] = useUpdateAnnotationMutation()
-  const [createAnnotation] = useCreateAnnotationMutation()
-  const [deleteAnnotation] = useDeleteAnnotationMutation()
   const [addTag] = useAddTagMutation()
   const [removeTag] = useRemoveTagMutation()
+  const { updateAnnotation, deleteAnnotation, restoreAnnotation } = useAnnotationManager(documentId)
 
   useEffect(() => {
     setComment(annotation?.content ?? "")
@@ -243,16 +240,16 @@ export function AnnotationPanel({ documentId }: AnnotationPanelProps) {
       setSaveStatus("saving")
 
       try {
-        const updated = await updateAnnotation({
+        updateAnnotation({
           id: annotation.id,
           documentId,
           content,
-        }).unwrap()
+        })
 
         pushUndo({
           action: "update",
           before: annotation,
-          after: updated,
+          after: { ...annotation, content } as AnnotationWithTags,
         })
 
         setSaveStatus("saved")
@@ -297,16 +294,16 @@ export function AnnotationPanel({ documentId }: AnnotationPanelProps) {
     setSaveStatus("saving")
 
     try {
-      const updated = await updateAnnotation({
+      updateAnnotation({
         id: annotation.id,
         documentId,
         color,
-      }).unwrap()
+      })
 
       pushUndo({
         action: "update",
         before: annotation,
-        after: updated,
+        after: { ...annotation, color } as AnnotationWithTags,
       })
 
       setSaveStatus("saved")
@@ -369,18 +366,11 @@ export function AnnotationPanel({ documentId }: AnnotationPanelProps) {
       return
     }
 
-    await createAnnotation({
-      documentId,
-      pageNumber: annotation.pageNumber,
-      type: annotation.type,
-      status: annotation.status,
-      assigneeId: annotation.assignee?.id ?? null,
-      color: annotation.color,
-      positionData: annotation.positionData,
-      ...(annotation.content ? { content: annotation.content } : {}),
-    }).unwrap()
+    restoreAnnotation({ id: annotation.id, documentId })
 
-    // Note: The annotation is already in the cache via optimistic update
+    // Note: The annotation is already in the cache via optimistic update,
+    // though restoreAnnotation doesn't fully optimistically restore in the UI yet.
+    // However, it queues it for the next flush.
   }
 
   async function handleDelete() {
@@ -403,7 +393,7 @@ export function AnnotationPanel({ documentId }: AnnotationPanelProps) {
     pushUndo({ action: "delete", before: annotation, after: null })
 
     try {
-      await deleteAnnotation({ id: annotation.id, documentId }).unwrap()
+      deleteAnnotation({ id: annotation.id, documentId })
       closeAnnotation()
 
       toast.success("Annotation deleted", {
@@ -446,16 +436,16 @@ export function AnnotationPanel({ documentId }: AnnotationPanelProps) {
     setSaveStatus("saving")
 
     try {
-      const updated = await updateAnnotation({
+      updateAnnotation({
         id: annotation.id,
         documentId,
         status,
-      }).unwrap()
+      })
 
       pushUndo({
         action: "update",
         before: annotation,
-        after: updated,
+        after: { ...annotation, status } as AnnotationWithTags,
       })
 
       setSaveStatus("saved")
@@ -482,16 +472,16 @@ export function AnnotationPanel({ documentId }: AnnotationPanelProps) {
     setSaveStatus("saving")
 
     try {
-      const updated = await updateAnnotation({
+      updateAnnotation({
         id: annotation.id,
         documentId,
         assigneeId: nextAssigneeId,
-      }).unwrap()
+      })
 
       pushUndo({
         action: "update",
         before: annotation,
-        after: updated,
+        after: { ...annotation, assignee: assignableCollaborators.find(c => c.id === nextAssigneeId) || null } as unknown as AnnotationWithTags,
       })
 
       setSaveStatus("saved")

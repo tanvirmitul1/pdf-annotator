@@ -206,3 +206,35 @@ export const AddTagSchema = z.object({
 })
 
 export type AddTagInput = z.infer<typeof AddTagSchema>
+
+// ─── Bulk Sync Schema ─────────────────────────────────────────────────────────
+
+export const SyncOperationSchema = z.discriminatedUnion("type", [
+  z.object({
+    type: z.literal("create"),
+    clientId: z.string().uuid(),
+    payload: CreateAnnotationSchema,
+  }),
+  z.object({
+    type: z.literal("update"),
+    id: z.string(),
+    payload: UpdateAnnotationSchema,
+  }),
+  z.object({
+    type: z.literal("delete"),
+    id: z.string(),
+  }),
+  z.object({
+    type: z.literal("restore"),
+    id: z.string(),
+  }),
+])
+
+export const BulkSyncSchema = z.object({
+  documentId: z.string().uuid(),
+  operations: z.array(SyncOperationSchema).min(1).max(100),
+})
+
+export type SyncOperationInput = z.infer<typeof SyncOperationSchema>
+export type BulkSyncInput = z.infer<typeof BulkSyncSchema>
+

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import Link from "next/link"
 import {
   ChevronLeft,
@@ -17,6 +17,8 @@ import {
   Bookmark,
   BookmarkCheck,
   MoreVertical,
+  Save,
+  RefreshCw,
 } from "lucide-react"
 import type { DocumentMemberRole } from "@prisma/client"
 import type { SessionUser } from "@/features/auth/slice"
@@ -49,6 +51,10 @@ import { DocumentShareDialog } from "./document-share-dialog"
 import { UserMenu } from "@/components/common/user-menu"
 import { ThemeToggle } from "@/components/common/theme-toggle"
 import { cn } from "@/lib/utils"
+import { Switch } from "@/components/ui/switch"
+import { Label } from "@/components/ui/label"
+import { useAnnotationManager } from "@/features/annotations/use-annotation-manager"
+import { toast } from "sonner"
 
 import { SHORTCUTS } from "@/features/shortcuts/definitions"
 
@@ -127,6 +133,34 @@ export function Toolbar({
   const [deleteBookmark] = useDeleteBookmarkMutation()
 
   const currentBookmark = bookmarks.find((b) => b.pageNumber === currentPage)
+
+  const autosaveEnabled = useViewer((s) => s.autosaveEnabled)
+  const setAutosaveEnabled = useViewer((s) => s.setAutosaveEnabled)
+  const { flushNow, getPendingCount } = useAnnotationManager(documentId)
+  const [pendingCount, setPendingCount] = useState(0)
+  const [isSaving, setIsSaving] = useState(false)
+
+  // Poll for pending count to update UI
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPendingCount(getPendingCount())
+    }, 2000)
+    return () => clearInterval(interval)
+  }, [getPendingCount])
+
+  const handleManualSave = async () => {
+    if (isSaving) return
+    setIsSaving(true)
+    try {
+      await flushNow()
+      toast.success("Progress saved")
+      setPendingCount(0)
+    } catch {
+      toast.error("Failed to save progress")
+    } finally {
+      setIsSaving(false)
+    }
+  }
 
   const handlePageSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -259,10 +293,44 @@ export function Toolbar({
           <span className="max-w-[240px] truncate text-sm font-bold tracking-tight text-foreground">
             {documentName}
           </span>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             {saveStatusSlot}
+            <div className="flex items-center gap-2 border-l border-border/40 pl-3">
+               <Label htmlFor="autosave-toggle" className="text-[10px] font-bold uppercase tracking-wider opacity-50 cursor-pointer">
+                 Autosave
+               </Label>
+               <Switch 
+                 id="autosave-toggle"
+                 checked={autosaveEnabled} 
+                 onCheckedChange={setAutosaveEnabled}
+                 className="h-4 w-7 data-[state=checked]:bg-primary scale-75"
+               />
+            </div>
+
+            {!autosaveEnabled && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleManualSave}
+                disabled={isSaving}
+                className="h-7 gap-2 rounded-lg px-2 text-[10px] font-bold uppercase tracking-wider text-primary hover:bg-primary/10"
+              >
+                {isSaving ? (
+                  <RefreshCw className="size-3 animate-spin" />
+                ) : (
+                  <Save className="size-3" />
+                )}
+                Save Progress
+                {pendingCount > 0 && (
+                  <span className="ml-1 flex size-4 items-center justify-center rounded-full bg-primary text-[8px] text-primary-foreground animate-in zoom-in">
+                    {pendingCount}
+                  </span>
+                )}
+              </Button>
+            )}
+
             {collaborators.length > 1 && (
-              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest opacity-50">
+              <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-widest opacity-50 border-l border-border/40 pl-3">
                 {collaborators.length} collaborators
               </span>
             )}

@@ -62,6 +62,8 @@ export interface ViewerState {
   selectedPageIndices: number[]
   isMultiSelectMode: boolean
   duplicationIntentId: string | null
+  autosaveEnabled: boolean
+  setAutosaveEnabled: (enabled: boolean) => void
 
   // ─── Annotation state ────────────────────────────────────────────────────
   /** The currently active annotation tool */
@@ -178,6 +180,8 @@ export const createViewerStore = (documentId: string, isAuthenticated = false, o
       selectedPageIndices: [],
       isMultiSelectMode: false,
       duplicationIntentId: null,
+      autosaveEnabled: true,
+
 
       // ─── Annotation defaults ──────────────────────────────────────────────
       activeTool: "select" as ToolId,
@@ -217,6 +221,8 @@ export const createViewerStore = (documentId: string, isAuthenticated = false, o
           }
           return newState
         }),
+
+      setAutosaveEnabled: (autosaveEnabled) => set({ autosaveEnabled }),
 
       setRotation: (rotation) => set({ rotation }),
       setSidebarTab: (sidebarTab) => set({ sidebarTab, sidebarOpen: true }),

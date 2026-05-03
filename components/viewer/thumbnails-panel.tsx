@@ -25,7 +25,7 @@ const THUMB_HEIGHT = 150
 
 export function ThumbnailsPanel({
   pdfDocument,
-  totalPages,
+  totalPages: _totalPages,
 }: ThumbnailsPanelProps) {
   const currentPage = useViewer((s) => s.currentPage)
   const setPage = useViewer((s) => s.setPage)
@@ -47,7 +47,7 @@ export function ThumbnailsPanel({
   const virtualizer = useVirtualizer({
     count: displayPages.length,
     getScrollElement: () => containerRef.current,
-    estimateSize: () => THUMB_HEIGHT + 70, // Increased for spacing, footer, and insertion buttons
+    estimateSize: () => THUMB_HEIGHT + 90, // Increased further to prevent overlapping
 
     overscan: 3,
   })

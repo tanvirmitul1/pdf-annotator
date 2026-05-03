@@ -14,12 +14,8 @@ import {
   useUpdatePageOrderMutation,
 } from "@/features/viewer/api"
 import { useDebouncedMutation } from "@/hooks/use-debounced-mutation"
-import {
-  useDeleteAnnotationMutation,
-  useUpdateAnnotationMutation,
-  useRestoreAnnotationMutation,
-  useListByDocumentQuery,
-} from "@/features/annotations/api"
+import { useListByDocumentQuery } from "@/features/annotations/api"
+import { useAnnotationManager } from "@/features/annotations/use-annotation-manager"
 import { cn } from "@/lib/utils"
 import { useGetMeQuery } from "@/features/auth/slice"
 import { useShortcuts } from "@/hooks/use-shortcuts"
@@ -194,9 +190,7 @@ export function ViewerShellInner({
        lastPersistedOrderRef.current = orderStr
     }
   }, [pageOrder, debouncedUpdatePageOrder])
-  const [deleteAnnotation] = useDeleteAnnotationMutation()
-  const [updateAnnotation] = useUpdateAnnotationMutation()
-  const [restoreAnnotation] = useRestoreAnnotationMutation()
+  const { updateAnnotation, deleteAnnotation, restoreAnnotation } = useAnnotationManager(documentId)
 
   // Multi-user polling: poll every 10s when collaborators exist and user isn't drawing
   const hasCollaborators = (data?.collaborators?.length ?? 0) > 1
@@ -214,18 +208,18 @@ export function ViewerShellInner({
     try {
       setSaveStatus("saving")
       if (entry.action === "create" && entry.after) {
-        await deleteAnnotation({ id: entry.after.id, documentId }).unwrap()
+        deleteAnnotation({ id: entry.after.id, documentId })
       } else if (entry.action === "delete" && entry.before) {
-        await restoreAnnotation({ id: entry.before.id, documentId }).unwrap()
+        restoreAnnotation({ id: entry.before.id, documentId })
       } else if (entry.action === "update" && entry.before) {
         const { content, color, positionData } = entry.before
-        await updateAnnotation({
+        updateAnnotation({
           id: entry.before.id,
           documentId,
           content: content ?? undefined,
           color,
           positionData,
-        }).unwrap()
+        })
       }
       setSaveStatus("saved")
       setTimeout(() => setSaveStatus("idle"), 2000)
@@ -242,18 +236,18 @@ export function ViewerShellInner({
     try {
       setSaveStatus("saving")
       if (entry.action === "create" && entry.after) {
-        await restoreAnnotation({ id: entry.after.id, documentId }).unwrap()
+        restoreAnnotation({ id: entry.after.id, documentId })
       } else if (entry.action === "delete" && entry.before) {
-        await deleteAnnotation({ id: entry.before.id, documentId }).unwrap()
+        deleteAnnotation({ id: entry.before.id, documentId })
       } else if (entry.action === "update" && entry.after) {
         const { content, color, positionData } = entry.after
-        await updateAnnotation({
+        updateAnnotation({
           id: entry.after.id,
           documentId,
           content: content ?? undefined,
           color,
           positionData,
-        }).unwrap()
+        })
       }
       setSaveStatus("saved")
       setTimeout(() => setSaveStatus("idle"), 2000)
@@ -265,7 +259,7 @@ export function ViewerShellInner({
     if (!rightPanelAnnotationId) return
     try {
       setSaveStatus("saving")
-      await deleteAnnotation({ id: rightPanelAnnotationId, documentId }).unwrap()
+      deleteAnnotation({ id: rightPanelAnnotationId, documentId })
       closeAnnotation()
       setSaveStatus("saved")
       setTimeout(() => setSaveStatus("idle"), 2000)

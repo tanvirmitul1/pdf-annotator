@@ -4,7 +4,7 @@ const nextConfig = {
   // Native .node binaries used by the BullMQ worker (canvas rendering,
   // pdf.js processing) cannot be bundled by webpack. Mark them external
   // so Next.js leaves them to Node.js require() at runtime.
-  serverExternalPackages: ["@napi-rs/canvas", "pdfjs-dist", "sharp", "canvas", "bullmq", "ioredis"],
+  serverExternalPackages: ["@napi-rs/canvas", "pdfjs-dist", "sharp", "canvas", "bullmq", "ioredis", "@opentelemetry/instrumentation"],
 
   webpack(config, { isServer }) {
     if (isServer) {

@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { motion, Reorder } from "framer-motion"
+import { Reorder } from "framer-motion"
 
 import { RotateCw, Trash2, Copy, Plus } from "lucide-react"
 import type { PDFDocumentProxy } from "pdfjs-dist"

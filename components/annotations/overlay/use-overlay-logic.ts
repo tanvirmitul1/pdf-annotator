@@ -23,11 +23,9 @@ import {
   TOOL_TO_TYPE 
 } from "@/features/annotations/types"
 import { resolveTextAnchor } from "@/features/annotations/reanchor"
-import { 
+import {
   useListByDocumentQuery, 
   useCreateAnnotationMutation, 
-  useDeleteAnnotationMutation, 
-  useUpdateAnnotationMutation 
 } from "@/features/annotations/api"
 import { useAnnotationManager } from "@/features/annotations/use-annotation-manager"
 import { useViewer, useViewerStore } from "@/features/viewer/provider"
@@ -77,9 +75,7 @@ export function useOverlayLogic(props: AnnotationOverlayProps) {
 
   const { data: allAnnotations = [] } = useListByDocumentQuery(documentId)
   const [createAnnotation] = useCreateAnnotationMutation()
-  const [deleteAnnotation] = useDeleteAnnotationMutation()
-  const [updateAnnotation] = useUpdateAnnotationMutation()
-  const { addAnnotation } = useAnnotationManager(documentId)
+  const { addAnnotation, updateAnnotation, deleteAnnotation } = useAnnotationManager(documentId)
 
   const activeTool = useViewer((state) => state.activeTool)
   const selectedColor = useViewer((state) => state.selectedColor)
@@ -199,17 +195,23 @@ export function useOverlayLogic(props: AnnotationOverlayProps) {
       const target = pageAnnotations.find((a) => a.id === relocatingAnnotationId)
       if (!target || target.positionData.kind !== "TEXT") return
 
-      const updated = await updateAnnotation({
+      const nextPosition = {
+        kind: "TEXT" as const,
+        pageNumber,
+        anchor,
+      }
+
+      updateAnnotation({
         id: target.id,
         documentId,
-        positionData: {
-          kind: "TEXT",
-          pageNumber,
-          anchor,
-        },
-      }).unwrap()
+        positionData: nextPosition,
+      })
 
-      pushUndo({ action: "update", before: target, after: updated })
+      pushUndo({ 
+        action: "update", 
+        before: target, 
+        after: { ...target, positionData: nextPosition } as AnnotationWithTags 
+      })
       setAnnotationOrphaned(target.id, false)
       cancelRelocatingAnnotation()
       openAnnotation(target.id)
@@ -256,9 +258,8 @@ export function useOverlayLogic(props: AnnotationOverlayProps) {
           after: null 
         })
 
-        // Trigger the mutation
-        const result = await deleteAnnotation({ id: annotation.id, documentId }).unwrap()
-        console.log("Annotation deleted successfully:", result)
+        // Trigger the manager delete
+        deleteAnnotation({ id: annotation.id, documentId })
 
         if (options?.showToast !== false) {
           toast.success("Annotation deleted", {
@@ -773,12 +774,16 @@ export function useOverlayLogic(props: AnnotationOverlayProps) {
         manipulationRef.current = null
 
         if (latestPosition && movedDuringManipulationRef.current) {
-          const updated = await updateAnnotation({
+          updateAnnotation({
             id: state.annotation.id,
             documentId,
             positionData: latestPosition,
-          }).unwrap()
-          pushUndo({ action: "update", before: state.annotation, after: updated })
+          })
+          pushUndo({ 
+            action: "update", 
+            before: state.annotation, 
+            after: { ...state.annotation, positionData: latestPosition } as AnnotationWithTags 
+          })
         }
         movedDuringManipulationRef.current = false
       }

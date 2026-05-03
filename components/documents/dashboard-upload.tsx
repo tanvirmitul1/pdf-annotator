@@ -14,9 +14,21 @@ import {
   DialogDescription,
 } from "@/components/ui/responsive-dialog"
 
-export function DashboardUpload() {
+export function DashboardUpload({ variant = "button" }: { variant?: "button" | "inline" }) {
   const [isOpen, setIsOpen] = useState(false)
   const router = useRouter()
+
+  if (variant === "inline") {
+    return (
+      <div className="w-full">
+        <DocumentUpload
+          onUploadSuccess={({ document }) => {
+            router.push(`/app/documents/${document.id}`)
+          }}
+        />
+      </div>
+    )
+  }
 
   return (
     <>

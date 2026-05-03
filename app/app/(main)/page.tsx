@@ -15,21 +15,32 @@ export default async function AppDashboardPage() {
   const firstName = session.user.name?.split(" ")[0] ?? "there"
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Page header */}
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex flex-col gap-6">
         <div>
           <p className="text-sm text-muted-foreground">{getGreeting()}, {firstName}</p>
-          <h1 className="mt-0.5 font-heading text-2xl font-semibold tracking-tight text-foreground">
-            Documents
+          <h1 className="mt-0.5 font-heading text-3xl font-bold tracking-tight text-foreground">
+            Workspace
           </h1>
         </div>
-        <DashboardUpload />
-
+        
+        {/* Prominent Upload Area */}
+        <div className="grid gap-6 md:grid-cols-3">
+           <div className="md:col-span-2">
+              <DashboardUpload variant="inline" />
+           </div>
+           <div className="flex flex-col justify-center gap-2 rounded-xl border border-border/40 bg-card/50 p-6 backdrop-blur-sm">
+              <h3 className="font-semibold">Quick Start</h3>
+              <p className="text-xs text-muted-foreground">Upload your PDF or image files to start annotating, tagging, and organizing your study materials.</p>
+           </div>
+        </div>
       </div>
 
-      {/* Document list */}
-      <DocumentList />
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold tracking-tight">Recent Documents</h2>
+        <DocumentList />
+      </div>
     </div>
   )
 }

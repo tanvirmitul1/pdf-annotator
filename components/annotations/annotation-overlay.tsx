@@ -50,7 +50,6 @@ export function AnnotationOverlay(props: AnnotationOverlayProps) {
     handleAnnotationActivate,
     beginManipulation,
     discardDraft,
-    canEditAnnotation,
     setSelectedColor,
     deleteAnnotationImmediate,
     updateAnnotation,
@@ -102,7 +101,6 @@ export function AnnotationOverlay(props: AnnotationOverlayProps) {
 
           const isSelected = selectedAnnotationId === annotation.id
           const isHovered = !coarsePointer && hoveredAnnotation?.id === annotation.id
-          const isEraser = activeTool === "eraser"
 
           const effectivePosition = livePositions[annotation.id] ?? resolved.positionData
 

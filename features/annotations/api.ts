@@ -64,9 +64,25 @@ export const annotationsApi = api.injectEndpoints({
         },
       }),
       transformResponse: (res: { data: Array<{ id: string; clientId?: string; status: string }>; count: number }) => res.data,
-      // No onQueryStarted — cache already has the annotations locally
       invalidatesTags: [],
     }),
+
+    bulkSyncAnnotations: b.mutation<
+      any[],
+      { documentId: string; operations: any[] }
+    >({
+      query: ({ documentId, operations }) => ({
+        url: `/annotations/sync`,
+        method: "POST",
+        body: {
+          documentId,
+          operations,
+        },
+      }),
+      transformResponse: (res: { data: any[] }) => res.data,
+      invalidatesTags: [],
+    }),
+
 
     // ─── Create annotation (optimistic) ─────────────────────────────────────
     createAnnotation: b.mutation<
@@ -318,7 +334,9 @@ export const {
   useListByDocumentQuery,
   useCreateAnnotationMutation,
   useBulkCreateAnnotationsMutation,
+  useBulkSyncAnnotationsMutation,
   useUpdateAnnotationMutation,
+
   useDeleteAnnotationMutation,
   useRestoreAnnotationMutation,
   useAddTagMutation,
