@@ -77,10 +77,10 @@ export async function processDocumentPostProcess({ documentId }: DocumentPostPro
 type PdfDocumentRecord = Pick<Document, "id" | "userId" | "name" | "fileSize" | "storageKey">
 type ProgressFn = (percent: number) => Promise<unknown>
 
-import { createWorker } from "tesseract.js"
+import { createWorker, createScheduler } from "tesseract.js"
 
 /** Process pages in parallel batches to avoid overwhelming memory. */
-const PAGE_CONCURRENCY = 15
+const PAGE_CONCURRENCY = 8
 
 async function processPdf(document: PdfDocumentRecord, storage: StorageAdapter, setProgress: ProgressFn) {
   const t0 = Date.now()
@@ -154,7 +154,7 @@ async function processPdf(document: PdfDocumentRecord, storage: StorageAdapter, 
   await setProgress(98)
 }
 
-import { PdfAnalyzer, type PdfObject } from "@/lib/pdf/analyzer"
+import { PdfAnalyzer, isGarbageText, type PdfObject } from "@/lib/pdf/analyzer"
 
 async function extractObjectMetadata(
   pdf: pdfjs.PDFDocumentProxy,
@@ -168,9 +168,30 @@ async function extractObjectMetadata(
   const pages = Array.from({ length: numPages }, (_, i) => i + 1)
   let completed = 0
 
+  // Lazy OCR scheduler — only initialized when the first garbage page is detected.
+  // This avoids ~8-12s of Tesseract worker startup for PDFs with clean text layers.
+  const ocrRef: { scheduler: ReturnType<typeof createScheduler> | null } = { scheduler: null }
+
+  async function getOcrScheduler() {
+    if (!ocrRef.scheduler) {
+      console.log(`[${documentId}] Initializing OCR scheduler (first garbage page detected)...`)
+      const t = Date.now()
+      ocrRef.scheduler = createScheduler()
+      const numWorkers = Math.min(4, PAGE_CONCURRENCY)
+      await Promise.all(
+        Array.from({ length: numWorkers }).map(async () => {
+          const worker = await createWorker(["eng", "ben"])
+          ocrRef.scheduler!.addWorker(worker)
+        })
+      )
+      console.log(`[${documentId}] OCR scheduler ready in ${Date.now() - t}ms (${numWorkers} workers)`)
+    }
+    return ocrRef.scheduler
+  }
+
   const processPage = async (pageNum: number) => {
     const page = await pdf.getPage(pageNum)
-    const objects = await PdfAnalyzer.analyzePage(page, pageNum)
+    let objects = await PdfAnalyzer.analyzePage(page, pageNum)
     
     // Aggregate full text for search
     let fullText = objects
@@ -179,14 +200,14 @@ async function extractObjectMetadata(
       .join(" ")
       .trim()
 
-    // OCR Fallback if page has objects but no text (e.g., scanned image)
-    if (fullText.length < 20) {
-      console.log(`[${documentId}] Page ${pageNum} lacks text layer, running OCR...`)
-      const ocrText = await performOcrOnPage(page)
-      if (ocrText) {
-        fullText = ocrText
-        // For OCR, we might want to create a giant text object or many small ones.
-        // For now, let's just update fullText so it's searchable.
+    // OCR Fallback if page has no text or text is garbage (e.g., scanned image or bad font encoding)
+    if (isGarbageText(fullText)) {
+      console.log(`[${documentId}] Page ${pageNum} text layer is missing or corrupted, running OCR...`)
+      const ocrScheduler = await getOcrScheduler()
+      const ocrResult = await performOcrOnPage(page, pageNum, ocrScheduler)
+      if (ocrResult) {
+        fullText = ocrResult.text
+        objects = ocrResult.objects
       }
     }
 
@@ -202,16 +223,34 @@ async function extractObjectMetadata(
   }
 
   // Batch for performance
-  for (let i = 0; i < numPages; i += PAGE_CONCURRENCY) {
-    const batch = pages.slice(i, i + PAGE_CONCURRENCY)
-    await Promise.all(batch.map(processPage))
+  try {
+    for (let i = 0; i < numPages; i += PAGE_CONCURRENCY) {
+      const batch = pages.slice(i, i + PAGE_CONCURRENCY)
+      await Promise.all(batch.map(processPage))
+    }
+  } finally {
+    // Cleanup workers to release memory (only if they were ever created)
+    if (ocrRef.scheduler) {
+      await ocrRef.scheduler.terminate()
+    }
   }
+
 
   return { textEntries }
 }
 
-async function performOcrOnPage(page: pdfjs.PDFPageProxy): Promise<string> {
-  const viewport = page.getViewport({ scale: 2.0 }) // Higher scale for better OCR
+
+interface OcrWord {
+  bbox: { x0: number; y0: number; x1: number; y1: number }
+  text: string
+}
+
+async function performOcrOnPage(
+  page: pdfjs.PDFPageProxy, 
+  pageNum: number, 
+  scheduler: ReturnType<typeof createScheduler>
+): Promise<{ text: string, objects: PdfObject[] } | null> {
+  const viewport = page.getViewport({ scale: 2.0 }) // High scale for recognition
   const { createCanvas } = await import("@napi-rs/canvas")
   const canvas = createCanvas(viewport.width, viewport.height)
   const context = canvas.getContext("2d")
@@ -221,15 +260,36 @@ async function performOcrOnPage(page: pdfjs.PDFPageProxy): Promise<string> {
     canvasContext: context as unknown as CanvasRenderingContext2D, 
     viewport 
   }).promise
-  const imageBuffer = await canvas.encode("png")
 
-  // Use a fresh worker for now to avoid state issues between pages in a single job
-  // In a production environment, you'd use a pool or a single long-lived worker
-  const worker = await createWorker(["eng", "ben"]) // Support English and Bangla
-  const { data: { text } } = await worker.recognize(imageBuffer)
-  await worker.terminate()
+  // OPTIMIZATION: Use Sharp to pre-process the image for OCR
+  // This drastically improves accuracy for Bangla scripts
+  const rawImage = await canvas.encode("png")
+  const processedImage = await sharp(rawImage)
+    .grayscale() // Remove color noise
+    .normalize() // Expand contrast
+    .sharpen()   // Make edges clearer
+    .toBuffer()
 
-  return text.replace(/\0/g, "")
+  const result = await scheduler.addJob("recognize", processedImage) as unknown as { data: { text: string; words: OcrWord[] } }
+  const { text, words } = result.data
+
+  // Convert Tesseract words into PdfObjects for selection
+  const objects: PdfObject[] = words.map((word: OcrWord, idx: number) => ({
+    id: `ocr-${pageNum}-${idx}`,
+    type: "text" as const,
+    pageNumber: pageNum,
+    x: word.bbox.x0 / 2.0, 
+    y: word.bbox.y0 / 2.0,
+    width: (word.bbox.x1 - word.bbox.x0) / 2.0,
+    height: (word.bbox.y1 - word.bbox.y0) / 2.0,
+    content: word.text,
+    fontSize: (word.bbox.y1 - word.bbox.y0) / 2.0 * 0.8,
+  }))
+
+  return {
+    text: text.replace(/\0/g, ""),
+    objects
+  }
 }
 
 async function generatePdfThumbnail(

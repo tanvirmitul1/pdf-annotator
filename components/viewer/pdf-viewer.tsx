@@ -270,6 +270,7 @@ export function PdfViewer({
                           onTextClick={handleTextClick}
                           searchMatches={searchMatches.filter(m => m.pageNumber === pageNum)}
                           isCurrentMatch={currentMatch?.pageNumber === pageNum}
+                          objects={objects}
                         />
                         <PdfObjectLayer pageNumber={pageNum} objects={objects} zoom={displayZoom} rotation={totalRot} screenWidth={scaledW} screenHeight={scaledH} />
                         <AnnotationOverlay documentId={documentId} pageNumber={pageNum} zoom={displayZoom} rotation={totalRot} srcW={dim.width} srcH={dim.height} screenW={scaledW} screenH={scaledH} textLayerGenerationKey={`${textLayerGenerationKey}:${pageRec.rotation}`} textLayerReadyKey={textLayerReadyByPage[pageNum] ?? null} />

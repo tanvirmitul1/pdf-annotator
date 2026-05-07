@@ -4,8 +4,10 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react"
 import type { PDFPageProxy, RenderTask } from "pdfjs-dist"
 import { AlertCircle, RefreshCw } from "lucide-react"
 import { useViewer } from "@/features/viewer/provider"
+import { srcToScreen } from "@/features/annotations/types"
 
 import { Button } from "@/components/ui/button"
+import { type PdfObject, isGarbageText } from "@/lib/pdf/text-quality"
 
 interface TextLayerItem {
   id: string
@@ -30,6 +32,7 @@ export interface PdfCanvasProps {
   onTextClick?: (text: string, rect: DOMRect, pageNumber: number) => void
   searchMatches?: Array<{ startOffset: number; endOffset: number }>
   isCurrentMatch?: boolean
+  objects?: PdfObject[]
 }
 
 type TransformMatrix = [number, number, number, number, number, number]
@@ -60,6 +63,7 @@ export function PdfCanvas({
   searchMatches = [],
   isCurrentMatch = false,
   onTextClick,
+  objects = [],
 }: PdfCanvasProps) {
   const activeTool = useViewer((s) => s.activeTool)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -158,6 +162,32 @@ export function PdfCanvas({
     async function loadTextLayer() {
       const viewport = pageProxy.getViewport({ scale: zoom, rotation })
       const textContent = await pageProxy.getTextContent()
+      const nativeText = textContent.items.map(i => ("str" in i ? i.str : "")).join(" ")
+
+      // If native text is garbage and we have OCR objects, prefer OCR
+      if (isGarbageText(nativeText) && objects.some(o => o.id.startsWith("ocr-"))) {
+        const ocrItems: TextLayerItem[] = objects.map((obj) => {
+          const screenPoint = srcToScreen(obj.x, obj.y, naturalWidth, naturalHeight, zoom, rotation as 0 | 90 | 180 | 270)
+          
+          return {
+            id: obj.id,
+            text: obj.content || "",
+            left: screenPoint.x,
+            top: screenPoint.y,
+            fontSize: (obj.fontSize || 12) * zoom,
+            scaleX: 1,
+            angle: (rotation * Math.PI) / 180,
+            fontFamily: "Inter, sans-serif",
+          }
+        })
+        
+        if (!cancelled) {
+          setTextItems(ocrItems)
+          setPendingTextLayerGenerationKey(textLayerGenerationKey)
+        }
+        return
+      }
+
       const styles = textContent.styles as Record<
         string,
         { ascent?: number; fontFamily?: string; vertical?: boolean }
@@ -204,7 +234,7 @@ export function PdfCanvas({
     return () => {
       cancelled = true
     }
-  }, [active, onTextLayerReady, page, rotation, textLayerGenerationKey, zoom])
+  }, [active, onTextLayerReady, page, rotation, textLayerGenerationKey, zoom, naturalWidth, naturalHeight, objects])
 
   useLayoutEffect(() => {
     if (

@@ -1,4 +1,5 @@
 import type { TextAnchor, TextRect } from "@/features/annotations/types"
+import { mergeRects } from "./geometry"
 
 export interface ReanchorSegment {
   text: string
@@ -135,7 +136,7 @@ export function resolveTextAnchor(
   }
 
   return {
-    rects,
+    rects: mergeRects(rects),
     orphaned: false,
   }
 }

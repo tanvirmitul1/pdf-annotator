@@ -16,6 +16,7 @@ import {
   resizePositionData,
   rotatePositionData,
   simplifyPath,
+  mergeRects,
   type ResizeHandle
 } from "@/features/annotations/geometry"
 import {
@@ -466,7 +467,7 @@ export function useOverlayLogic(props: AnnotationOverlayProps) {
       }
 
       const anchor = { 
-        rects: sourceRects, 
+        rects: mergeRects(sourceRects), 
         quotedText: selectedText.slice(0, 5000), 
         prefix, 
         suffix 

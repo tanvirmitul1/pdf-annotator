@@ -1,17 +1,5 @@
 import * as pdfjs from "pdfjs-dist"
-
-export interface PdfObject {
-  id: string
-  type: "text" | "image"
-  pageNumber: number
-  x: number
-  y: number
-  width: number
-  height: number
-  content?: string
-  fontName?: string
-  fontSize?: number
-}
+import { type PdfObject } from "./text-quality"
 
 export class PdfAnalyzer {
   static async analyzePage(page: pdfjs.PDFPageProxy, pageNum: number): Promise<PdfObject[]> {
@@ -72,7 +60,19 @@ export class PdfAnalyzer {
       console.error(`[PdfAnalyzer] Failed to get operator list for page ${pageNum}:`, opErr)
     }
 
+    // 3. Sort text objects by reading order (Top-to-Bottom, then Left-to-Right)
+    // We use a small threshold for Y to group items into lines
+    objects.sort((a, b) => {
+      const yDiff = a.y - b.y
+      if (Math.abs(yDiff) > 5) return yDiff
+      return a.x - b.x
+    })
+
     console.log(`[PdfAnalyzer] Extracted ${objects.length} objects from page ${pageNum}`)
     return objects
   }
 }
+
+// Re-export from separate file so server-side imports (document-post-process.ts) keep working.
+// Client components should import directly from "@/lib/pdf/text-quality" to avoid pulling in pdfjs-dist.
+export { isGarbageText, type PdfObject } from "./text-quality"

@@ -1,4 +1,4 @@
-import type { PositionData } from "./types"
+import type { PositionData, TextRect } from "./types"
 
 export type ResizeHandle = "nw" | "ne" | "sw" | "se" | "start" | "end" | "rot"
 
@@ -388,4 +388,50 @@ export function simplifyPath(
   }
 
   return [points[0], points[points.length - 1]]
+}
+
+/**
+ * Merges a list of rectangles into a minimal set of horizontal lines.
+ * Useful for cleaning up messy PDF text selections where each character might have its own rect.
+ */
+export function mergeRects(rects: TextRect[], toleranceY = 2): TextRect[] {
+  if (rects.length <= 1) return rects
+
+  // Sort by Y first, then X
+  const sorted = [...rects].sort((a, b) => (a.y - b.y) || (a.x - b.x))
+  const merged: TextRect[] = []
+
+  let current = sorted[0]
+
+  for (let i = 1; i < sorted.length; i++) {
+    const next = sorted[i]
+
+    // Check if on same "line"
+    const sameLine = Math.abs(current.y - next.y) < toleranceY && 
+                     Math.abs(current.height - next.height) < (current.height * 0.3)
+
+    // Check if overlapping or adjacent on X
+    // We allow a small gap (e.g., 20% of height) to merge words into sentences
+    const xGap = next.x - (current.x + current.width)
+    const adjacent = xGap < (current.height * 0.5)
+
+    if (sameLine && adjacent) {
+      // Merge into current
+      const newRight = Math.max(current.x + current.width, next.x + next.width)
+      current = {
+        ...current,
+        x: Math.min(current.x, next.x),
+        width: newRight - Math.min(current.x, next.x),
+        // Average the Y and Height slightly or just keep current
+        y: (current.y + next.y) / 2,
+        height: (current.height + next.height) / 2,
+      }
+    } else {
+      merged.push(current)
+      current = next
+    }
+  }
+  merged.push(current)
+
+  return merged
 }
