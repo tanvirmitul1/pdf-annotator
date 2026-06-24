@@ -8,6 +8,7 @@ import { modalsReducer } from "@/features/modals/slice"
 import { themeReducer, themeSlice } from "@/features/theme/slice"
 import { toastsReducer } from "@/features/toasts/slice"
 import localAnnotationsReducer from "@/features/annotations/local-slice"
+import { conversationsApi } from "@/app/gemma/chat/_store/conversations-api"
 
 const createNoopStorage = () => ({
   getItem: async () => null,
@@ -40,6 +41,7 @@ const persistedThemeReducer = persistReducer(
 
 const rootReducer = combineReducers({
   [api.reducerPath]: api.reducer,
+  [conversationsApi.reducerPath]: conversationsApi.reducer,
   auth: authReducer,
   theme: persistedThemeReducer,
   toasts: toastsReducer,
@@ -56,7 +58,7 @@ export function makeStore(preloadedState?: Partial<RootState>) {
         serializableCheck: {
           ignoredActions: ["persist/PERSIST", "persist/REHYDRATE"],
         },
-      }).concat(api.middleware, listenerMiddleware.middleware),
+      }).concat(api.middleware, conversationsApi.middleware, listenerMiddleware.middleware),
   })
 }
 

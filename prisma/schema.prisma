@@ -140,6 +140,15 @@ model User {
   apiKeys            ApiKey[]
   errorLogs          ErrorLog[]
   resolvedErrors     ErrorLog[]        @relation("ErrorResolver")
+  conversations      Conversation[]
+  messages           Message[]
+  chatAttachments    ChatAttachment[]
+  userMemories       UserMemory[]
+  userSettings       UserSettings?
+  chatFolders        ChatFolder[]
+  savedPrompts       SavedPrompt[]
+  sharedConversations SharedConversation[]
+  chatUsageLogs      ChatUsageLog[]
 
   @@index([planId])
   @@index([deletedAt])
@@ -570,4 +579,201 @@ model ErrorLog {
   @@index([errorType])
   @@index([createdAt(sort: Desc)])
   @@index([resolved])
+}
+
+// ============================================
+// AI CHAT PLATFORM MODELS
+// ============================================
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+  TOOL
+}
+
+enum ChatModel {
+  GEMMA_LOCAL
+  GEMMA_GATEWAY
+  GPT_4
+  GPT_4_TURBO
+  GPT_3_5_TURBO
+  CLAUDE_3_OPUS
+  CLAUDE_3_SONNET
+  CLAUDE_3_HAIKU
+  GEMINI_PRO
+  GEMINI_ULTRA
+  DEEPSEEK_CHAT
+  LLAMA_3_70B
+  MISTRAL_LARGE
+}
+
+model Conversation {
+  id          String               @id @default(cuid())
+  userId      String
+  title       String               @default("New Chat")
+  model       ChatModel            @default(GEMMA_LOCAL)
+  folderId    String?
+  pinned      Boolean              @default(false)
+  archived    Boolean              @default(false)
+  archivedAt  DateTime?
+  metadata    Json?                // Store extra settings like temperature, system prompt, etc.
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  user        User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folder      ChatFolder?          @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  messages    Message[]
+  attachments ChatAttachment[]
+  shared      SharedConversation[]
+
+  @@index([userId])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([userId, pinned])
+  @@index([userId, archived])
+  @@index([folderId])
+}
+
+model Message {
+  id             String         @id @default(cuid())
+  conversationId String
+  userId         String
+  role           MessageRole
+  content        String         @db.Text
+  model          ChatModel?
+  tokenCount     Int?           // Tokens used for this message
+  metadata       Json?          // Store tool calls, function results, etc.
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  conversation   Conversation   @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attachments    ChatAttachment[]
+
+  @@index([conversationId])
+  @@index([userId])
+  @@index([conversationId, createdAt(sort: Asc)])
+}
+
+model ChatAttachment {
+  id                  String       @id @default(cuid())
+  userId              String
+  conversationId      String
+  messageId           String?
+  fileName            String
+  mimeType            String
+  fileSize            Int
+  cloudinaryPublicId  String       // Cloudinary public_id
+  cloudinaryUrl       String       // Cloudinary secure_url
+  ocrText             String?      @db.Text // Extracted OCR text for images
+  metadata            Json?        // Store processing results, dimensions, etc.
+  createdAt           DateTime     @default(now())
+  user                User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  conversation        Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  message             Message?     @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([conversationId])
+  @@index([messageId])
+}
+
+model UserMemory {
+  id        String   @id @default(cuid())
+  userId    String
+  key       String   // Memory topic/key
+  value     String   @db.Text // Memory content
+  metadata  Json?    // Store context, source conversation, etc.
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key])
+  @@index([userId])
+}
+
+model UserSettings {
+  id                   String    @id @default(cuid())
+  userId               String    @unique
+  theme                String    @default("system") // light | dark | system
+  defaultModel         ChatModel @default(GEMMA_LOCAL)
+  language             String    @default("en")
+  temperature          Float     @default(0.7)
+  systemInstructions   String?   @db.Text
+  enableMemory         Boolean   @default(false)
+  sidebarCollapsed     Boolean   @default(false)
+  notificationsEnabled Boolean   @default(true)
+  metadata             Json?     // Store other preferences
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model ChatFolder {
+  id            String         @id @default(cuid())
+  userId        String
+  name          String
+  parentId      String?        // For nested folders
+  order         Int            @default(0)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent        ChatFolder?    @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children      ChatFolder[]   @relation("FolderHierarchy")
+  conversations Conversation[]
+
+  @@unique([userId, name, parentId])
+  @@index([userId])
+  @@index([parentId])
+}
+
+model SavedPrompt {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  content   String   @db.Text
+  tags      String[] // Array of tags for organization
+  favorite  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, favorite])
+}
+
+model SharedConversation {
+  id             String       @id @default(cuid())
+  conversationId String
+  userId         String
+  token          String       @unique // Public share token
+  expiresAt      DateTime?
+  viewCount      Int          @default(0)
+  revokedAt      DateTime?
+  passwordHash   String?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([conversationId])
+  @@index([token])
+}
+
+model ChatUsageLog {
+  id             String    @id @default(cuid())
+  userId         String
+  conversationId String?
+  model          ChatModel
+  promptTokens   Int
+  completionTokens Int
+  totalTokens    Int
+  cost           Float?    // Estimated cost in USD
+  metadata       Json?     // Store request details
+  createdAt      DateTime  @default(now())
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([conversationId])
 }
