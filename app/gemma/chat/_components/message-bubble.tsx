@@ -1,13 +1,191 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useState, type ReactNode } from "react";
 import { AudioLines, Bot, ChevronRight, User, X, Copy, Edit2, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { type Components } from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
 import type { Artifact, ChatMessage } from "../_lib/types";
 import { stripArtifacts } from "../_lib/artifact-parser";
 import { getArtifactIcon } from "../_lib/icons";
+import { CodeHighlight } from "./code-highlight";
+
+/* ── Code block with language label + copy button ── */
+function CodeBlock({ className, children }: { className?: string; children?: ReactNode }) {
+  const [copied, setCopied] = useState(false);
+  const match = /language-(\w+)/.exec(className || "");
+  const lang = match ? match[1] : "";
+  const code = String(children).replace(/\n$/, "");
+
+  if (!match) {
+    // Inline code
+    return (
+      <code className="text-[13px] font-mono bg-slate-100 dark:bg-slate-800 text-pink-600 dark:text-pink-400 px-1.5 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">
+        {children}
+      </code>
+    );
+  }
+
+  const handleCopy = async () => {
+    await navigator.clipboard.writeText(code);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const displayLang = lang.toUpperCase();
+
+  return (
+    <div className="relative group/code my-4 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-[#1d1f21]">
+      <div className="flex items-center justify-between px-4 py-2 bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+          {displayLang || "CODE"}
+        </span>
+        <button
+          onClick={handleCopy}
+          className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors px-2 py-1 rounded-md hover:bg-slate-200 dark:hover:bg-slate-700"
+        >
+          {copied ? (
+            <>
+              <Check className="h-3.5 w-3.5 text-green-600" />
+              <span className="text-green-600">Copied!</span>
+            </>
+          ) : (
+            <>
+              <Copy className="h-3.5 w-3.5" />
+              <span>Copy</span>
+            </>
+          )}
+        </button>
+      </div>
+      <CodeHighlight code={code} language={lang} className="rounded-none! border-0!" />
+    </div>
+  );
+}
+
+/* ── Custom markdown components for ChatGPT/Claude-like styling ── */
+const markdownComponents: Components = {
+  // Code blocks and inline code
+  code: CodeBlock as Components["code"],
+  pre: ({ children }) => <>{children}</>,
+
+  // Paragraphs
+  p: ({ children }) => (
+    <p className="text-[15px] leading-7 text-slate-700 dark:text-slate-300 my-3 first:mt-0 last:mb-0">
+      {children}
+    </p>
+  ),
+
+  // Headings
+  h1: ({ children }) => (
+    <h1 className="text-xl font-bold text-slate-900 dark:text-white mt-6 mb-3 first:mt-0 pb-2 border-b border-slate-200 dark:border-slate-700">
+      {children}
+    </h1>
+  ),
+  h2: ({ children }) => (
+    <h2 className="text-lg font-bold text-slate-900 dark:text-white mt-5 mb-2.5 first:mt-0">
+      {children}
+    </h2>
+  ),
+  h3: ({ children }) => (
+    <h3 className="text-base font-semibold text-slate-900 dark:text-white mt-4 mb-2 first:mt-0">
+      {children}
+    </h3>
+  ),
+  h4: ({ children }) => (
+    <h4 className="text-sm font-semibold text-slate-900 dark:text-white mt-3 mb-1.5 first:mt-0 uppercase tracking-wide">
+      {children}
+    </h4>
+  ),
+
+  // Unordered lists
+  ul: ({ children }) => (
+    <ul className="my-3 space-y-1.5 pl-5 list-disc marker:text-blue-500 dark:marker:text-blue-400">
+      {children}
+    </ul>
+  ),
+  // Ordered lists
+  ol: ({ children, start }) => (
+    <ol className="my-3 space-y-1.5 pl-5 list-decimal marker:text-blue-600 marker:font-semibold dark:marker:text-blue-400" start={start}>
+      {children}
+    </ol>
+  ),
+  li: ({ children }) => (
+    <li className="text-[15px] leading-7 text-slate-700 dark:text-slate-300 pl-1.5">
+      {children}
+    </li>
+  ),
+
+  // Blockquotes
+  blockquote: ({ children }) => (
+    <blockquote className="my-3 border-l-4 border-blue-500 dark:border-blue-400 bg-blue-50/50 dark:bg-blue-950/30 pl-4 pr-3 py-2 rounded-r-lg text-slate-600 dark:text-slate-400 italic">
+      {children}
+    </blockquote>
+  ),
+
+  // Links
+  a: ({ href, children }) => (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-blue-600 dark:text-blue-400 font-medium underline decoration-blue-300 dark:decoration-blue-700 underline-offset-2 hover:decoration-blue-500 dark:hover:decoration-blue-400 transition-colors"
+    >
+      {children}
+    </a>
+  ),
+
+  // Tables
+  table: ({ children }) => (
+    <div className="my-4 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+      <table className="w-full text-sm">{children}</table>
+    </div>
+  ),
+  thead: ({ children }) => (
+    <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+      {children}
+    </thead>
+  ),
+  tbody: ({ children }) => (
+    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+      {children}
+    </tbody>
+  ),
+  tr: ({ children }) => (
+    <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
+      {children}
+    </tr>
+  ),
+  th: ({ children }) => (
+    <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+      {children}
+    </th>
+  ),
+  td: ({ children }) => (
+    <td className="px-4 py-2.5 text-slate-700 dark:text-slate-300">
+      {children}
+    </td>
+  ),
+
+  // Horizontal rule
+  hr: () => (
+    <hr className="my-6 border-slate-200 dark:border-slate-700" />
+  ),
+
+  // Strong / Bold
+  strong: ({ children }) => (
+    <strong className="font-semibold text-slate-900 dark:text-white">
+      {children}
+    </strong>
+  ),
+
+  // Emphasis / Italic
+  em: ({ children }) => (
+    <em className="italic text-slate-600 dark:text-slate-400">
+      {children}
+    </em>
+  ),
+};
 
 interface MessageBubbleProps {
   message: ChatMessage;
@@ -125,33 +303,17 @@ export function MessageBubble({
                 )}
               >
                 {isUser ? (
-                  <div className="text-[15px] leading-[1.7] whitespace-pre-wrap break-words">
+                  <div className="text-base leading-8 whitespace-pre-wrap break-words">
                     {cleanText}
                   </div>
                 ) : (
-                  <div className="prose prose-slate max-w-none dark:prose-invert
-                    prose-headings:font-semibold prose-headings:tracking-tight prose-headings:mt-6 first:prose-headings:mt-0 prose-headings:mb-3
-                    prose-h1:text-2xl prose-h2:text-xl prose-h3:text-lg prose-h4:text-base
-                    prose-p:text-[15px] prose-p:leading-[1.7] prose-p:my-4 prose-p:text-slate-700 dark:prose-p:text-slate-300
-                    first:prose-p:mt-0 last:prose-p:mb-0
-                    prose-ul:my-4 prose-ul:space-y-2 prose-ol:my-4 prose-ol:space-y-2
-                    prose-li:text-[15px] prose-li:leading-[1.7] prose-li:my-1 prose-li:text-slate-700 dark:prose-li:text-slate-300
-                    prose-strong:font-semibold prose-strong:text-slate-900 dark:prose-strong:text-slate-100
-                    prose-code:text-sm prose-code:bg-slate-100 dark:prose-code:bg-slate-800 
-                    prose-code:text-slate-900 dark:prose-code:text-slate-100
-                    prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded-md prose-code:font-mono
-                    prose-code:before:content-[''] prose-code:after:content-['']
-                    prose-pre:my-4 prose-pre:bg-slate-50 dark:prose-pre:bg-slate-900 
-                    prose-pre:border prose-pre:border-slate-200 dark:prose-pre:border-slate-800 
-                    prose-pre:rounded-xl prose-pre:p-4
-                    prose-blockquote:my-4 prose-blockquote:border-l-blue-500 prose-blockquote:border-l-4 
-                    prose-blockquote:pl-4 prose-blockquote:py-1 prose-blockquote:italic 
-                    prose-blockquote:text-slate-600 dark:prose-blockquote:text-slate-400
-                    prose-a:text-blue-600 dark:prose-a:text-blue-400 prose-a:font-medium prose-a:no-underline hover:prose-a:underline
-                    prose-hr:my-6 prose-hr:border-slate-200 dark:prose-hr:border-slate-800
-                    prose-table:my-4 prose-th:text-left prose-th:font-semibold prose-th:p-2 prose-td:p-2"
-                  >
-                    <ReactMarkdown>{cleanText}</ReactMarkdown>
+                  <div className="max-w-none">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={markdownComponents}
+                    >
+                      {cleanText}
+                    </ReactMarkdown>
                   </div>
                 )}
               </div>
@@ -190,7 +352,7 @@ export function MessageBubble({
           {/* Inline artifact cards */}
           {!isUser && artifacts.length > 0 && (
             <div className="flex flex-col gap-2">
-              {artifacts.map((artifact, artIdx) => {
+              {artifacts.map((artifact) => {
                 const Icon = getArtifactIcon(artifact.type, artifact.title);
                 return (
                   <button

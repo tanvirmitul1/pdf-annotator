@@ -1,22 +1,22 @@
 import type { Metadata } from "next"
-import { IBM_Plex_Mono, Manrope, Space_Grotesk } from "next/font/google"
+import { JetBrains_Mono, Plus_Jakarta_Sans, Sora } from "next/font/google"
 
 import "@/app/globals.css"
 import { Providers } from "@/app/providers"
 import { getCurrentUser } from "@/lib/auth/require"
 import { cn } from "@/lib/utils"
 
-const manrope = Manrope({
+const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
   variable: "--font-sans",
 })
 
-const heading = Space_Grotesk({
+const heading = Sora({
   subsets: ["latin"],
   variable: "--font-display",
 })
 
-const fontMono = IBM_Plex_Mono({
+const fontMono = JetBrains_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
   weight: ["400", "500", "600"],
@@ -59,7 +59,7 @@ export default async function RootLayout({
         fontMono.variable,
         "font-sans",
         heading.variable,
-        manrope.variable
+        plusJakarta.variable
       )}
     >
       <head>
