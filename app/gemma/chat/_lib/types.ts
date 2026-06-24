@@ -3,7 +3,7 @@ export interface ChatAttachment {
   fileName: string;
   mimeType: string;
   base64: string;
-  preview: string;
+  preview?: string;
   kind: "image" | "audio";
   ocrText?: string;
   ocrTraceId?: string;

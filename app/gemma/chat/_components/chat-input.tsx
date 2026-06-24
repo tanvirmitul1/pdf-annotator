@@ -2,6 +2,7 @@
 
 import { useCallback } from "react";
 import { useDropzone } from "react-dropzone";
+import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUp, Mic, MicOff, Paperclip, Square, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -129,11 +130,11 @@ export function ChatInput({
           {...getRootProps()}
           className={cn(
             "rounded-2xl border transition-all duration-200",
-            "gemma-glass-heavy",
-            isLanding ? "gemma-shadow-lg" : "gemma-shadow",
+            "bg-card/90 backdrop-blur-xl",
+            isLanding ? "shadow-lg" : "shadow-sm",
             isDragActive
-              ? "border-primary/60 ring-2 ring-primary/20 gemma-glow"
-              : "border-border/50 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary/40"
+              ? "border-primary/60 ring-2 ring-primary/20"
+              : "border-border/60 focus-within:border-primary/40 focus-within:shadow-md"
           )}
         >
           <input {...getInputProps()} />
@@ -194,8 +195,8 @@ export function ChatInput({
                 isDragActive
                   ? "Drop files..."
                   : isLanding
-                    ? "Ask Gemma anything..."
-                    : "Message Gemma..."
+                    ? "Ask anything..."
+                    : "Message..."
               }
               disabled={isLoading}
               rows={isLanding ? 2 : 1}
@@ -222,8 +223,8 @@ export function ChatInput({
                       className={cn(
                         "shrink-0 transition-colors",
                         backend === "gateway-api"
-                          ? "text-orange-500 hover:text-orange-600 hover:bg-orange-500/10"
-                          : "text-purple-500 hover:text-purple-600 hover:bg-purple-500/10"
+                          ? "text-accent hover:text-accent/80 hover:bg-accent/10"
+                          : "text-primary hover:text-primary/80 hover:bg-primary/10"
                       )}
                     >
                       <Zap className={isLanding ? "size-5" : "size-4"} />
@@ -276,49 +277,62 @@ export function ChatInput({
             )}
 
             {/* Send / Stop button */}
-            {isLoading ? (
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      size={isLanding ? "icon" : "icon-sm"}
-                      onClick={onStop}
-                      aria-label="Stop generating"
+            <AnimatePresence mode="wait">
+              {isLoading ? (
+                <motion.div
+                  key="stop"
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.8, opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                >
+                  <Button
+                    size={isLanding ? "icon" : "icon-sm"}
+                    onClick={onStop}
+                    aria-label="Stop generating"
+                    className={cn(
+                      "shrink-0 rounded-xl transition-all duration-200",
+                      "bg-destructive text-white border-0",
+                      "hover:bg-destructive/90 hover:shadow-md",
+                      isLanding && "size-10"
+                    )}
+                  >
+                    <Square
                       className={cn(
-                        "shrink-0 rounded-xl transition-all duration-200",
-                        "bg-destructive/90 text-white border-0",
-                        "hover:bg-destructive hover:shadow-lg",
-                        isLanding && "size-10 rounded-xl"
+                        "fill-current",
+                        isLanding ? "size-4" : "size-3"
                       )}
-                    >
-                      <Square
-                        className={cn(
-                          "fill-current",
-                          isLanding ? "size-4" : "size-3"
-                        )}
-                      />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="top">Stop generating</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            ) : (
-              <Button
-                size={isLanding ? "icon" : "icon-sm"}
-                onClick={handleSubmit}
-                disabled={!input.trim() && attachments.length === 0}
-                aria-label="Send message"
-                className={cn(
-                  "shrink-0 rounded-xl transition-all duration-200",
-                  "gemma-gradient text-white border-0",
-                  "hover:opacity-90 hover:shadow-lg",
-                  "disabled:opacity-40 disabled:gemma-gradient",
-                  isLanding && "size-10 rounded-xl"
-                )}
-              >
-                <ArrowUp className={isLanding ? "size-5" : "size-3.5"} />
-              </Button>
-            )}
+                    />
+                  </Button>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="send"
+                  initial={{ scale: 0.8, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.8, opacity: 0 }}
+                  transition={{ duration: 0.15 }}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Button
+                    size={isLanding ? "icon" : "icon-sm"}
+                    onClick={handleSubmit}
+                    disabled={!input.trim() && attachments.length === 0}
+                    aria-label="Send message"
+                    className={cn(
+                      "shrink-0 rounded-xl transition-all duration-200",
+                      "bg-primary text-primary-foreground border-0",
+                      "hover:shadow-md",
+                      "disabled:opacity-30 disabled:bg-muted disabled:text-muted-foreground",
+                      isLanding && "size-10"
+                    )}
+                  >
+                    <ArrowUp className={isLanding ? "size-5" : "size-3.5"} />
+                  </Button>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
 
@@ -328,12 +342,12 @@ export function ChatInput({
             isLanding ? "text-xs mt-3" : "text-[11px] mt-2"
           )}
         >
-          <kbd className="px-1.5 py-0.5 rounded-md bg-muted/60 text-[10px] font-mono border border-border/40">
+          <kbd className="px-1.5 py-0.5 rounded bg-muted text-[10px] font-mono text-muted-foreground">
             Enter
           </kbd>{" "}
           to send{" "}
           <span className="text-border mx-1">&middot;</span>{" "}
-          <kbd className="px-1.5 py-0.5 rounded-md bg-muted/60 text-[10px] font-mono border border-border/40">
+          <kbd className="px-1.5 py-0.5 rounded bg-muted text-[10px] font-mono text-muted-foreground">
             Shift+Enter
           </kbd>{" "}
           for new line{" "}

@@ -71,11 +71,30 @@ export function useChat(backend?: "local" | "gateway-api") {
         throw new Error("Failed to load messages");
       }
       const data = await response.json() as {
-        messages: Array<{ role: string; content: string }>;
+        messages: Array<{ 
+          role: string; 
+          content: string;
+          attachments?: Array<{
+            id: string;
+            fileName: string;
+            mimeType: string;
+            cloudinaryUrl: string;
+            ocrText: string | null;
+          }>;
+        }>;
       };
       const loaded: ChatMessage[] = data.messages.map((m) => ({
         role: m.role === "ASSISTANT" ? "assistant" : "user",
         text: m.content,
+        attachments: m.attachments?.map((att) => ({
+          id: att.id,
+          fileName: att.fileName,
+          mimeType: att.mimeType,
+          base64: "",
+          preview: att.cloudinaryUrl,
+          kind: att.mimeType.startsWith("image/") ? "image" : "audio" as const,
+          ocrText: att.ocrText || undefined,
+        })),
       }));
       setMessages(loaded);
 
@@ -387,6 +406,52 @@ export function useChat(backend?: "local" | "gateway-api") {
         // Save messages to conversation if we have an ID
         if (conversationIdToUse) {
           try {
+            // Upload attachments to Cloudinary first if present
+            let attachmentIds: string[] = [];
+            let uploadedAttachments: Array<{ id: string; cloudinaryUrl: string }> = [];
+            if (attachments && attachments.length > 0) {
+              uploadedAttachments = await Promise.all(
+                attachments.map(async (att) => {
+                  const response = await fetch(`/api/gemma/chat/attachments`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      conversationId: conversationIdToUse,
+                      fileName: att.fileName,
+                      mimeType: att.mimeType,
+                      base64: att.base64,
+                      ocrText: att.ocrText,
+                    }),
+                  });
+
+                  const result = await response.json() as { id: string; cloudinaryUrl: string };
+                  return result;
+                })
+              );
+              attachmentIds = uploadedAttachments.map(a => a.id);
+            }
+
+            // Update the user message in state with Cloudinary URLs
+            if (uploadedAttachments.length > 0) {
+              setMessages((prev) => {
+                const updated = [...prev];
+                // Find the last user message (the one we just added)
+                for (let i = updated.length - 1; i >= 0; i--) {
+                  if (updated[i].role === "user" && updated[i].attachments) {
+                    updated[i] = {
+                      ...updated[i],
+                      attachments: updated[i].attachments!.map((att, idx) => ({
+                        ...att,
+                        preview: uploadedAttachments[idx]?.cloudinaryUrl || att.preview,
+                      })),
+                    };
+                    break;
+                  }
+                }
+                return updated;
+              });
+            }
+
             // Save user message
             await fetch(`/api/gemma/chat/conversations/${conversationIdToUse}/messages`, {
               method: "POST",
@@ -394,6 +459,7 @@ export function useChat(backend?: "local" | "gateway-api") {
               body: JSON.stringify({
                 role: "USER",
                 content: messageText,
+                attachments: attachmentIds.length > 0 ? attachmentIds : undefined,
               }),
             });
 

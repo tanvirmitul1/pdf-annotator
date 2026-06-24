@@ -160,7 +160,7 @@
 
   button,
   [role="button"] {
-    @apply transition-all active:scale-95;
+    @apply transition-all active:scale-[0.98];
     cursor: pointer;
   }
 }
@@ -466,6 +466,37 @@
   border-radius: 50%;
   border: 2px solid oklch(0.6 0.2 25);
   animation: pulse-ring 1.2s ease-out infinite;
+}
+
+/* Gemma chat scrollbar — thin, invisible until hovered */
+.gemma-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+.gemma-scrollbar:hover {
+  scrollbar-color: var(--border) transparent;
+}
+.gemma-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.gemma-scrollbar::-webkit-scrollbar-thumb {
+  background: transparent;
+  border-radius: 10px;
+}
+.gemma-scrollbar:hover::-webkit-scrollbar-thumb {
+  background: var(--border);
+}
+
+/* Linear-style gradient divider */
+.gemma-divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    var(--border) 20%,
+    var(--border) 80%,
+    transparent
+  );
 }
 
 /* Reduced motion */

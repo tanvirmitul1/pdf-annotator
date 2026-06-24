@@ -69,8 +69,8 @@ export function CodeHighlight({ code, language, className }: CodeHighlightProps)
   const prismLang = LANGUAGE_MAP[language.toLowerCase()] || "text";
 
   return (
-    <pre className={cn("!bg-[#1d1f21] !p-4 !m-0 rounded-lg overflow-auto", className)}>
-      <code ref={codeRef} className={`language-${prismLang}`}>
+    <pre className={cn("!bg-muted !p-4 !m-0 rounded-lg overflow-auto max-w-full", className)}>
+      <code ref={codeRef} className={`language-${prismLang} wrap-break-word`}>
         {code}
       </code>
     </pre>

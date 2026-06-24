@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import type { Artifact } from "../_lib/types";
 import { getArtifactIcon } from "../_lib/icons";
@@ -16,6 +16,8 @@ interface ArtifactPanelProps {
   onClose: () => void;
   copiedId: string | null;
   onCopy: (text: string, id: string) => void;
+  /** When true, panel fills its container width (used in mobile overlay) */
+  fullWidth?: boolean;
 }
 
 const MIN_WIDTH = 400;
@@ -30,12 +32,12 @@ export function ArtifactPanel({
   onClose,
   copiedId,
   onCopy,
+  fullWidth = false,
 }: ArtifactPanelProps) {
   const [width, setWidth] = useState(DEFAULT_WIDTH);
   const [isResizing, setIsResizing] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  // Load saved width from localStorage
   useEffect(() => {
     const savedWidth = localStorage.getItem(STORAGE_KEY);
     if (savedWidth) {
@@ -46,7 +48,6 @@ export function ArtifactPanel({
     }
   }, []);
 
-  // Save width to localStorage
   const saveWidth = useCallback((newWidth: number) => {
     localStorage.setItem(STORAGE_KEY, newWidth.toString());
   }, []);
@@ -64,11 +65,7 @@ export function ArtifactPanel({
 
       const rect = panelRef.current.getBoundingClientRect();
       const newWidth = rect.right - e.clientX;
-      
-      // Calculate max width based on window size
       const maxWidth = (window.innerWidth * MAX_WIDTH_PERCENT) / 100;
-      
-      // Constrain width
       const constrainedWidth = Math.max(MIN_WIDTH, Math.min(newWidth, maxWidth));
       setWidth(constrainedWidth);
     };
@@ -90,26 +87,31 @@ export function ArtifactPanel({
   return (
     <div
       ref={panelRef}
-      className="relative flex flex-col h-full"
-      style={{ width: `${width}px` }}
+      className={cn(
+        "relative flex flex-col h-full overflow-hidden",
+        fullWidth ? "w-full" : "max-w-[calc(100vw-4rem)]"
+      )}
+      style={fullWidth ? undefined : { width: `${width}px` }}
     >
-      {/* Resize Handle */}
-      <div
-        className={cn(
-          "absolute left-0 top-0 bottom-0 w-1 cursor-col-resize z-10",
-          "hover:bg-blue-500 transition-colors",
-          isResizing && "bg-blue-500"
-        )}
-        onMouseDown={handleMouseDown}
-      />
+      {/* Resize Handle (desktop only) */}
+      {!fullWidth && (
+        <div
+          className={cn(
+            "absolute left-0 top-0 bottom-0 w-1 cursor-col-resize z-10 transition-all duration-150",
+            "hover:bg-primary/50",
+            isResizing ? "bg-primary" : "bg-transparent"
+          )}
+          onMouseDown={handleMouseDown}
+        />
+      )}
 
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 dark:border-slate-800">
+      <div className="flex items-center justify-between px-3 py-3 border-b border-border/50 min-w-0">
         <div className="flex items-center gap-2">
-          <h2 className="text-sm font-semibold text-slate-900 dark:text-white">
+          <h2 className="text-sm font-medium text-foreground">
             Files
           </h2>
-          <span className="text-xs text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
+          <span className="text-[11px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded-md font-mono">
             {artifacts.length}
           </span>
         </div>
@@ -117,7 +119,7 @@ export function ArtifactPanel({
           variant="ghost"
           size="icon"
           onClick={onClose}
-          className="h-8 w-8 -mr-2"
+          className="h-8 w-8 -mr-2 text-muted-foreground hover:text-foreground"
         >
           <X className="h-4 w-4" />
         </Button>
@@ -125,9 +127,9 @@ export function ArtifactPanel({
 
       {/* Tabs for multiple artifacts */}
       {artifacts.length > 1 && (
-        <div className="border-b border-slate-200 dark:border-slate-800">
-          <ScrollArea className="w-full">
-            <div className="flex gap-1 px-3 py-2">
+        <div className="border-b border-border/50">
+          <ScrollArea className="w-full" viewportClassName="overflow-x-auto">
+            <div className="flex gap-1 px-3 py-2 min-w-max">
               {artifacts.map((artifact) => {
                 const Icon = getArtifactIcon(artifact.type, artifact.title);
                 const isActive =
@@ -137,10 +139,10 @@ export function ArtifactPanel({
                     key={artifact.identifier}
                     onClick={() => onSelectArtifact(artifact)}
                     className={cn(
-                      "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium whitespace-nowrap transition-colors",
+                      "flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-all duration-150",
                       isActive
-                        ? "bg-blue-600 text-white"
-                        : "text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800"
+                        ? "bg-primary/10 text-primary shadow-sm"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                     )}
                   >
                     <Icon className="h-3.5 w-3.5" />
@@ -149,13 +151,14 @@ export function ArtifactPanel({
                 );
               })}
             </div>
+            <ScrollBar orientation="horizontal" />
           </ScrollArea>
         </div>
       )}
 
       {/* Viewer */}
       {activeArtifact ? (
-        <div className="flex-1 min-h-0">
+        <div className="flex-1 min-h-0 min-w-0 overflow-hidden">
           <ArtifactViewer
             artifact={activeArtifact}
             copiedId={copiedId}
@@ -164,7 +167,7 @@ export function ArtifactPanel({
         </div>
       ) : (
         <div className="flex-1 flex items-center justify-center">
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <p className="text-sm text-muted-foreground">
             Select a file to view
           </p>
         </div>

@@ -2,10 +2,10 @@
 
 import { useCallback, useState, type ReactNode } from "react";
 import { AudioLines, Bot, ChevronRight, User, X, Copy, Edit2, Check } from "lucide-react";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { Button } from "@/components/ui/button";
 import type { Artifact, ChatMessage } from "../_lib/types";
 import { stripArtifacts } from "../_lib/artifact-parser";
 import { getArtifactIcon } from "../_lib/icons";
@@ -19,9 +19,8 @@ function CodeBlock({ className, children }: { className?: string; children?: Rea
   const code = String(children).replace(/\n$/, "");
 
   if (!match) {
-    // Inline code
     return (
-      <code className="text-[13px] font-mono bg-slate-100 dark:bg-slate-800 text-pink-600 dark:text-pink-400 px-1.5 py-0.5 rounded-md border border-slate-200 dark:border-slate-700">
+      <code className="text-[13px] font-mono bg-muted px-1.5 py-0.5 rounded-md text-primary border border-border/50">
         {children}
       </code>
     );
@@ -36,14 +35,14 @@ function CodeBlock({ className, children }: { className?: string; children?: Rea
   const displayLang = lang.toUpperCase();
 
   return (
-    <div className="relative group/code my-4 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 bg-[#1d1f21]">
-      <div className="flex items-center justify-between px-4 py-2 bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-        <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+    <div className="relative group/code my-4 rounded-xl overflow-hidden border border-border/50 bg-muted">
+      <div className="flex items-center justify-between px-4 py-2 bg-muted/80 border-b border-border/50">
+        <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">
           {displayLang || "CODE"}
         </span>
         <button
           onClick={handleCopy}
-          className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors px-2 py-1 rounded-md hover:bg-slate-200 dark:hover:bg-slate-700"
+          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-md hover:bg-muted"
         >
           {copied ? (
             <>
@@ -63,125 +62,114 @@ function CodeBlock({ className, children }: { className?: string; children?: Rea
   );
 }
 
-/* ── Custom markdown components for ChatGPT/Claude-like styling ── */
+/* ── Custom markdown components ── */
 const markdownComponents: Components = {
-  // Code blocks and inline code
   code: CodeBlock as Components["code"],
   pre: ({ children }) => <>{children}</>,
 
-  // Paragraphs
   p: ({ children }) => (
-    <p className="text-[15px] leading-7 text-slate-700 dark:text-slate-300 my-3 first:mt-0 last:mb-0">
+    <p className="text-[15px] leading-7 text-foreground/80 my-3 first:mt-0 last:mb-0">
       {children}
     </p>
   ),
 
-  // Headings
   h1: ({ children }) => (
-    <h1 className="text-xl font-bold text-slate-900 dark:text-white mt-6 mb-3 first:mt-0 pb-2 border-b border-slate-200 dark:border-slate-700">
+    <h1 className="text-xl font-semibold text-foreground mt-6 mb-3 first:mt-0 pb-2 border-b border-border/50 tracking-tight">
       {children}
     </h1>
   ),
   h2: ({ children }) => (
-    <h2 className="text-lg font-bold text-slate-900 dark:text-white mt-5 mb-2.5 first:mt-0">
+    <h2 className="text-lg font-semibold text-foreground mt-5 mb-2.5 first:mt-0 tracking-tight">
       {children}
     </h2>
   ),
   h3: ({ children }) => (
-    <h3 className="text-base font-semibold text-slate-900 dark:text-white mt-4 mb-2 first:mt-0">
+    <h3 className="text-base font-semibold text-foreground mt-4 mb-2 first:mt-0">
       {children}
     </h3>
   ),
   h4: ({ children }) => (
-    <h4 className="text-sm font-semibold text-slate-900 dark:text-white mt-3 mb-1.5 first:mt-0 uppercase tracking-wide">
+    <h4 className="text-sm font-semibold text-foreground mt-3 mb-1.5 first:mt-0 uppercase tracking-wide">
       {children}
     </h4>
   ),
 
-  // Unordered lists
   ul: ({ children }) => (
-    <ul className="my-3 space-y-1.5 pl-5 list-disc marker:text-blue-500 dark:marker:text-blue-400">
+    <ul className="my-3 space-y-1.5 pl-5 list-disc marker:text-primary/60">
       {children}
     </ul>
   ),
-  // Ordered lists
   ol: ({ children, start }) => (
-    <ol className="my-3 space-y-1.5 pl-5 list-decimal marker:text-blue-600 marker:font-semibold dark:marker:text-blue-400" start={start}>
+    <ol className="my-3 space-y-1.5 pl-5 list-decimal marker:text-primary marker:font-semibold" start={start}>
       {children}
     </ol>
   ),
   li: ({ children }) => (
-    <li className="text-[15px] leading-7 text-slate-700 dark:text-slate-300 pl-1.5">
+    <li className="text-[15px] leading-7 text-foreground/80 pl-1.5">
       {children}
     </li>
   ),
 
-  // Blockquotes
   blockquote: ({ children }) => (
-    <blockquote className="my-3 border-l-4 border-blue-500 dark:border-blue-400 bg-blue-50/50 dark:bg-blue-950/30 pl-4 pr-3 py-2 rounded-r-lg text-slate-600 dark:text-slate-400 italic">
+    <blockquote className="my-3 border-l-4 border-primary/40 bg-primary/5 pl-4 pr-3 py-2 rounded-r-lg text-muted-foreground italic">
       {children}
     </blockquote>
   ),
 
-  // Links
   a: ({ href, children }) => (
     <a
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="text-blue-600 dark:text-blue-400 font-medium underline decoration-blue-300 dark:decoration-blue-700 underline-offset-2 hover:decoration-blue-500 dark:hover:decoration-blue-400 transition-colors"
+      className="text-primary font-medium underline decoration-primary/30 underline-offset-2 hover:decoration-primary transition-colors"
     >
       {children}
     </a>
   ),
 
-  // Tables
   table: ({ children }) => (
-    <div className="my-4 overflow-x-auto rounded-xl border border-slate-200 dark:border-slate-700">
+    <div className="my-4 overflow-x-auto rounded-xl border border-border/50">
       <table className="w-full text-sm">{children}</table>
     </div>
   ),
   thead: ({ children }) => (
-    <thead className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+    <thead className="bg-muted/50 border-b border-border/50">
       {children}
     </thead>
   ),
   tbody: ({ children }) => (
-    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+    <tbody className="divide-y divide-border/30">
       {children}
     </tbody>
   ),
   tr: ({ children }) => (
-    <tr className="hover:bg-slate-50/50 dark:hover:bg-slate-800/50 transition-colors">
+    <tr className="hover:bg-muted/30 transition-colors">
       {children}
     </tr>
   ),
   th: ({ children }) => (
-    <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">
+    <th className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase tracking-wider">
       {children}
     </th>
   ),
   td: ({ children }) => (
-    <td className="px-4 py-2.5 text-slate-700 dark:text-slate-300">
+    <td className="px-4 py-2.5 text-foreground/80">
       {children}
     </td>
   ),
 
-  // Horizontal rule
   hr: () => (
-    <hr className="my-6 border-slate-200 dark:border-slate-700" />
+    <div className="h-px bg-gradient-to-r from-transparent via-border to-transparent my-6" />
   ),
 
-  // Strong / Bold
   strong: ({ children }) => (
-    <strong className="font-semibold text-slate-900 dark:text-white">
+    <strong className="font-semibold text-foreground">
       {children}
     </strong>
   ),
 
-  // Emphasis / Italic
   em: ({ children }) => (
-    <em className="italic text-slate-600 dark:text-slate-400">
+    <em className="italic text-muted-foreground">
       {children}
     </em>
   ),
@@ -191,6 +179,7 @@ interface MessageBubbleProps {
   message: ChatMessage;
   artifacts: Artifact[];
   onArtifactClick: (artifact: Artifact) => void;
+  onEditMessage?: (text: string) => void;
   index?: number;
 }
 
@@ -198,11 +187,11 @@ export function MessageBubble({
   message,
   artifacts,
   onArtifactClick,
+  onEditMessage,
   index = 0,
 }: MessageBubbleProps) {
   const isUser = message.role === "user";
   const cleanText = isUser ? message.text : stripArtifacts(message.text);
-  const delay = Math.min(index * 50, 300);
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -221,19 +210,26 @@ export function MessageBubble({
   }, [cleanText]);
 
   const handleEdit = useCallback(() => {
-    // TODO: Implement edit functionality
-    console.log("Edit message:", message);
-  }, [message]);
+    if (onEditMessage && cleanText) {
+      onEditMessage(cleanText);
+    }
+  }, [onEditMessage, cleanText]);
 
   return (
-    <div
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{
+        duration: 0.35,
+        ease: [0.25, 0.1, 0.25, 1],
+        delay: Math.min(index * 0.05, 0.3),
+      }}
       className="flex gap-4 w-full group"
-      style={{ animationDelay: `${delay}ms` }}
     >
       {/* Bot avatar */}
       {!isUser && (
-        <div className="shrink-0 h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-sm">
-          <Bot className="h-4 w-4 text-white" />
+        <div className="shrink-0 size-8 rounded-xl bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-sm">
+          <Bot className="size-4 text-white" />
         </div>
       )}
 
@@ -254,16 +250,16 @@ export function MessageBubble({
                 att.kind === "audio" ? (
                   <div
                     key={att.id}
-                    className="flex flex-col gap-2 px-4 py-3 rounded-xl bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 min-w-44 max-w-56"
+                    className="flex flex-col gap-2 px-4 py-3 rounded-xl bg-primary/5 border border-primary/20 min-w-44 max-w-56"
                   >
                     <div className="flex items-center gap-2">
-                      <AudioLines className="h-4 w-4 text-blue-600 dark:text-blue-400 shrink-0" />
-                      <span className="text-xs text-blue-700 dark:text-blue-300 truncate flex-1">
+                      <AudioLines className="h-4 w-4 text-primary shrink-0" />
+                      <span className="text-xs text-primary truncate flex-1">
                         {att.fileName}
                       </span>
                     </div>
                     <audio
-                      src={`data:${att.mimeType};base64,${att.base64}`}
+                      src={att.preview || `data:${att.mimeType};base64,${att.base64}`}
                       controls
                       preload="metadata"
                       className="w-full h-8 rounded-lg"
@@ -273,19 +269,18 @@ export function MessageBubble({
                   <button
                     key={att.id}
                     type="button"
-                    onClick={() =>
-                      handleImageClick(
-                        `data:${att.mimeType};base64,${att.base64}`
-                      )
-                    }
-                    className="cursor-pointer focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:outline-none rounded-xl"
+                    onClick={() => {
+                      const imgSrc = att.preview || `data:${att.mimeType};base64,${att.base64}`;
+                      handleImageClick(imgSrc);
+                    }}
+                    className="cursor-pointer focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none rounded-xl"
                     aria-label={`View ${att.fileName} full size`}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={`data:${att.mimeType};base64,${att.base64}`}
+                      src={att.preview || `data:${att.mimeType};base64,${att.base64}`}
                       alt={att.fileName}
-                      className="w-24 h-24 rounded-xl object-cover border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200"
+                      className="w-24 h-24 rounded-xl object-cover border border-border/50 shadow-sm hover:shadow-md hover:scale-105 transition-all duration-200"
                     />
                   </button>
                 )
@@ -298,12 +293,12 @@ export function MessageBubble({
               <div
                 className={cn(
                   isUser
-                    ? "rounded-2xl px-4 py-3 bg-blue-600 text-white shadow-sm ml-auto w-fit"
+                    ? "rounded-2xl rounded-br-md px-4 py-3 bg-primary text-primary-foreground shadow-sm ml-auto w-fit"
                     : "w-full"
                 )}
               >
                 {isUser ? (
-                  <div className="text-base leading-8 whitespace-pre-wrap break-words">
+                  <div className="text-[15px] leading-7 whitespace-pre-wrap wrap-break-word">
                     {cleanText}
                   </div>
                 ) : (
@@ -318,32 +313,35 @@ export function MessageBubble({
                 )}
               </div>
 
-              {/* Action Buttons */}
+              {/* Action Buttons — below message */}
               <div className={cn(
-                "absolute top-0 flex gap-1 opacity-0 group-hover/message:opacity-100 transition-opacity",
-                isUser ? "right-full mr-2" : "left-full ml-2"
+                "flex gap-1 mt-1 opacity-0 group-hover/message:opacity-100 transition-all duration-200",
+                isUser ? "justify-end" : "justify-start"
               )}>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-7 w-7 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700"
+                <button
                   onClick={handleCopy}
+                  className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
                 >
                   {copied ? (
-                    <Check className="h-3.5 w-3.5 text-green-600" />
+                    <>
+                      <Check className="size-3.5 text-green-600" />
+                      <span className="text-green-600">Copied</span>
+                    </>
                   ) : (
-                    <Copy className="h-3.5 w-3.5 text-slate-600 dark:text-slate-400" />
+                    <>
+                      <Copy className="size-3.5" />
+                      <span>Copy</span>
+                    </>
                   )}
-                </Button>
+                </button>
                 {isUser && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700"
+                  <button
                     onClick={handleEdit}
+                    className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
                   >
-                    <Edit2 className="h-3.5 w-3.5 text-slate-600 dark:text-slate-400" />
-                  </Button>
+                    <Edit2 className="size-3.5" />
+                    <span>Edit</span>
+                  </button>
                 )}
               </div>
             </div>
@@ -358,20 +356,25 @@ export function MessageBubble({
                   <button
                     key={artifact.identifier}
                     onClick={() => onArtifactClick(artifact)}
-                    className="flex items-center gap-3 px-4 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:border-blue-300 dark:hover:border-blue-700 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all text-left group/artifact"
+                    className={cn(
+                      "flex items-center gap-3 w-full px-4 py-3 rounded-xl",
+                      "bg-muted/30 border border-border/50",
+                      "hover:bg-muted/50 hover:border-primary/30",
+                      "transition-all duration-200 text-left group/artifact"
+                    )}
                   >
-                    <div className="shrink-0 h-10 w-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-sm">
+                    <div className="shrink-0 h-10 w-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-sm">
                       <Icon className="h-5 w-5 text-white" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <span className="text-sm font-semibold text-slate-900 dark:text-white block truncate">
+                      <span className="text-sm font-medium text-foreground block truncate">
                         {artifact.title}
                       </span>
-                      <span className="text-xs text-slate-500 dark:text-slate-400">
-                        Click to view • {artifact.type}
+                      <span className="text-xs text-muted-foreground">
+                        Click to view &middot; {artifact.type}
                       </span>
                     </div>
-                    <ChevronRight className="h-4 w-4 text-slate-400 group-hover/artifact:text-blue-600 dark:group-hover/artifact:text-blue-400 group-hover/artifact:translate-x-0.5 transition-all shrink-0" />
+                    <ChevronRight className="h-4 w-4 text-muted-foreground group-hover/artifact:text-primary group-hover/artifact:translate-x-0.5 transition-all shrink-0" />
                   </button>
                 );
               })}
@@ -382,8 +385,8 @@ export function MessageBubble({
 
       {/* User avatar */}
       {isUser && (
-        <div className="shrink-0 h-8 w-8 rounded-lg bg-slate-200 dark:bg-slate-700 flex items-center justify-center shadow-sm">
-          <User className="h-4 w-4 text-slate-600 dark:text-slate-400" />
+        <div className="shrink-0 size-8 rounded-xl bg-muted flex items-center justify-center">
+          <User className="size-4 text-muted-foreground" />
         </div>
       )}
 
@@ -416,6 +419,6 @@ export function MessageBubble({
           />
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }

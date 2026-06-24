@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
 import {
   Plus,
   Search,
@@ -20,6 +21,8 @@ import {
   Pin,
   PinOff,
   Archive,
+  Moon,
+  Sun,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +46,8 @@ import {
   useUpdateConversationMutation,
 } from "../_store/conversations-api";
 import { formatDistanceToNow } from "date-fns";
+import { useAppDispatch, useAppSelector } from "@/store/hooks";
+import { setTheme } from "@/features/theme/slice";
 
 interface ModernSidebarProps {
   isCollapsed: boolean;
@@ -125,7 +130,7 @@ export function ModernSidebar({
             variant="ghost"
             size="icon"
             onClick={onToggleCollapse}
-            className="shrink-0"
+            className="shrink-0 text-muted-foreground hover:text-foreground"
           >
             <ChevronRight className="h-5 w-5" />
           </Button>
@@ -134,20 +139,20 @@ export function ModernSidebar({
             variant="ghost"
             size="icon"
             onClick={handleNewChat}
-            className="shrink-0"
+            className="shrink-0 text-muted-foreground hover:text-foreground"
           >
             <Plus className="h-5 w-5" />
           </Button>
         </div>
 
         {status === "authenticated" && session?.user && (
-          <div className="p-3 border-t border-slate-200 dark:border-slate-800">
+          <div className="p-3 border-t border-border/30">
             <Popover open={userMenuOpen} onOpenChange={setUserMenuOpen}>
               <PopoverTrigger asChild>
                 <Button variant="ghost" size="icon" className="w-full">
                   <Avatar className="h-8 w-8">
                     <AvatarImage src={session.user.image || ""} />
-                    <AvatarFallback className="bg-blue-500 text-white text-sm">
+                    <AvatarFallback className="bg-primary text-primary-foreground text-sm">
                       {session.user.name?.[0]?.toUpperCase() || "U"}
                     </AvatarFallback>
                   </Avatar>
@@ -170,20 +175,20 @@ export function ModernSidebar({
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="px-4 py-4 border-b border-slate-200 dark:border-slate-800">
+      <div className="px-4 py-4 border-b border-border/30">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-sm">
+            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-sm">
               <MessageSquare className="h-4 w-4 text-white" />
             </div>
-            <span className="font-semibold text-slate-900 dark:text-white">Chats</span>
+            <span className="font-semibold text-foreground">Chats</span>
           </div>
 
           <Button
             variant="ghost"
             size="icon"
             onClick={onToggleCollapse}
-            className="h-8 w-8 text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white"
+            className="h-8 w-8 text-muted-foreground hover:text-foreground"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -191,7 +196,7 @@ export function ModernSidebar({
 
         <Button
           onClick={handleNewChat}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+          className="w-full bg-primary text-primary-foreground shadow-sm hover:shadow-md hover:brightness-110 transition-all"
           size="sm"
         >
           <Plus className="h-4 w-4 mr-2" />
@@ -200,29 +205,29 @@ export function ModernSidebar({
 
         {status === "authenticated" && (
           <div className="relative mt-3">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               type="text"
               placeholder="Search chats..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-9 h-9 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+              className="pl-9 h-9 bg-muted/50 border-border/50 focus:bg-background transition-colors"
             />
           </div>
         )}
       </div>
 
       {/* Content */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto gemma-scrollbar">
         {status === "loading" ? (
           <div className="flex items-center justify-center h-32">
-            <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : status !== "authenticated" ? (
           <div className="p-6 space-y-4">
             <div className="text-center space-y-2">
-              <h3 className="font-semibold text-slate-900 dark:text-white">Welcome</h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+              <h3 className="font-semibold text-foreground">Welcome</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
                 Sign in to save your conversations and access them from anywhere
               </p>
             </div>
@@ -230,7 +235,7 @@ export function ModernSidebar({
             <div className="space-y-2">
               <Button
                 variant="default"
-                className="w-full bg-blue-600 hover:bg-blue-700"
+                className="w-full"
                 onClick={() => router.push("/login?callbackUrl=/gemma/chat")}
               >
                 <LogIn className="h-4 w-4 mr-2" />
@@ -249,12 +254,12 @@ export function ModernSidebar({
           </div>
         ) : isLoading ? (
           <div className="flex items-center justify-center h-32">
-            <Loader2 className="h-6 w-6 animate-spin text-slate-400" />
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : data?.conversations.length === 0 ? (
           <div className="p-8 text-center space-y-3">
-            <MessageSquare className="h-12 w-12 mx-auto text-slate-300 dark:text-slate-700" />
-            <p className="text-sm text-slate-600 dark:text-slate-400">
+            <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground/30" />
+            <p className="text-sm text-muted-foreground">
               {searchQuery ? "No conversations found" : "No conversations yet"}
             </p>
             {!searchQuery && (
@@ -267,8 +272,8 @@ export function ModernSidebar({
         ) : (
           <div className="py-2">
             {pinnedConversations.length > 0 && (
-              <div className="mb-4">
-                <h3 className="px-4 py-2 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+              <div className="mb-2">
+                <h3 className="px-4 py-2 text-[11px] font-medium text-muted-foreground/70 uppercase tracking-widest">
                   Pinned
                 </h3>
                 <div>
@@ -290,7 +295,7 @@ export function ModernSidebar({
             {recentConversations.length > 0 && (
               <div>
                 {pinnedConversations.length > 0 && (
-                  <h3 className="px-4 py-2 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                  <h3 className="px-4 py-2 text-[11px] font-medium text-muted-foreground/70 uppercase tracking-widest">
                     Recent
                   </h3>
                 )}
@@ -315,24 +320,24 @@ export function ModernSidebar({
 
       {/* User Menu at Bottom */}
       {status === "authenticated" && session?.user && (
-        <div className="p-3 border-t border-slate-200 dark:border-slate-800">
+        <div className="p-3 border-t border-border/30">
           <Popover open={userMenuOpen} onOpenChange={setUserMenuOpen}>
             <PopoverTrigger asChild>
               <Button
                 variant="ghost"
-                className="w-full justify-start h-auto p-2 hover:bg-slate-100 dark:hover:bg-slate-800"
+                className="w-full justify-start h-auto p-2 hover:bg-muted/50"
               >
                 <Avatar className="h-8 w-8 mr-3">
                   <AvatarImage src={session.user.image || ""} />
-                  <AvatarFallback className="bg-blue-500 text-white text-sm">
+                  <AvatarFallback className="bg-primary text-primary-foreground text-sm">
                     {session.user.name?.[0]?.toUpperCase() || "U"}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1 text-left min-w-0">
-                  <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
+                  <p className="text-sm font-medium text-foreground truncate">
                     {session.user.name || "User"}
                   </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                  <p className="text-xs text-muted-foreground truncate">
                     {session.user.email}
                   </p>
                 </div>
@@ -383,20 +388,35 @@ function ConversationRow({
   return (
     <div
       className={cn(
-        "group relative flex items-center gap-3 px-3 py-2.5 mx-2 rounded-lg cursor-pointer transition-colors",
+        "group relative flex items-center gap-3 px-3 py-2.5 mx-2 rounded-lg cursor-pointer transition-all duration-150",
         isActive
-          ? "bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800"
-          : "hover:bg-slate-100 dark:hover:bg-slate-800"
+          ? "bg-primary/10 text-foreground"
+          : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
       )}
       onClick={() => onSelect?.(conversation.id)}
     >
-      <MessageSquare className="h-4 w-4 shrink-0 text-slate-400" />
+      {/* Active indicator bar */}
+      {isActive && (
+        <motion.div
+          layoutId="sidebar-indicator"
+          className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-full bg-primary"
+          transition={{ type: "spring", stiffness: 350, damping: 30 }}
+        />
+      )}
+
+      <MessageSquare className={cn(
+        "h-4 w-4 shrink-0 transition-colors",
+        isActive ? "text-primary" : "text-muted-foreground/50"
+      )} />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-slate-900 dark:text-white truncate">
+        <p className={cn(
+          "text-sm font-medium truncate",
+          isActive ? "text-foreground" : "text-foreground/80"
+        )}>
           {conversation.title}
         </p>
         {conversation.messages?.[0] && (
-          <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+          <p className="text-xs text-muted-foreground truncate">
             {formatDistanceToNow(new Date(conversation.updatedAt), {
               addSuffix: true,
             })}
@@ -409,7 +429,7 @@ function ConversationRow({
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 opacity-0 group-hover:opacity-100 shrink-0"
+            className="h-7 w-7 opacity-0 group-hover:opacity-100 shrink-0 text-muted-foreground hover:text-foreground"
             onClick={(e) => {
               e.stopPropagation();
               setIsMenuOpen(true);
@@ -459,7 +479,7 @@ function ConversationRow({
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
-            className="text-red-600 dark:text-red-400"
+            className="text-destructive"
             onClick={(e) => {
               e.stopPropagation();
               onDelete(conversation.id);
@@ -492,27 +512,48 @@ function UserMenuContent({
   showArchived?: boolean;
   onToggleArchived?: () => void;
 }) {
+  const dispatch = useAppDispatch();
+  const theme = useAppSelector((state) => state.theme.value);
+
+  const toggleTheme = () => {
+    const newTheme = theme === "dark" ? "light" : "dark";
+    dispatch(setTheme(newTheme));
+  };
+
   return (
     <div>
-      <div className="p-4 border-b border-slate-200 dark:border-slate-800">
+      <div className="p-4 border-b border-border/50">
         <div className="flex items-center gap-3">
           <Avatar className="h-10 w-10">
             <AvatarImage src={user.image || ""} />
-            <AvatarFallback className="bg-blue-500 text-white">
+            <AvatarFallback className="bg-primary text-primary-foreground">
               {user.name?.[0]?.toUpperCase() || "U"}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-slate-900 dark:text-white truncate">
+            <p className="font-semibold text-foreground truncate">
               {user.name || "User"}
             </p>
-            <p className="text-sm text-slate-500 dark:text-slate-400 truncate">
+            <p className="text-sm text-muted-foreground truncate">
               {user.email}
             </p>
           </div>
         </div>
       </div>
       <div className="p-1">
+        <Button
+          variant="ghost"
+          className="w-full justify-start"
+          size="sm"
+          onClick={toggleTheme}
+        >
+          {theme === "dark" ? (
+            <Sun className="h-4 w-4 mr-2" />
+          ) : (
+            <Moon className="h-4 w-4 mr-2" />
+          )}
+          {theme === "dark" ? "Light Mode" : "Dark Mode"}
+        </Button>
         <Button
           variant="ghost"
           className="w-full justify-start"
@@ -535,7 +576,7 @@ function UserMenuContent({
         )}
         <Button
           variant="ghost"
-          className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+          className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
           size="sm"
           onClick={onSignOut}
         >

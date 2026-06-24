@@ -63,7 +63,7 @@ export function AttachmentPreview({
                 )}
               >
                 <div className="flex items-center gap-2.5">
-                  <div className="size-9 rounded-lg gemma-gradient flex items-center justify-center shrink-0">
+                  <div className="size-9 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shrink-0">
                     <AudioLines className="size-4 text-white" />
                   </div>
                   <div className="min-w-0 flex-1">
@@ -107,7 +107,7 @@ export function AttachmentPreview({
                 "border border-border/50",
                 isOcrRunning && "ring-2 ring-primary/50 ring-offset-2",
                 ocrError && "ring-2 ring-destructive/50 ring-offset-2",
-                hasOcr && !ocrError && "ring-2 ring-green-500/50 ring-offset-2",
+                hasOcr && !ocrError && "ring-2 ring-accent/50 ring-offset-2",
                 "transition-all duration-200 hover:shadow-lg hover:-translate-y-0.5"
               )}
             >
@@ -123,7 +123,7 @@ export function AttachmentPreview({
 
               {/* Status badges */}
               {hasOcr && !ocrError && !isOcrRunning && (
-                <div className="absolute top-1 right-1 bg-green-500 text-white rounded-full p-1 shadow-lg">
+                <div className="absolute top-1 right-1 bg-accent text-accent-foreground rounded-full p-1 shadow-lg">
                   <CheckCircle2 className="size-3" />
                 </div>
               )}
@@ -136,22 +136,22 @@ export function AttachmentPreview({
 
               {/* Cache hit badge */}
               {attachment.ocrCacheHit && (
-                <div className="absolute bottom-1 left-1 bg-blue-500 text-white text-[8px] px-1.5 py-0.5 rounded-md font-semibold shadow-sm">
+                <div className="absolute bottom-1 left-1 bg-primary text-primary-foreground text-[8px] px-1.5 py-0.5 rounded-md font-semibold shadow-sm">
                   {attachment.ocrCacheHit === "redis" ? "⚡ CACHED" : "💾 CACHED"}
                 </div>
               )}
 
               {/* OCR Progress Overlay */}
               {isOcrRunning && (
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/60 to-transparent backdrop-blur-sm flex flex-col items-center justify-center gap-2 p-2">
-                  <Loader2 className="size-6 text-white animate-spin" />
-                  <p className="text-[10px] text-white font-medium text-center leading-tight">
+                <div className="absolute inset-0 bg-gradient-to-t from-background/95 via-background/75 to-transparent backdrop-blur-sm flex flex-col items-center justify-center gap-2 p-2">
+                  <Loader2 className="size-6 text-primary animate-spin" />
+                  <p className="text-[10px] text-foreground font-medium text-center leading-tight">
                     {progress || "Processing..."}
                   </p>
                   <Button
                     size="icon-xs"
                     variant="ghost"
-                    className="text-white hover:bg-white/20 size-6 mt-1"
+                    className="text-foreground hover:bg-muted size-6 mt-1"
                     onClick={() => onCancelOcr(attachment.id)}
                     aria-label="Cancel OCR"
                   >
@@ -163,14 +163,14 @@ export function AttachmentPreview({
               {/* Error Overlay */}
               {ocrError && !isOcrRunning && (
                 <div className="absolute inset-0 bg-gradient-to-t from-destructive/90 via-destructive/60 to-transparent backdrop-blur-sm flex flex-col items-center justify-center gap-1.5 p-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <AlertCircle className="size-5 text-white" />
-                  <p className="text-[9px] text-white font-medium text-center leading-tight line-clamp-2">
+                  <AlertCircle className="size-5 text-destructive-foreground" />
+                  <p className="text-[9px] text-destructive-foreground font-medium text-center leading-tight line-clamp-2">
                     {ocrError}
                   </p>
                   <Button
                     size="icon-xs"
                     variant="ghost"
-                    className="text-white hover:bg-white/20 size-6 mt-1"
+                    className="text-destructive-foreground hover:bg-destructive/20 size-6 mt-1"
                     onClick={() => onRetryOcr(attachment.id)}
                     aria-label="Retry OCR"
                   >
@@ -181,7 +181,7 @@ export function AttachmentPreview({
 
               {/* Hover Actions */}
               {!isOcrRunning && !ocrError && (
-                <div className="absolute inset-0 bg-black/50 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-all duration-200 flex items-center justify-center gap-1.5">
+                <div className="absolute inset-0 bg-background/75 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-all duration-200 flex items-center justify-center gap-1.5">
                   {!hasOcr && (
                     <TooltipProvider>
                       <Tooltip>

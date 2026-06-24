@@ -80,8 +80,8 @@ export function ChatSidebar({
       <div className="shrink-0 p-3 space-y-3 border-b border-border/40">
         <div className="flex items-center justify-between gap-2">
           <h2 className="text-sm font-semibold text-foreground flex items-center gap-2">
-            <span className="size-6 rounded-lg gemma-gradient flex items-center justify-center">
-              <span className="text-white text-xs font-bold">G</span>
+            <span className="size-6 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+              <span className="text-white text-xs font-bold">C</span>
             </span>
             Conversations
           </h2>
@@ -101,7 +101,7 @@ export function ChatSidebar({
         <Button
           onClick={handleNewChat}
           disabled={isCreating}
-          className="w-full gemma-gradient text-white hover:opacity-90"
+          className="w-full bg-gradient-to-br from-primary to-accent text-white hover:opacity-90"
           size="sm"
         >
           {isCreating ? (

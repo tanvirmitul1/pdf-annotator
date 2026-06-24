@@ -1,5 +1,5 @@
 export const ARTIFACT_REGEX =
-  /<artifact\s+identifier="([^"]+)"\s+title="([^"]+)"\s+type="([^"]+)">\s*([\s\S]*?)\s*<\/artifact>/g;
+  /<artifact\s+identifier="([^"]+)"[,\s]+title="([^"]+)"[,\s]+type="([^"]+)">\s*([\s\S]*?)\s*<\/artifact>/g;
 
 export const MIME_TYPES: Record<string, string> = {
   // Documents

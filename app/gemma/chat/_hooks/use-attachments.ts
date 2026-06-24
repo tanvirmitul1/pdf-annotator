@@ -52,7 +52,7 @@ export function useAttachments() {
       validFiles.map(async (file) => {
         const base64 = await fileToBase64(file);
         const id = `attachment-${++nextId}`;
-        const preview = URL.createObjectURL(file);
+        const preview = `data:${file.type};base64,${base64}`;
         const kind = isAudioFile(file) ? "audio" : "image";
         const duration =
           kind === "audio" ? await getAudioDuration(file) : undefined;
@@ -87,11 +87,7 @@ export function useAttachments() {
       ocrService.cancel();
     }
     
-    setAttachments((prev) => {
-      const removed = prev.find((a) => a.id === id);
-      if (removed) URL.revokeObjectURL(removed.preview);
-      return prev.filter((a) => a.id !== id);
-    });
+    setAttachments((prev) => prev.filter((a) => a.id !== id));
     
     // Clean up loading/progress/error states
     setOcrLoading((prev) => {
@@ -198,10 +194,7 @@ export function useAttachments() {
     // Cancel any ongoing OCR
     ocrService.cancel();
     
-    setAttachments((prev) => {
-      for (const a of prev) URL.revokeObjectURL(a.preview);
-      return [];
-    });
+    setAttachments([]);
     setOcrLoading({});
     setOcrProgress({});
     setOcrErrors({});
