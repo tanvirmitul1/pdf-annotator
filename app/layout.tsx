@@ -23,21 +23,27 @@ const fontMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "PDF Annotator",
-  description: "Scaffolded SaaS foundations for PDF and image annotation.",
+  title: "WorkHub - All Your Productivity Tools",
+  description: "Multi-service productivity platform with document annotation, AI chat, and more.",
 }
 
 const themeScript = `
   (function() {
     try {
-      var stored = localStorage.getItem("pdf-annotator-theme");
-      var resolved = stored === "dark" || stored === "light"
-        ? stored
-        : window.matchMedia("(prefers-color-scheme: dark)").matches
-          ? "dark"
-          : "light";
+      var theme = null;
+      var persisted = localStorage.getItem("persist:theme");
+      if (persisted) {
+        var parsed = JSON.parse(persisted);
+        if (parsed.value) theme = JSON.parse(parsed.value);
+      }
+      var resolved;
+      if (theme === "dark" || theme === "light") {
+        resolved = theme;
+      } else {
+        resolved = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+      }
       document.documentElement.setAttribute("data-theme", resolved);
-    } catch (error) {
+    } catch (e) {
       document.documentElement.setAttribute("data-theme", "light");
     }
   })();

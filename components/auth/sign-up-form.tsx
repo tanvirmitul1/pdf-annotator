@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { type FormEvent, useState } from "react"
 import { LoaderCircle, Mail, Lock, Eye, EyeOff } from "lucide-react"
 import { signIn } from "next-auth/react"
@@ -41,7 +42,8 @@ export function SignUpForm({
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
 
-  const callbackUrl = propCallbackUrl ?? "/app"
+  const searchParams = useSearchParams()
+  const callbackUrl = propCallbackUrl ?? searchParams.get("callbackUrl") ?? "/dashboard"
 
   async function handleSignup() {
     setIsSubmitting(true)

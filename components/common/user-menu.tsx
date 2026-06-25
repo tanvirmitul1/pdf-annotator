@@ -89,20 +89,20 @@ export function UserMenu({
 
         <div className="p-1.5">
           <DropdownMenuItem asChild className="rounded-lg px-3 py-2.5 text-sm cursor-pointer">
-            <Link href="/app/settings">
+            <Link href="/settings">
               <Settings className="size-4 text-muted-foreground" />
               <span>Settings</span>
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild className="rounded-lg px-3 py-2.5 text-sm cursor-pointer">
-            <Link href="/app/help">
+            <Link href="/help">
               <CircleHelp className="size-4 text-muted-foreground" />
               <span>Help & Support</span>
             </Link>
           </DropdownMenuItem>
           {role === "ADMIN" && (
             <DropdownMenuItem asChild className="rounded-lg px-3 py-2.5 text-sm cursor-pointer">
-              <Link href="/app/admin">
+              <Link href="/services/documents/admin">
                 <Shield className="size-4 text-muted-foreground" />
                 <span>Admin Dashboard</span>
               </Link>

@@ -59,6 +59,7 @@ export const api = createApi({
     "AdminApiKey",
     "AdminPlan",
     "AdminError",
+    "DashboardStats",
   ],
   endpoints: () => ({}),
   keepUnusedDataFor: 60,

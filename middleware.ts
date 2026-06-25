@@ -43,15 +43,42 @@ export default auth(async (req) => {
     req.auth?.user &&
     ["/", "/login", "/signup"].includes(req.nextUrl.pathname)
   ) {
-    const response = NextResponse.redirect(new URL("/app", req.url))
+    const response = NextResponse.redirect(new URL("/dashboard", req.url))
     setSecurityHeaders(response)
     return response
   }
 
-  if (req.nextUrl.pathname.startsWith("/app") && !req.auth?.user) {
+  if (
+    (req.nextUrl.pathname.startsWith("/services") ||
+      req.nextUrl.pathname.startsWith("/dashboard")) &&
+    !req.auth?.user
+  ) {
     const loginUrl = new URL("/login", req.url)
     loginUrl.searchParams.set("callbackUrl", req.nextUrl.pathname)
     const response = NextResponse.redirect(loginUrl)
+    setSecurityHeaders(response)
+    return response
+  }
+
+  // Legacy route redirects
+  if (req.nextUrl.pathname.startsWith("/app")) {
+    const newPath = req.nextUrl.pathname.replace("/app", "/services/documents")
+    const response = NextResponse.redirect(new URL(newPath, req.url))
+    setSecurityHeaders(response)
+    return response
+  }
+
+  if (req.nextUrl.pathname.startsWith("/gemma/chat")) {
+    const response = NextResponse.redirect(
+      new URL("/services/ai-chat", req.url)
+    )
+    setSecurityHeaders(response)
+    return response
+  }
+
+  if (["/login", "/signup"].includes(req.nextUrl.pathname) && !req.auth?.user) {
+    // Allow access to login/signup pages when not authenticated
+    const response = NextResponse.next()
     setSecurityHeaders(response)
     return response
   }
@@ -69,7 +96,8 @@ function setSecurityHeaders(response: NextResponse) {
 
 export const config = {
   matcher: [
-    "/app/:path*",
+    "/services/:path*",
+    "/dashboard",
     "/((?!_next/static|_next/image|favicon.ico|api/).*)",
   ],
 }

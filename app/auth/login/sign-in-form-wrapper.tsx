@@ -8,7 +8,7 @@ export function SignInFormWrapper() {
   
   return (
     <SignInForm 
-      onSwitchToSignUp={() => router.push("/signup")} 
+      onSwitchToSignUp={() => router.push("/auth/signup")} 
     />
   )
 }

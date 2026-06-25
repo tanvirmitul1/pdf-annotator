@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useMemo, useState } from "react"
 import { usePathname } from "next/navigation"
 import {
+  ChevronLeft,
   CircleHelp,
   FolderKanban,
   LayoutDashboard,
@@ -27,15 +28,15 @@ import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 
 const navigation = [
-  { href: "/app", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/app/collections", label: "Collections", icon: FolderKanban },
-  { href: "/app/tags", label: "Tags", icon: Tag },
-  { href: "/app/trash", label: "Trash", icon: Trash2 },
+  { href: "/services/documents", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/services/documents/collections", label: "Collections", icon: FolderKanban },
+  { href: "/services/documents/tags", label: "Tags", icon: Tag },
+  { href: "/services/documents/trash", label: "Trash", icon: Trash2 },
 ]
 
 const bottomNav = [
-  { href: "/app/settings", label: "Settings", icon: Settings },
-  { href: "/app/help", label: "Help", icon: CircleHelp },
+  { href: "/services/documents/settings", label: "Settings", icon: Settings },
+  { href: "/services/documents/help", label: "Help", icon: CircleHelp },
 ]
 
 export interface ProtectedShellProps {
@@ -112,10 +113,17 @@ export function ProtectedShell({
       {/* Desktop sidebar */}
       <aside className="relative hidden h-screen w-[220px] shrink-0 flex-col border-r border-border/60 bg-card/50 backdrop-blur-sm lg:flex xl:w-[240px]">
         <div className="flex h-full flex-col px-3 py-4">
-          {/* Logo */}
+          {/* Logo + back link */}
           <div className="mb-6 px-2">
+            <Link
+              href="/dashboard"
+              className="mb-3 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ChevronLeft className="size-3" />
+              All Services
+            </Link>
             <LogoMark compact />
-            <p className="mt-1 text-[11px] font-medium text-foreground/80 tracking-tight">PDF Annotator</p>
+            <p className="mt-1 text-[11px] font-medium text-foreground/80 tracking-tight">Document Annotator</p>
           </div>
 
           {/* Main navigation */}
@@ -137,15 +145,15 @@ export function ProtectedShell({
                   </p>
                   <nav className="space-y-0.5">
                     <Link
-                      href="/app/admin"
+                      href="/services/documents/admin"
                       className={cn(
                         "group flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors",
-                        pathname.startsWith("/app/admin")
+                        pathname.startsWith("/services/documents/admin")
                           ? "bg-primary/10 text-primary font-medium"
                           : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
                       )}
                     >
-                      <Shield className={cn("size-4 shrink-0", pathname.startsWith("/app/admin") ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
+                      <Shield className={cn("size-4 shrink-0", pathname.startsWith("/services/documents/admin") ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
                       Admin
                     </Link>
                   </nav>
@@ -228,8 +236,16 @@ export function ProtectedShell({
               >
                 <div className="flex h-full flex-col px-3 py-4">
                   <div className="mb-6 px-2">
+                    <Link
+                      href="/dashboard"
+                      className="mb-3 flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      onClick={() => setMobileOpen(false)}
+                    >
+                      <ChevronLeft className="size-3" />
+                      All Services
+                    </Link>
                     <LogoMark compact />
-                    <p className="mt-1 text-[11px] font-medium text-foreground/80">PDF Annotator</p>
+                    <p className="mt-1 text-[11px] font-medium text-foreground/80">Document Annotator</p>
                   </div>
                   <div className="flex-1">
                     {renderNavItems(() => setMobileOpen(false))}

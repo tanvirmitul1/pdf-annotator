@@ -20,11 +20,10 @@ export function LogoMark({ compact = false, className }: LogoMarkProps) {
       {!compact ? (
         <div className="space-y-0.5">
           <p className="font-heading text-base font-semibold tracking-tight text-foreground">
-            PDF Annotator
+          WorkHub
           </p>
           <p className="text-xs text-muted-foreground">
-            Review, mark up, and organize dense reading without losing the
-            thread.
+            Your unified productivity workspace.
           </p>
         </div>
       ) : null}

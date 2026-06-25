@@ -1,43 +1,33 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 
-import { setTheme, type ThemeMode } from "@/features/theme/slice"
-import { useAppDispatch, useAppSelector } from "@/store/hooks"
+import { type ThemeMode } from "@/features/theme/slice"
+import { useAppSelector } from "@/store/hooks"
 
-function resolveTheme(theme: ThemeMode) {
+function resolveTheme(theme: ThemeMode): "dark" | "light" {
   if (theme === "system") {
     return window.matchMedia("(prefers-color-scheme: dark)").matches
       ? "dark"
       : "light"
   }
-
   return theme
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const dispatch = useAppDispatch()
   const theme = useAppSelector((state) => state.theme.value)
+  const isFirstRender = useRef(true)
 
   useEffect(() => {
-    if (typeof window === "undefined") {
+    // Skip the very first render — the blocking <script> already set the
+    // correct data-theme before React hydrated. Applying the redux initial
+    // state ("system") here would flash to the wrong theme before
+    // redux-persist rehydrates the real value.
+    if (isFirstRender.current) {
+      isFirstRender.current = false
       return
     }
 
-    const stored = window.localStorage.getItem(
-      "pdf-annotator-theme"
-    ) as ThemeMode | null
-    if (stored === "light" || stored === "dark" || stored === "system") {
-      dispatch(setTheme(stored))
-    }
-  }, [dispatch])
-
-  useEffect(() => {
-    if (typeof window === "undefined") {
-      return
-    }
-
-    window.localStorage.setItem("pdf-annotator-theme", theme)
     document.documentElement.setAttribute("data-theme", resolveTheme(theme))
   }, [theme])
 

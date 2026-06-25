@@ -29,7 +29,7 @@ export function SignInForm({ callbackUrl: propCallbackUrl, onSwitchToSignUp }: S
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
 
-  const callbackUrl = propCallbackUrl ?? searchParams.get("callbackUrl") ?? "/app"
+  const callbackUrl = propCallbackUrl ?? searchParams.get("callbackUrl") ?? "/dashboard"
 
   async function handleSignIn() {
     setIsSubmitting(true)

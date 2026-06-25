@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { FileText, FolderKanban, Users } from "lucide-react"
+import { FileText, MessageSquare, Sparkles } from "lucide-react"
 
 import { LogoMark } from "@/components/common/logo-mark"
 import { cn } from "@/lib/utils"
@@ -14,21 +14,21 @@ export interface AuthShellProps {
 const features = [
   {
     icon: FileText,
-    title: "Annotate any PDF",
+    title: "Document annotation",
     description:
-      "Highlight, draw, and comment on any document with precision and ease.",
+      "Upload, annotate, and organize PDFs with highlights, tags, and bookmarks.",
   },
   {
-    icon: Users,
-    title: "Real-time collaboration",
+    icon: MessageSquare,
+    title: "AI chat assistant",
     description:
-      "Invite teammates, share access, and review together seamlessly.",
+      "Chat with advanced AI — OCR, voice input, artifact generation, and more.",
   },
   {
-    icon: FolderKanban,
-    title: "Organized library",
+    icon: Sparkles,
+    title: "Unified workspace",
     description:
-      "Tag, categorize, and find your documents in seconds — not minutes.",
+      "All your productivity tools in one dashboard, designed for focus.",
   },
 ]
 
@@ -53,12 +53,12 @@ export function AuthShell({
           <div className="space-y-10">
             <div className="space-y-4">
               <h1 className="font-heading text-4xl font-semibold tracking-tight text-foreground xl:text-5xl">
-                Read, mark, <br />
-                <span className="text-primary">collaborate.</span>
+                Work smarter, <br />
+                <span className="text-primary">all in one place.</span>
               </h1>
               <p className="max-w-sm text-base leading-7 text-muted-foreground">
-                The annotation workspace that keeps your team aligned without
-                the noise.
+                Your unified productivity workspace — documents, AI, and
+                more under one roof.
               </p>
             </div>
 

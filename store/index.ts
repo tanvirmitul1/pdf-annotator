@@ -1,11 +1,11 @@
 import { combineReducers, configureStore, createListenerMiddleware } from "@reduxjs/toolkit"
-import { persistReducer, persistStore } from "redux-persist"
+import { REHYDRATE, persistReducer, persistStore } from "redux-persist"
 import createWebStorage from "redux-persist/lib/storage/createWebStorage"
 
 import { api } from "@/store/api"
 import { authReducer, setSession } from "@/features/auth/slice"
 import { modalsReducer } from "@/features/modals/slice"
-import { themeReducer, themeSlice } from "@/features/theme/slice"
+import { themeReducer, themeSlice, type ThemeMode } from "@/features/theme/slice"
 import { toastsReducer } from "@/features/toasts/slice"
 import localAnnotationsReducer from "@/features/annotations/local-slice"
 import { conversationsApi } from "@/app/gemma/chat/_store/conversations-api"
@@ -19,13 +19,34 @@ const createNoopStorage = () => ({
 const storage =
   typeof window === "undefined" ? createNoopStorage() : createWebStorage("local")
 
+function applyThemeToDOM(theme: ThemeMode) {
+  if (typeof document === "undefined") return
+  const resolved =
+    theme === "system"
+      ? window.matchMedia("(prefers-color-scheme: dark)").matches
+        ? "dark"
+        : "light"
+      : theme
+  document.documentElement.setAttribute("data-theme", resolved)
+}
+
 const listenerMiddleware = createListenerMiddleware()
 
+// Apply theme to DOM on explicit setTheme actions
 listenerMiddleware.startListening({
   actionCreator: themeSlice.actions.setTheme,
   effect: async (action) => {
-    if (typeof document !== "undefined") {
-      document.documentElement.setAttribute("data-theme", action.payload)
+    applyThemeToDOM(action.payload)
+  },
+})
+
+// Apply theme to DOM when redux-persist rehydrates the theme slice
+listenerMiddleware.startListening({
+  predicate: (action) => action.type === REHYDRATE,
+  effect: async (action) => {
+    const a = action as unknown as { key?: string; payload?: { value?: ThemeMode } }
+    if (a.key === "theme" && a.payload?.value) {
+      applyThemeToDOM(a.payload.value)
     }
   },
 })

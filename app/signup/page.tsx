@@ -1,22 +1,5 @@
 import { redirect } from "next/navigation"
 
-import { AuthShell } from "@/components/common/auth-shell"
-import { getCurrentUser } from "@/lib/auth/require"
-import { SignUpFormWrapper } from "./sign-up-form-wrapper"
-
-export default async function SignupPage() {
-  const user = await getCurrentUser()
-
-  if (user) {
-    redirect("/app")
-  }
-
-  return (
-    <AuthShell
-      badge="Create account"
-      title="Save your work"
-      description="Create an account to keep your annotations, bookmarks, and reading progress."
-      form={<SignUpFormWrapper />}
-    />
-  )
+export default function SignupPage() {
+  redirect("/auth/signup")
 }

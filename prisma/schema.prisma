@@ -99,6 +99,11 @@ enum EmailLogStatus {
   SKIPPED
 }
 
+enum ServiceType {
+  DOCUMENTS
+  AI_CHAT
+}
+
 model User {
   id                 String             @id @default(cuid())
   name               String?
@@ -149,6 +154,7 @@ model User {
   savedPrompts       SavedPrompt[]
   sharedConversations SharedConversation[]
   chatUsageLogs      ChatUsageLog[]
+  serviceAccess      UserServiceAccess[]
 
   @@index([planId])
   @@index([deletedAt])
@@ -776,4 +782,23 @@ model ChatUsageLog {
   @@index([userId])
   @@index([userId, createdAt(sort: Desc)])
   @@index([conversationId])
+}
+
+// ============================================
+// PLATFORM SERVICE ACCESS CONTROL
+// ============================================
+
+model UserServiceAccess {
+  id        String      @id @default(cuid())
+  userId    String
+  service   ServiceType
+  enabled   Boolean     @default(true)
+  metadata  Json?       // Store service-specific settings
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, service])
+  @@index([userId])
+  @@index([service])
 }
