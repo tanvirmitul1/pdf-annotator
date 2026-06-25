@@ -1,7 +1,5 @@
 "use client"
 
-import { BookOpenText } from "lucide-react"
-
 import { cn } from "@/lib/utils"
 
 export interface LogoMarkProps {
@@ -9,18 +7,40 @@ export interface LogoMarkProps {
   className?: string
 }
 
+/**
+ * Abstract overlapping-circles logo that echoes the bubble aesthetic.
+ * Three translucent circles merge into a unified shape.
+ */
+function LogoSvg({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 36 36"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      aria-hidden
+    >
+      {/* Bottom-left circle — warm orange */}
+      <circle cx="13" cy="21" r="9" fill="#f4a261" opacity={0.85} />
+      {/* Bottom-right circle — teal */}
+      <circle cx="23" cy="21" r="9" fill="#2a9d8f" opacity={0.8} />
+      {/* Top-center circle — coral */}
+      <circle cx="18" cy="13" r="9" fill="#e76f51" opacity={0.85} />
+    </svg>
+  )
+}
+
 export function LogoMark({ compact = false, className }: LogoMarkProps) {
   return (
-    <div className={cn("flex items-center gap-3", className)}>
-      <div className="relative flex size-9 items-center justify-center overflow-hidden rounded-lg border border-white/20 bg-primary text-primary-foreground shadow-sm">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(255,255,255,0.34),transparent_45%),linear-gradient(135deg,color-mix(in_oklab,var(--primary)_85%,white)_0%,color-mix(in_oklab,var(--accent)_68%,var(--primary))_100%)]" />
-        <BookOpenText className="relative z-10 size-4" />
+    <div className={cn("flex items-center gap-2.5", className)}>
+      <div className="relative flex size-8 items-center justify-center">
+        <LogoSvg className="size-8" />
       </div>
 
       {!compact ? (
         <div className="space-y-0.5">
           <p className="font-heading text-base font-semibold tracking-tight text-foreground">
-          WorkHub
+            WorkHub
           </p>
           <p className="text-xs text-muted-foreground">
             Your unified productivity workspace.
