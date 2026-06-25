@@ -6,6 +6,7 @@ import * as d3 from "d3"
 interface BubbleNode extends d3.SimulationNodeDatum {
   radius: number
   color: string
+  letter: string
 }
 
 const PALETTE = [
@@ -45,8 +46,10 @@ export default function HeroBubbles() {
     }
     setupCanvasScale()
 
-    // Cluster center: horizontally centered, pushed to lower 70% of viewport
-    const clusterCenterY = () => height * 0.7
+    // Cluster center: horizontally centered, vertically centered
+    const clusterCenterY = () => height * 0.6
+
+    const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
     const numNodes = 400
     const nodes: BubbleNode[] = Array.from({ length: numNodes }, (_, i) => {
@@ -59,6 +62,7 @@ export default function HeroBubbles() {
         vy: 0,
         radius: Math.random() * 10 + 10, // 10–20px
         color: PALETTE[i % PALETTE.length],
+        letter: LETTERS[i % LETTERS.length],
       }
     })
 
@@ -106,7 +110,7 @@ export default function HeroBubbles() {
           const mdx = node.x - pointer.x
           const mdy = node.y - pointer.y
           const mouseDist = Math.sqrt(mdx * mdx + mdy * mdy)
-          const repelRadius = 250
+          const repelRadius = 300
 
           if (mouseDist > 0 && mouseDist < repelRadius) {
             const t = mouseDist / repelRadius
@@ -121,12 +125,15 @@ export default function HeroBubbles() {
 
       ctx.clearRect(0, 0, width, height)
 
+      ctx.textAlign = "center"
+      ctx.textBaseline = "middle"
+
       for (const node of nodes) {
         if (node.x === undefined || node.y === undefined) continue
-        ctx.beginPath()
-        ctx.arc(node.x, node.y, node.radius, 0, Math.PI * 2)
+        const fontSize = node.radius * 1.6
+        ctx.font = `700 ${fontSize}px "Inter", "SF Pro Display", system-ui, sans-serif`
         ctx.fillStyle = node.color
-        ctx.fill()
+        ctx.fillText(node.letter, node.x, node.y)
       }
 
       raf = requestAnimationFrame(animate)
@@ -181,10 +188,7 @@ export default function HeroBubbles() {
       ref={containerRef}
       className="absolute inset-0 z-0 h-full w-full overflow-hidden"
     >
-      <canvas
-        ref={canvasRef}
-        className="block h-full w-full opacity-80"
-      />
+      <canvas ref={canvasRef} className="block h-full w-full opacity-80" />
     </div>
   )
 }
