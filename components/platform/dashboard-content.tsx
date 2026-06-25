@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { motion } from "framer-motion"
 import {
@@ -37,12 +38,17 @@ export function DashboardContent({
   chatCount,
   children,
 }: DashboardContentProps) {
-  const today = new Date()
-  const dateStr = today.toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-  })
+  const [dateStr, setDateStr] = useState("")
+
+  useEffect(() => {
+    setDateStr(
+      new Date().toLocaleDateString("en-US", {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+      })
+    )
+  }, [])
 
   return (
     <div className="min-h-[calc(100vh-3.5rem)]">

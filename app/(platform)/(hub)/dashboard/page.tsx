@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
 import { SERVICES } from "@/lib/services/registry"
 import { ServiceCardWrapper } from "@/components/platform/service-card-wrapper"
@@ -74,13 +75,17 @@ function DashboardSkeleton() {
 
 export default function DashboardPage() {
   const { data, isLoading } = useGetDashboardStatsQuery()
+  const [greeting, setGreeting] = useState("")
+
+  useEffect(() => {
+    setGreeting(getGreeting())
+  }, [])
 
   if (isLoading || !data) {
     return <DashboardSkeleton />
   }
 
   const firstName = data.user.name?.split(" ")[0] || "there"
-  const greeting = getGreeting()
 
   const accessMap = new Map(
     data.serviceAccess.map((access) => [access.service, access.enabled])
