@@ -324,35 +324,6 @@ export function SignUpForm({
           </Button>
         </form>
 
-        {/* Switch to sign-in */}
-        <p className="text-center text-sm text-muted-foreground">
-          Do you have an account?{" "}
-          <button
-            type="button"
-            onClick={onSwitchToSignIn}
-            className="font-bold text-foreground transition-all hover:underline"
-          >
-            Sign in!
-          </button>
-        </p>
-
-        {/* Legal footer */}
-        <p className="text-center text-xs leading-relaxed text-muted-foreground">
-          If you continue, you agree to the{" "}
-          <Link
-            href="/terms"
-            className="font-medium text-foreground underline underline-offset-2 transition-colors hover:text-primary"
-          >
-            Terms of Service
-          </Link>
-          {" & "}
-          <Link
-            href="/privacy"
-            className="font-medium text-foreground underline underline-offset-2 transition-colors hover:text-primary"
-          >
-            Privacy Policy
-          </Link>
-        </p>
       </div>
     </div>
   )

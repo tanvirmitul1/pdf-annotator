@@ -71,6 +71,11 @@
   --sidebar-accent-foreground: oklch(0.18 0.02 260);
   --sidebar-border: oklch(0.92 0.01 255 / 85%);
   --sidebar-ring: oklch(0.55 0.18 260 / 35%);
+  /* Landing/auth background blob fills — tinted gray-blue, visible on near-white bg */
+  --blob-fill-a: oklch(0.87 0.018 258 / 0.70);
+  --blob-fill-b: oklch(0.91 0.010 255 / 0.38);
+  --blob-fill-c: oklch(0.87 0.018 258 / 0.80);
+  --blob-fill-d: oklch(0.90 0.012 255 / 0.40);
 }
 
 [data-theme="dark"] {
@@ -102,6 +107,11 @@
   --sidebar-accent-foreground: oklch(0.98 0.005 252);
   --sidebar-border: oklch(0.98 0.005 250 / 12%);
   --sidebar-ring: oklch(0.7 0.15 265 / 35%);
+  /* Dark-mode blob fills — slightly lighter than dark background */
+  --blob-fill-a: color-mix(in oklab, var(--card) 95%, transparent);
+  --blob-fill-b: color-mix(in oklab, var(--card) 45%, transparent);
+  --blob-fill-c: color-mix(in oklab, var(--card) 85%, transparent);
+  --blob-fill-d: color-mix(in oklab, var(--card) 38%, transparent);
 }
 
 @layer base {

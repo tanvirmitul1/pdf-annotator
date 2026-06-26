@@ -16,6 +16,9 @@ export default async function LoginPage() {
       badge="Login"
       title="Welcome back"
       description="Sign in to your WorkHub workspace."
+      switchHref="/auth/signup"
+      switchLabel="Sign up"
+      switchPrompt="Don't have an account?"
       form={<SignInFormWrapper />}
     />
   )

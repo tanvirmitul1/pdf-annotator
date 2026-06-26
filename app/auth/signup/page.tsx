@@ -16,6 +16,9 @@ export default async function SignupPage() {
       badge="Create account"
       title="Get started"
       description="Create an account to access all your productivity services."
+      switchHref="/auth/login"
+      switchLabel="Log in"
+      switchPrompt="Already have an account?"
       form={<SignUpFormWrapper />}
     />
   )

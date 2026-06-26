@@ -46,21 +46,24 @@ export default function HeroBubbles() {
     }
     setupCanvasScale()
 
-    // Cluster center: horizontally centered, vertically centered
-    const clusterCenterY = () => height * 0.6
+    // Cluster at right side, slightly above vertical center
+    const clusterCenterX = () => width * 0.72
+    const clusterCenterY = () => height * 0.30
 
     const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-    const numNodes = 400
+    const numNodes = 300
     const nodes: BubbleNode[] = Array.from({ length: numNodes }, (_, i) => {
       const angle = Math.random() * Math.PI * 2
       const dist = Math.random() * Math.min(width, height) * 0.32
+      const cx0 = clusterCenterX()
+      const cy0 = clusterCenterY()
       return {
-        x: width / 2 + Math.cos(angle) * dist,
-        y: clusterCenterY() + Math.sin(angle) * dist,
+        x: cx0 + Math.cos(angle) * dist,
+        y: cy0 + Math.sin(angle) * dist,
         vx: 0,
         vy: 0,
-        radius: Math.random() * 10 + 10, // 10–20px
+        radius: Math.random() * 10 + 10,
         color: PALETTE[i % PALETTE.length],
         letter: LETTERS[i % LETTERS.length],
       }
@@ -87,7 +90,7 @@ export default function HeroBubbles() {
     let raf = 0
 
     const animate = () => {
-      const cx = width / 2
+      const cx = clusterCenterX()
       const cy = clusterCenterY()
 
       for (const node of nodes) {
@@ -96,16 +99,16 @@ export default function HeroBubbles() {
         const dx = cx - node.x
         const dy = cy - node.y
 
-        // 1. Pull toward cluster center
+        // Pull toward right-center cluster
         const pullStrength = 0.0004
         node.vx! += dx * pullStrength
         node.vy! += dy * pullStrength
 
-        // 2. Viscous drag
+        // Viscous drag
         node.vx! *= 0.94
         node.vy! *= 0.94
 
-        // 3. Mouse repulsion
+        // Mouse repulsion
         if (pointer.active) {
           const mdx = node.x - pointer.x
           const mdy = node.y - pointer.y
@@ -124,7 +127,6 @@ export default function HeroBubbles() {
       simulation.tick()
 
       ctx.clearRect(0, 0, width, height)
-
       ctx.textAlign = "center"
       ctx.textBaseline = "middle"
 

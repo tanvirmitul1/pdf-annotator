@@ -236,29 +236,6 @@ export function SignInForm({ callbackUrl: propCallbackUrl, onSwitchToSignUp }: S
           </Button>
         </form>
 
-        {/* Switch to sign-up */}
-        <p className="text-center text-sm text-muted-foreground">
-          Don&apos;t have an account?{" "}
-          <button
-            type="button"
-            onClick={onSwitchToSignUp}
-            className="text-foreground font-bold hover:underline transition-all"
-          >
-            Sign up!
-          </button>
-        </p>
-
-        {/* Legal footer */}
-        <p className="text-center text-xs text-muted-foreground leading-relaxed">
-          If you continue, you agree to the{" "}
-          <Link href="/terms" className="text-foreground underline underline-offset-2 font-medium hover:text-primary transition-colors">
-            Terms of Service
-          </Link>
-          {" & "}
-          <Link href="/privacy" className="text-foreground underline underline-offset-2 font-medium hover:text-primary transition-colors">
-            Privacy Policy
-          </Link>
-        </p>
       </div>
     </div>
   )

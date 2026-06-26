@@ -1,123 +1,116 @@
 import Link from "next/link"
-import { FileText, MessageSquare, Sparkles } from "lucide-react"
 
 import { LogoMark } from "@/components/common/logo-mark"
-import { cn } from "@/lib/utils"
 
 export interface AuthShellProps {
   badge: string
   title: string
   description: string
   form: React.ReactNode
+  /** Link shown next to the logo — e.g. "Already have an account? Log in" */
+  switchHref: string
+  switchLabel: string
+  switchPrompt: string
 }
 
-const features = [
-  {
-    icon: FileText,
-    title: "Document annotation",
-    description:
-      "Upload, annotate, and organize PDFs with highlights, tags, and bookmarks.",
-  },
-  {
-    icon: MessageSquare,
-    title: "AI chat assistant",
-    description:
-      "Chat with advanced AI — OCR, voice input, artifact generation, and more.",
-  },
-  {
-    icon: Sparkles,
-    title: "Unified workspace",
-    description:
-      "All your productivity tools in one dashboard, designed for focus.",
-  },
-]
-
-export function AuthShell({
-  title,
-  description,
-  form,
-}: AuthShellProps) {
+export function AuthShell({ form, switchHref, switchLabel, switchPrompt }: AuthShellProps) {
   return (
     <main
       id="main-content"
-      className="relative min-h-screen overflow-hidden"
+      className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-background px-4 py-16"
     >
-      {/* Background */}
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,color-mix(in_oklab,var(--primary)_14%,transparent)_0,transparent_40%),radial-gradient(circle_at_bottom_right,color-mix(in_oklab,var(--accent)_16%,transparent)_0,transparent_38%)]" />
+      {/* ── Background: same smooth streaming light as landing ── */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+        {/* Top-right streaming blob — adapts light/dark via CSS vars */}
+        <div
+          className="absolute -right-[8%] -top-[12%] h-[85vh] w-[72vw] blur-3xl"
+          style={{
+            background:
+              "radial-gradient(ellipse at 68% 18%, var(--blob-fill-a) 0%, var(--blob-fill-b) 40%, transparent 68%)",
+          }}
+        />
+        {/* Directional stream: right → center */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse 58% 78% at 86% 44%, color-mix(in oklab, var(--primary) 8%, transparent) 0%, transparent 62%)",
+          }}
+        />
+        {/* Center ambient glow */}
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "radial-gradient(ellipse 38% 42% at 66% 40%, color-mix(in oklab, var(--foreground) 6%, transparent) 0%, transparent 58%)",
+          }}
+        />
+        {/* Bottom-left soft blob — adapts light/dark via CSS vars */}
+        <div
+          className="absolute -bottom-[12%] -left-[6%] h-[62vh] w-[58vw] blur-3xl"
+          style={{
+            background:
+              "radial-gradient(ellipse at 28% 72%, var(--blob-fill-c) 0%, var(--blob-fill-d) 38%, transparent 65%)",
+          }}
+        />
+      </div>
 
-      <div className="relative flex min-h-screen">
-        {/* Left panel — product information */}
-        <div className="hidden flex-col justify-between border-r border-border/50 bg-card/40 px-10 py-10 backdrop-blur-sm lg:flex lg:w-[46%] xl:w-[42%]">
-          <LogoMark />
+      {/* ── Navbar ── */}
+      <nav className="absolute inset-x-0 top-0 z-20 flex items-center justify-between border-b border-border/40 bg-background/25 px-6 py-4 backdrop-blur-md sm:px-10">
+        <Link href="/" className="flex items-center gap-2.5 focus-visible:outline-none">
+          <LogoMark compact />
+          <span className="text-lg font-semibold tracking-tight">WorkHub</span>
+        </Link>
+        <p className="text-sm text-muted-foreground">
+          {switchPrompt}{" "}
+          <Link
+            href={switchHref}
+            className="font-semibold text-foreground transition-colors hover:text-primary"
+          >
+            {switchLabel}
+          </Link>
+        </p>
+      </nav>
 
-          <div className="space-y-10">
-            <div className="space-y-4">
-              <h1 className="font-heading text-4xl font-semibold tracking-tight text-foreground xl:text-5xl">
-                Work smarter, <br />
-                <span className="text-primary">all in one place.</span>
-              </h1>
-              <p className="max-w-sm text-base leading-7 text-muted-foreground">
-                Your unified productivity workspace — documents, AI, and
-                more under one roof.
-              </p>
-            </div>
-
-            <div className="space-y-5">
-              {features.map((feature, index) => (
-                <div
-                  key={feature.title}
-                  className={cn(
-                    "flex items-start gap-4",
-                    "animate-in duration-500 fade-in-0 slide-in-from-left-4"
-                  )}
-                  style={{ animationDelay: `${index * 80}ms` }}
-                >
-                  <div className="mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-lg border border-primary/20 bg-primary/10 text-primary">
-                    <feature.icon className="size-4" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-foreground">
-                      {feature.title}
-                    </p>
-                    <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                      {feature.description}
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <Link href="/terms" className="hover:text-foreground transition-colors">
-              Terms
-            </Link>
-            <Link href="/privacy" className="hover:text-foreground transition-colors">
-              Privacy
-            </Link>
-          </div>
-        </div>
-
-        {/* Right panel — form */}
-        <div className="flex flex-1 flex-col items-center justify-center px-6 py-12 sm:px-10">
-          {/* Mobile logo */}
-          <div className="mb-8 lg:hidden">
-            <LogoMark />
-          </div>
-
-          <div className="w-full max-w-sm space-y-6">
-            <div className="space-y-1.5">
-              <h2 className="font-heading text-2xl font-semibold tracking-tight text-foreground">
-                {title}
-              </h2>
-              <p className="text-sm text-muted-foreground">{description}</p>
-            </div>
-
-            <div className="rounded-xl border border-border/60 bg-card/80 p-6 shadow-sm backdrop-blur-sm">
-              {form}
-            </div>
+      {/* ── Centered card ── */}
+      <div className="relative z-10 w-full max-w-[400px]">
+        {/* Logo mark */}
+        <div className="mb-6 flex justify-center">
+          <div className="flex size-12 items-center justify-center rounded-xl border border-border/60 bg-card/80 shadow-sm backdrop-blur-sm">
+            <LogoMark compact />
           </div>
         </div>
+
+        {/* Form card */}
+        <div className="overflow-hidden rounded-2xl border border-border/60 bg-card/80 shadow-2xl backdrop-blur-sm">
+          {form}
+        </div>
+
+        {/* Single legal line — only place it appears */}
+        <p className="mt-5 text-center text-xs leading-relaxed text-muted-foreground/70">
+          By continuing, you agree to our{" "}
+          <Link
+            href="/terms"
+            className="text-muted-foreground underline underline-offset-2 transition-colors hover:text-foreground"
+          >
+            Terms
+          </Link>
+          ,{" "}
+          <Link
+            href="/terms#acceptable-use"
+            className="text-muted-foreground underline underline-offset-2 transition-colors hover:text-foreground"
+          >
+            Acceptable Use
+          </Link>
+          , and{" "}
+          <Link
+            href="/privacy"
+            className="text-muted-foreground underline underline-offset-2 transition-colors hover:text-foreground"
+          >
+            Privacy Policy
+          </Link>
+          .
+        </p>
       </div>
     </main>
   )
