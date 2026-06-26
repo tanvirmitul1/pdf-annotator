@@ -99,6 +99,11 @@ enum EmailLogStatus {
   SKIPPED
 }
 
+enum TokenType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
 enum ServiceType {
   DOCUMENTS
   AI_CHAT
@@ -155,6 +160,7 @@ model User {
   sharedConversations SharedConversation[]
   chatUsageLogs      ChatUsageLog[]
   serviceAccess      UserServiceAccess[]
+  userTokens         UserToken[]
 
   @@index([planId])
   @@index([deletedAt])
@@ -197,6 +203,20 @@ model VerificationToken {
 
   @@unique([identifier, token])
   @@index([token])
+}
+
+model UserToken {
+  id        String    @id @default(cuid())
+  userId    String
+  token     String    @unique
+  type      TokenType
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId, type])
 }
 
 model Plan {

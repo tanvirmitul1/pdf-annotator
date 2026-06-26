@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation"
 import { getCurrentUser } from "@/lib/auth/require"
 import { HubLayoutClient } from "@/components/platform/hub-layout-client"
+import { EmailVerificationBanner } from "@/components/common/email-verification-banner"
 
 export default async function HubLayout({
   children,
@@ -21,6 +22,7 @@ export default async function HubLayout({
       planId={user.planId}
       role={user.role}
     >
+      <EmailVerificationBanner userId={user.id} />
       {children}
     </HubLayoutClient>
   )

@@ -215,7 +215,7 @@ export function SignInForm({ callbackUrl: propCallbackUrl, onSwitchToSignUp }: S
           {/* Forgot password */}
           <div className="text-right -mt-1">
             <Link
-              href="/forgot-password"
+              href="/auth/forgot-password"
               className="text-sm text-primary hover:text-primary/80 transition-colors"
             >
               Forgot password?
