@@ -19,7 +19,7 @@ function clampPoint(
   }
 }
 
-export function isMovablePosition(positionData: PositionData) {
+export function isMovablePosition(_positionData: PositionData) { // eslint-disable-line @typescript-eslint/no-unused-vars
   return true
 }
 

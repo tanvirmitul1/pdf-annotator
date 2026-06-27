@@ -88,7 +88,7 @@ export default function GemmaChatPage() {
   );
 
   const handleConversationCreated = useCallback(
-    (id: string, title: string) => {
+    (id: string) => {
       router.replace(`/services/ai-chat?c=${id}`);
       refetchConversations();
     },
@@ -200,7 +200,7 @@ export default function GemmaChatPage() {
             chat.submit(
               attachments,
               hasOcrPending,
-              (id, title) => handleConversationCreated(id, title),
+              (id) => handleConversationCreated(id),
               () => handleTitleGenerated()
             )
           }

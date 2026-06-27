@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { Plus, Search, Settings, Archive, Folder, X, Loader2 } from "lucide-react";
+import { Plus, Search, Settings, Archive, X, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -32,7 +32,7 @@ export function ChatSidebar({
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [showArchived, setShowArchived] = useState(false);
-  const [showPinnedOnly, setShowPinnedOnly] = useState(false);
+  const [showPinnedOnly] = useState(false);
 
   const { data, isLoading, error } = useListConversationsQuery({
     search: searchQuery || undefined,

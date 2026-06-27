@@ -2,6 +2,7 @@ import { api } from "@/store/api"
 import type { Bookmark, ReadingProgress } from "@prisma/client"
 import type { DocumentMemberRole } from "@prisma/client"
 import type { PdfObject } from "@/lib/pdf/analyzer"
+import type { PageMetadata } from "@/features/viewer/store"
 
 export interface DocumentOutlineEntry {
   title: string
@@ -36,7 +37,7 @@ export interface ViewerData {
   bookmarks: Bookmark[]
   readingProgress: ReadingProgress | null
   pagesData: Array<{ pageNumber: number; objects: PdfObject[] }>
-  pageOrder: any[] | null
+  pageOrder: PageMetadata[] | null
 }
 
 export const viewerApi = api.injectEndpoints({
@@ -89,7 +90,7 @@ export const viewerApi = api.injectEndpoints({
       // scroll → progress PUT → viewer-data GET → PDF download GET → loop.
     }),
 
-    updatePageOrder: b.mutation<void, { documentId: string; pageOrder: any[] }>({
+    updatePageOrder: b.mutation<void, { documentId: string; pageOrder: PageMetadata[] }>({
       query: ({ documentId, pageOrder }) => ({
         url: `/documents/${documentId}/page-order`,
         method: "PUT",

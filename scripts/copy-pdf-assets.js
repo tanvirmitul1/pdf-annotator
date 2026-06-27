@@ -1,7 +1,6 @@
 import fs from 'fs';
 import path from 'path';
 
-const isWindows = process.platform === 'win32';
 
 function copyFolderSync(from, to) {
   if (!fs.existsSync(from)) return;

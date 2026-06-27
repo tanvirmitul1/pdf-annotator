@@ -67,6 +67,7 @@ export async function updateAnnotation(
   await assertValidAssignee(existing.documentId, changes.assigneeId)
 
   // Strip updatedAt from the changes before passing to the repository
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { updatedAt: _updatedAt, ...repoChanges } = changes
   return repo.update(annotationId, repoChanges)
 }

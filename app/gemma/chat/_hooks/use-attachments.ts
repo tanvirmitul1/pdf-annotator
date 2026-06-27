@@ -79,7 +79,7 @@ export function useAttachments() {
         }
       }
     }
-  }, []);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- runOcrOnAttachment is stable ([] deps) but defined later in scope
 
   const removeAttachment = useCallback((id: string) => {
     // Cancel OCR if running

@@ -7,7 +7,7 @@ import { useViewer } from "@/features/viewer/provider"
 import { annotationsApi } from "./api"
 import type { CreateAnnotationArg, UpdateAnnotationArg, DeleteAnnotationArg } from "./api"
 import type { AnnotationWithTags, PositionData } from "./types"
-import { addLocalAnnotation, markSynced, markFailed } from "./local-slice"
+import { addLocalAnnotation, markSynced } from "./local-slice"
 
 const FLUSH_DELAY_MS = 10_000 // 10 seconds as requested
 const MAX_BATCH_SIZE = 100
@@ -120,12 +120,13 @@ export function useAnnotationManager(documentId: string) {
 
   // Best-effort flush on unmount if there's data
   useEffect(() => {
+    const buffer = bufferRef.current
     return () => {
       if (flushTimerRef.current) {
         clearTimeout(flushTimerRef.current)
       }
-      
-      const pending = bufferRef.current.splice(0)
+
+      const pending = buffer.splice(0)
       if (pending.length > 0) {
         const payload = JSON.stringify({
           documentId,
@@ -178,7 +179,8 @@ export function useAnnotationManager(documentId: string) {
         })
       )
 
-      const { documentId, ...payloadWithoutDoc } = annotation
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { documentId: _docId, ...payloadWithoutDoc } = annotation
       bufferRef.current.push({ type: "create", clientId, payload: payloadWithoutDoc })
       scheduleFlush()
       return localId
@@ -251,8 +253,8 @@ export function useAnnotationManager(documentId: string) {
    */
   const restoreAnnotation = useCallback(
     (arg: DeleteAnnotationArg) => {
-      const { id, documentId } = arg
-      
+      const { id } = arg
+
       // We don't optimistically restore because we don't have the full data usually
       // but if it's already in the cache (just marked deleted), we can.
       // However, listByDocument usually filters out deleted.
@@ -271,7 +273,7 @@ export function useAnnotationManager(documentId: string) {
       clearTimeout(flushTimerRef.current)
       flushTimerRef.current = null
     }
-    return doFlush()
+    return flushRef.current()
   }, [])
 
   const getPendingCount = useCallback(() => bufferRef.current.length, [])

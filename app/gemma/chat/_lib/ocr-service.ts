@@ -10,7 +10,6 @@
  */
 
 const OCR_API_URL = "/api/gemma/ocr";
-const OCR_TIMEOUT = 960000; // 16 minutes
 
 export interface OcrResult {
   text: string;

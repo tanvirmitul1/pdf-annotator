@@ -68,8 +68,8 @@ export const annotationsApi = api.injectEndpoints({
     }),
 
     bulkSyncAnnotations: b.mutation<
-      any[],
-      { documentId: string; operations: any[] }
+      Array<{ status: string; serverId: string }>,
+      { documentId: string; operations: Array<Record<string, unknown>> }
     >({
       query: ({ documentId, operations }) => ({
         url: `/annotations/sync`,
@@ -79,7 +79,7 @@ export const annotationsApi = api.injectEndpoints({
           operations,
         },
       }),
-      transformResponse: (res: { data: any[] }) => res.data,
+      transformResponse: (res: { data: Array<{ status: string; serverId: string }> }) => res.data,
       invalidatesTags: [],
     }),
 
