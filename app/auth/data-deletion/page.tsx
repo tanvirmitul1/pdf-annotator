@@ -110,7 +110,7 @@ export default function DataDeletionPage() {
               >
                 privacy@clustar.app
               </a>{" "}
-              with the subject line <em>"Data Deletion Request"</em>. We will process your
+              with the subject line <em>&ldquo;Data Deletion Request&rdquo;</em>. We will process your
               request within 30 days and confirm deletion by email.
             </p>
           </section>
