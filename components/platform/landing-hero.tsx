@@ -251,7 +251,7 @@ export function LandingHero() {
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5 focus-visible:outline-none">
           <LogoMark compact />
-          <span className="text-lg font-semibold tracking-tight">WorkHub</span>
+          <span className="text-lg font-semibold tracking-tight">Clustar</span>
         </Link>
 
         {/* Center nav with dropdowns */}
@@ -469,7 +469,7 @@ export function LandingHero() {
         <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-3 px-6 py-4 sm:flex-row sm:px-10">
           <div className="flex items-center gap-2 text-sm text-muted-foreground/70">
             <LogoMark compact />
-            <span className="font-medium text-muted-foreground">WorkHub</span>
+            <span className="font-medium text-muted-foreground">Clustar</span>
             <span className="hidden sm:inline">&middot;</span>
             <span className="hidden sm:inline">
               &copy; {new Date().getFullYear()}

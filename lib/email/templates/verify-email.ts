@@ -9,12 +9,12 @@ export function verifyEmailTemplate({
 }): string {
   return emailBase({
     title: "Verify your email address",
-    previewText: `Hi ${name}, please verify your email address to activate your WorkHub account.`,
+    previewText: `Hi ${name}, please verify your email address to activate your Clustar account.`,
     icon: "✉️",
     iconBg: "#eef2ff",
     iconColor: "#c7d2fe",
     heading: "Verify your email address",
-    greeting: `Hi <strong style="color:#0f172a;">${name}</strong>, welcome to WorkHub! We just need to confirm your email address to activate your account.`,
+    greeting: `Hi <strong style="color:#0f172a;">${name}</strong>, welcome to Clustar! We just need to confirm your email address to activate your account.`,
     body: `
       <p style="margin:0 0 20px;font-size:15px;color:#475569;line-height:1.7;">
         Click the button below and you'll be verified instantly. The whole thing takes less than a second.
@@ -24,7 +24,7 @@ export function verifyEmailTemplate({
     ctaUrl: verifyUrl,
     notice: `
       ⏱ This link expires in <strong>24 hours</strong>.<br>
-      If you didn't create a WorkHub account, you can safely ignore this email — no account will be activated.
+      If you didn't create a Clustar account, you can safely ignore this email — no account will be activated.
     `,
   })
 }

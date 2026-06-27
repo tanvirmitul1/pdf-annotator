@@ -1,10 +1,10 @@
 services:
   postgres:
     image: postgres:16-alpine
-    container_name: pdf-annotator-postgres
+    container_name: clustar-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: pdf_annotator
+      POSTGRES_DB: clustar
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
@@ -14,7 +14,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: pdf-annotator-redis
+    container_name: clustar-redis
     restart: unless-stopped
     ports:
       - "16379:6379"

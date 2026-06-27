@@ -23,7 +23,7 @@ const fontMono = JetBrains_Mono({
 })
 
 export const metadata: Metadata = {
-  title: "WorkHub - All Your Productivity Tools",
+  title: "Clustar - Find Any App, All in One Place",
   description: "Multi-service productivity platform with document annotation, AI chat, and more.",
   icons: {
     icon: "/icon.svg",

@@ -40,10 +40,10 @@ export function LogoMark({ compact = false, className }: LogoMarkProps) {
       {!compact ? (
         <div className="space-y-0.5">
           <p className="font-heading text-base font-semibold tracking-tight text-foreground">
-            WorkHub
+            Clustar
           </p>
           <p className="text-xs text-muted-foreground">
-            Your unified productivity workspace.
+            Find any app, all in one place.
           </p>
         </div>
       ) : null}

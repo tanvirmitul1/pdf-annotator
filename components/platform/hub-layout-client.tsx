@@ -37,7 +37,7 @@ export function HubLayoutClient({
             <Link href="/dashboard" className="flex items-center gap-2.5">
               <LogoMark compact />
               <span className="hidden sm:inline-block font-semibold text-lg tracking-tight">
-                WorkHub
+                Clustar
               </span>
             </Link>
 

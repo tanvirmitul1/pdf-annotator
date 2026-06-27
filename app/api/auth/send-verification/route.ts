@@ -46,7 +46,7 @@ export const POST = withErrorHandling(async (req) => {
 
   await sendEmail({
     to: dbUser.email,
-    subject: "Verify your WorkHub email address",
+    subject: "Verify your Clustar email address",
     html: verifyEmailTemplate({ name: dbUser.name ?? "there", verifyUrl }),
     template: "verify_email",
     userId: user.id,

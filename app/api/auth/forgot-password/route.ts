@@ -37,7 +37,7 @@ export const POST = withErrorHandling(async (req) => {
 
     await sendEmail({
       to: user.email,
-      subject: "Reset your WorkHub password",
+      subject: "Reset your Clustar password",
       html: resetPasswordTemplate({ name: user.name ?? "there", resetUrl }),
       template: "reset_password",
       userId: user.id,

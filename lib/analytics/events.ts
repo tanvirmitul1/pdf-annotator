@@ -1,4 +1,4 @@
-export const ANALYTICS_CONSENT_COOKIE = "pdf-annotator-analytics-consent"
+export const ANALYTICS_CONSENT_COOKIE = "clustar-analytics-consent"
 
 export type AnalyticsConsent = "accepted" | "rejected" | "unknown"
 

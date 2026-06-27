@@ -290,7 +290,7 @@ export class CloudinaryAdapter implements StorageAdapter {
         {
           public_id: key,
           resource_type: resourceType,
-          folder: "pdf-annotator",
+          folder: "clustar",
         },
         (error: Error | null, result: { bytes: number }) => {
           if (error) {
@@ -308,7 +308,7 @@ export class CloudinaryAdapter implements StorageAdapter {
   async get(key: string): Promise<Readable> {
     const https = await import("https")
     const cloudinary = await this.getCloudinary()
-    const publicId = `pdf-annotator/${key}`
+    const publicId = `clustar/${key}`
     const url = cloudinary.utils.private_download_url(publicId, "", {
       resource_type: "raw",
       type: "upload",
@@ -328,7 +328,7 @@ export class CloudinaryAdapter implements StorageAdapter {
   async delete(key: string): Promise<void> {
     const cloudinary = await this.getCloudinary()
     try {
-      await cloudinary.uploader.destroy(`pdf-annotator/${key}`, {
+      await cloudinary.uploader.destroy(`clustar/${key}`, {
         resource_type: "raw",
       })
     } catch {
@@ -343,7 +343,7 @@ export class CloudinaryAdapter implements StorageAdapter {
       // We need to delete the specific folder
       // For now, we'll delete the main document files
       // A more comprehensive solution would require listing all resources first
-      const folderPath = `pdf-annotator/${prefix}`
+      const folderPath = `clustar/${prefix}`
       
       // Try to delete common file patterns
       const commonExtensions = ['.pdf', '.png', '.jpg', '.json', '.txt']
@@ -373,7 +373,7 @@ export class CloudinaryAdapter implements StorageAdapter {
       .split("/")
       .map((segment) => encodeURIComponent(segment))
       .join("/")
-    return `https://res.cloudinary.com/${this.cloudName}/raw/upload/pdf-annotator/${encodedKey}`
+    return `https://res.cloudinary.com/${this.cloudName}/raw/upload/clustar/${encodedKey}`
   }
 }
 

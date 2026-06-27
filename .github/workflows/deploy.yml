@@ -15,7 +15,7 @@ on:
 
 env:
   NODE_VERSION: "20"
-  DEPLOY_PATH: "/var/www/pdf-annotator"
+  DEPLOY_PATH: "/var/www/clustar"
   # Dummy values needed at build time — Prisma requires these during
   # `postinstall` (prisma generate) and Zod env validation runs during
   # Next.js "Collecting page data" phase. Real values are loaded at
@@ -163,15 +163,15 @@ jobs:
             npx prisma migrate deploy
 
             # Always delete and re-create PM2 process to ensure correct cwd
-            pm2 delete pdf-annotator 2>/dev/null || true
+            pm2 delete clustar 2>/dev/null || true
             pm2 start server.js \
-              --name pdf-annotator \
+              --name clustar \
               --cwd "$APP_DIR/current" \
               --node-args="--max-old-space-size=512" \
               -- --hostname 0.0.0.0
 
             # Update worker code and restart
-            WORKER_DIR="$HOME/pdf-annotator"
+            WORKER_DIR="$HOME/clustar"
             if [ -d "$WORKER_DIR" ]; then
               cd "$WORKER_DIR"
               git pull origin master

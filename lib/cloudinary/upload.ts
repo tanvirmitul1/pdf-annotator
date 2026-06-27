@@ -15,7 +15,7 @@ export async function uploadChatAttachment(
   const dataUri = `data:${mimeType};base64,${base64Data}`;
 
   const result = await cloudinary.uploader.upload(dataUri, {
-    folder: `pdf-annotator/chat/${conversationId}`,
+    folder: `clustar/chat/${conversationId}`,
     resource_type: "auto",
     public_id: `${Date.now()}-${fileName.replace(/\.[^/.]+$/, "")}`,
   });

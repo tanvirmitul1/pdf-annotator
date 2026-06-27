@@ -7,7 +7,7 @@ import { Prisma, type PrismaClient, UsageMetric } from "@prisma/client"
 import { prisma } from "@/lib/db/prisma"
 import { getIpAddress } from "@/lib/request"
 
-export const DEVICE_COOKIE_NAME = "pdf-annotator-device"
+export const DEVICE_COOKIE_NAME = "clustar-device"
 
 const DEVICE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365
 

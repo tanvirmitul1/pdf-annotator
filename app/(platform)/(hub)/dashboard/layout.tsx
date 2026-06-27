@@ -1,5 +1,5 @@
 export const metadata = {
-  title: "Dashboard - WorkHub",
+  title: "Dashboard - Clustar",
   description: "Access all your productivity services",
 }
 

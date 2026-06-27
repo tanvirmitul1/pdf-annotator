@@ -24,7 +24,7 @@ export function emailBase(opts: EmailBaseOptions): string {
   <meta name="color-scheme" content="light">
   <meta name="supported-color-schemes" content="light">
   <!--[if mso]><noscript><xml><o:OfficeDocumentSettings><o:PixelsPerInch>96</o:PixelsPerInch></o:OfficeDocumentSettings></xml></noscript><![endif]-->
-  <title>${opts.title} — WorkHub</title>
+  <title>${opts.title} — Clustar</title>
 </head>
 <body style="margin:0;padding:0;background-color:#eef2ff;-webkit-text-size-adjust:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
 
@@ -50,11 +50,11 @@ export function emailBase(opts: EmailBaseOptions): string {
                       <tr>
                         <!-- Icon box -->
                         <td style="width:42px;height:42px;background:rgba(255,255,255,0.13);border:1.5px solid rgba(255,255,255,0.22);border-radius:11px;text-align:center;vertical-align:middle;">
-                          <span style="display:block;font-size:21px;font-weight:900;color:#ffffff;line-height:42px;letter-spacing:-1px;">W</span>
+                          <span style="display:block;font-size:21px;font-weight:900;color:#ffffff;line-height:42px;letter-spacing:-1px;">C</span>
                         </td>
-                        <!-- Wordmark -->
+                        <!-- Cordmark -->
                         <td style="padding-left:11px;vertical-align:middle;">
-                          <span style="display:block;font-size:19px;font-weight:700;color:#ffffff;letter-spacing:-0.4px;line-height:1;">WorkHub</span>
+                          <span style="display:block;font-size:19px;font-weight:700;color:#ffffff;letter-spacing:-0.4px;line-height:1;">Clustar</span>
                           <span style="display:block;font-size:11px;color:rgba(199,210,254,0.75);letter-spacing:0.4px;margin-top:2px;">Productivity Platform</span>
                         </td>
                       </tr>
@@ -136,15 +136,15 @@ export function emailBase(opts: EmailBaseOptions): string {
                 <tr>
                   <td>
                     <p style="margin:0 0 6px;font-size:12px;color:#94a3b8;line-height:1.6;">
-                      &copy; ${year} WorkHub. All rights reserved.
+                      &copy; ${year} Clustar. All rights reserved.
                     </p>
                     <p style="margin:0;font-size:12px;color:#cbd5e1;line-height:1.6;">
-                      You received this email because your account is registered at WorkHub.<br>
+                      You received this email because your account is registered at Clustar.<br>
                       If you have questions, reply to this email or contact our support.
                     </p>
                   </td>
                   <td align="right" style="vertical-align:bottom;">
-                    <span style="display:inline-block;width:28px;height:28px;background:linear-gradient(135deg,#4f46e5,#6d28d9);border-radius:7px;text-align:center;line-height:28px;font-size:13px;font-weight:800;color:#ffffff;">W</span>
+                    <span style="display:inline-block;width:28px;height:28px;background:linear-gradient(135deg,#4f46e5,#6d28d9);border-radius:7px;text-align:center;line-height:28px;font-size:13px;font-weight:800;color:#ffffff;">C</span>
                   </td>
                 </tr>
               </table>

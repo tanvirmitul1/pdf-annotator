@@ -30,7 +30,7 @@ export default async function ResetPasswordPage({
     <AuthShell
       badge="Reset password"
       title="Choose a new password"
-      description="Enter a new password for your WorkHub account."
+      description="Enter a new password for your Clustar account."
       switchHref="/auth/login"
       switchLabel="Back to login"
       switchPrompt="Remember your password?"

@@ -56,7 +56,7 @@ export async function registerCredentialsUser(input: {
       const verifyUrl = `${env.APP_URL}/auth/verify-email/confirm?token=${token}`
       await sendEmail({
         to: user.email!,
-        subject: "Verify your WorkHub email address",
+        subject: "Verify your Clustar email address",
         html: verifyEmailTemplate({ name: user.name ?? "there", verifyUrl }),
         template: "verify_email",
         userId: user.id,

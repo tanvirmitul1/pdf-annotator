@@ -59,7 +59,7 @@ export function AuthShell({ form, switchHref, switchLabel, switchPrompt }: AuthS
       <nav className="absolute inset-x-0 top-0 z-20 flex items-center justify-between border-b border-border/40 bg-background/25 px-6 py-4 backdrop-blur-md sm:px-10">
         <Link href="/" className="flex items-center gap-2.5 focus-visible:outline-none">
           <LogoMark compact />
-          <span className="text-lg font-semibold tracking-tight">WorkHub</span>
+          <span className="text-lg font-semibold tracking-tight">Clustar</span>
         </Link>
         <p className="text-sm text-muted-foreground">
           {switchPrompt}{" "}

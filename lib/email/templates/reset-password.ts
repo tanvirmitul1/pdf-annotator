@@ -9,12 +9,12 @@ export function resetPasswordTemplate({
 }): string {
   return emailBase({
     title: "Reset your password",
-    previewText: `Hi ${name}, we received a request to reset your WorkHub password.`,
+    previewText: `Hi ${name}, we received a request to reset your Clustar password.`,
     icon: "🔐",
     iconBg: "#fff7ed",
     iconColor: "#fed7aa",
     heading: "Reset your password",
-    greeting: `Hi <strong style="color:#0f172a;">${name}</strong>, we received a request to reset the password for your WorkHub account.`,
+    greeting: `Hi <strong style="color:#0f172a;">${name}</strong>, we received a request to reset the password for your Clustar account.`,
     body: `
       <p style="margin:0 0 20px;font-size:15px;color:#475569;line-height:1.7;">
         Click the button below to choose a new password. If you didn't request this, you can safely ignore this email — your current password will remain unchanged.
