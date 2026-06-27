@@ -2,82 +2,60 @@ import { Skeleton } from "@/components/ui/skeleton"
 
 export default function SignupLoading() {
   return (
-    <main className="relative min-h-screen overflow-hidden">
-      <div className="relative flex min-h-screen">
-        {/* Left Panel — hidden on mobile */}
-        <div className="hidden lg:flex lg:w-[46%] xl:w-[42%] flex-col justify-between border-r border-border/50 bg-card/40 px-10 py-10">
-          <Skeleton className="h-8 w-32" />
+    <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-background px-4 py-16">
+      {/* Navbar */}
+      <div className="absolute inset-x-0 top-0 flex items-center justify-between border-b border-border/40 bg-background/25 px-6 py-4 sm:px-10">
+        <Skeleton className="h-7 w-28" />
+        <Skeleton className="h-4 w-44" />
+      </div>
 
-          <div className="space-y-10">
-            <div className="space-y-4">
-              <Skeleton className="h-12 w-72" />
-              <Skeleton className="h-10 w-56" />
-              <Skeleton className="h-4 w-80" />
-              <Skeleton className="h-4 w-64" />
-            </div>
-
-            <div className="space-y-5">
-              {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="flex gap-4">
-                  <Skeleton className="h-10 w-10 rounded-lg shrink-0" />
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-36" />
-                    <Skeleton className="h-3 w-64" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <Skeleton className="h-3 w-40" />
+      {/* Centered card area */}
+      <div className="relative z-10 w-full max-w-[400px]">
+        {/* Logo icon */}
+        <div className="mb-6 flex justify-center">
+          <Skeleton className="size-12 rounded-xl" />
         </div>
 
-        {/* Right Panel — Form */}
-        <div className="flex flex-1 items-center justify-center px-6 py-12">
-          <div className="w-full max-w-sm space-y-8">
-            {/* Logo on mobile */}
-            <div className="lg:hidden">
-              <Skeleton className="h-8 w-32 mx-auto mb-6" />
+        {/* Card */}
+        <div className="overflow-hidden rounded-2xl border border-border/60 bg-card/80 shadow-2xl">
+          <div className="px-8 pb-8 pt-8 flex flex-col gap-5">
+            {/* Title */}
+            <Skeleton className="mx-auto h-9 w-44" />
+
+            {/* Social icon buttons */}
+            <div className="flex items-center justify-center gap-3">
+              <Skeleton className="size-10 rounded-lg" />
+              <Skeleton className="size-10 rounded-lg" />
             </div>
 
-            <div className="space-y-2 text-center lg:text-left">
-              <Skeleton className="h-8 w-32 mx-auto lg:mx-0" />
-              <Skeleton className="h-4 w-72 mx-auto lg:mx-0" />
-            </div>
-
-            {/* OAuth Buttons */}
-            <div className="space-y-3">
-              <Skeleton className="h-10 w-full rounded-md" />
-              <Skeleton className="h-10 w-full rounded-md" />
-            </div>
-
-            {/* Divider */}
+            {/* OR divider */}
             <div className="flex items-center gap-3">
               <Skeleton className="h-px flex-1" />
-              <Skeleton className="h-4 w-8" />
+              <Skeleton className="h-3.5 w-6" />
               <Skeleton className="h-px flex-1" />
             </div>
 
-            {/* Name/Email/Password Fields */}
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-12" />
-                <Skeleton className="h-10 w-full rounded-md" />
+            {/* Fields */}
+            <div className="flex flex-col gap-3">
+              {/* Name */}
+              <Skeleton className="h-11 w-full rounded-lg" />
+              {/* Email */}
+              <Skeleton className="h-11 w-full rounded-lg" />
+              {/* Password */}
+              <Skeleton className="h-11 w-full rounded-lg" />
+              {/* Checkbox + terms */}
+              <div className="flex items-start gap-2 px-1">
+                <Skeleton className="mt-0.5 size-4 shrink-0 rounded" />
+                <Skeleton className="h-4 w-52" />
               </div>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-12" />
-                <Skeleton className="h-10 w-full rounded-md" />
-              </div>
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-16" />
-                <Skeleton className="h-10 w-full rounded-md" />
-              </div>
+              {/* Submit */}
+              <Skeleton className="mt-2 h-11 w-full rounded-lg" />
             </div>
-
-            <Skeleton className="h-10 w-full rounded-md" />
-            <Skeleton className="h-4 w-52 mx-auto" />
           </div>
         </div>
+
+        {/* Legal line */}
+        <Skeleton className="mx-auto mt-5 h-3 w-72" />
       </div>
     </main>
   )
