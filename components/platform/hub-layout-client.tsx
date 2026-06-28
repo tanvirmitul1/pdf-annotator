@@ -15,6 +15,7 @@ import {
   User,
   CreditCard,
   ShieldCheck,
+  Shield,
 } from "lucide-react"
 import { LogoMark } from "@/components/common/logo-mark"
 import { ThemeToggle } from "@/components/common/theme-toggle"
@@ -27,7 +28,7 @@ import { cn } from "@/lib/utils"
 
 const PRIMARY_NAV = [
   { label: "Dashboard", icon: LayoutDashboard, href: "/dashboard", exact: true },
-  { label: "Documents", icon: FileText, href: "/services/documents" },
+  { label: "PDF Annotator", icon: FileText, href: "/services/annotations" },
   { label: "AI Chat", icon: Bot, href: "/services/ai-chat" },
 ]
 
@@ -105,10 +106,11 @@ interface SidebarProps {
   userEmail?: string | null
   userImage?: string | null
   planId?: string
+  role?: string
   onNavClick?: () => void
 }
 
-function Sidebar({ pathname, userName, userImage, planId, onNavClick }: SidebarProps) {
+function Sidebar({ pathname, userName, userImage, planId, role, onNavClick }: SidebarProps) {
   const initials = (userName ?? "U")
     .split(" ")
     .map((w) => w[0])
@@ -171,6 +173,21 @@ function Sidebar({ pathname, userName, userImage, planId, onNavClick }: SidebarP
             />
           ))}
         </div>
+
+        {role === "ADMIN" && (
+          <div className="pt-5 space-y-0.5">
+            <p className="px-3 mb-2.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/35">
+              Admin
+            </p>
+            <NavItem
+              icon={Shield}
+              label="Admin"
+              href="/admin"
+              pathname={pathname}
+              onClick={onNavClick}
+            />
+          </div>
+        )}
       </nav>
 
       {/* Bottom nav */}
@@ -241,6 +258,7 @@ export function HubLayoutClient({
     userEmail,
     userImage,
     planId,
+    role,
   }
 
   return (

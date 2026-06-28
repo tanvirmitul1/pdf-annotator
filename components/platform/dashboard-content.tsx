@@ -202,9 +202,9 @@ export function DashboardContent({
                 size="sm"
                 className="h-9 gap-1.5 border-border/50 hover:border-primary/40"
               >
-                <Link href="/services/documents">
+                <Link href="/services/annotations">
                   <Plus className="size-3.5" />
-                  New Document
+                  New PDF
                 </Link>
               </Button>
               <Button
@@ -232,7 +232,7 @@ export function DashboardContent({
         >
           {/* Documents */}
           <motion.div variants={fadeUp}>
-            <Link href="/services/documents" className="group block h-full">
+            <Link href="/services/annotations" className="group block h-full">
               <div className="relative rounded-2xl border border-border/30 bg-card/80 backdrop-blur-sm p-5 h-full overflow-hidden transition-all duration-300 hover:border-blue-500/40 hover:shadow-xl hover:shadow-blue-500/8 hover:-translate-y-0.5">
                 <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 <div className="relative">
@@ -248,7 +248,7 @@ export function DashboardContent({
                   <p className="text-3xl font-bold font-mono tracking-tight text-foreground tabular-nums">
                     {documentCount}
                   </p>
-                  <p className="text-sm text-muted-foreground mt-0.5">Documents</p>
+                  <p className="text-sm text-muted-foreground mt-0.5">PDFs</p>
                   <div className="mt-3 flex items-center gap-1 text-xs text-blue-500 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
                     <span>Open library</span>
                     <ArrowRight className="size-3" />
@@ -357,7 +357,7 @@ export function DashboardContent({
                 <div className="flex items-center gap-4">
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <div className="size-2.5 rounded-sm bg-gradient-to-br from-blue-500 to-cyan-500" />
-                    <span>Documents</span>
+                    <span>PDFs</span>
                   </div>
                   <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <div className="size-2.5 rounded-sm bg-gradient-to-br from-purple-500 to-pink-500" />
@@ -403,7 +403,7 @@ export function DashboardContent({
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
                     <div className="size-3 rounded-sm bg-gradient-to-br from-blue-500 to-cyan-500 shrink-0" />
-                    <span className="text-muted-foreground">Documents</span>
+                    <span className="text-muted-foreground">PDFs</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="font-mono font-semibold text-foreground tabular-nums">
@@ -449,14 +449,14 @@ export function DashboardContent({
               <h3 className="font-semibold text-foreground mb-3">Quick Launch</h3>
               <div className="space-y-1">
                 <Link
-                  href="/services/documents"
+                  href="/services/annotations"
                   className="group flex items-center gap-3 rounded-xl p-3 hover:bg-muted/50 transition-colors"
                 >
                   <div className="flex size-9 items-center justify-center rounded-lg bg-blue-500/10 group-hover:bg-blue-500/20 transition-colors shrink-0">
                     <FileText className="size-4 text-blue-500" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground">Document Annotator</p>
+                    <p className="text-sm font-medium text-foreground">PDF Annotator</p>
                     <p className="text-xs text-muted-foreground truncate">Upload &amp; annotate PDFs</p>
                   </div>
                   <ChevronRight className="size-4 text-muted-foreground/30 group-hover:text-muted-foreground transition-colors shrink-0" />

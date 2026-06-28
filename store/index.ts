@@ -8,7 +8,7 @@ import { modalsReducer } from "@/features/modals/slice"
 import { themeReducer, themeSlice, type ThemeMode } from "@/features/theme/slice"
 import { toastsReducer } from "@/features/toasts/slice"
 import localAnnotationsReducer from "@/features/annotations/local-slice"
-import { conversationsApi } from "@/app/gemma/chat/_store/conversations-api"
+import { conversationsApi } from "@/app/(platform)/services/ai-chat/_store/conversations-api"
 
 const createNoopStorage = () => ({
   getItem: async () => null,

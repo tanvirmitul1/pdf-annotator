@@ -12,7 +12,6 @@ import {
   Menu,
   Search,
   Settings,
-  Shield,
   Tag,
   Trash2,
 } from "lucide-react"
@@ -28,15 +27,15 @@ import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
 
 const navigation = [
-  { href: "/services/documents", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/services/documents/collections", label: "Collections", icon: FolderKanban },
-  { href: "/services/documents/tags", label: "Tags", icon: Tag },
-  { href: "/services/documents/trash", label: "Trash", icon: Trash2 },
+  { href: "/services/annotations", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/services/annotations/collections", label: "Collections", icon: FolderKanban },
+  { href: "/services/annotations/tags", label: "Tags", icon: Tag },
+  { href: "/services/annotations/trash", label: "Trash", icon: Trash2 },
 ]
 
 const bottomNav = [
-  { href: "/services/documents/settings", label: "Settings", icon: Settings },
-  { href: "/services/documents/help", label: "Help", icon: CircleHelp },
+  { href: "/services/annotations/settings", label: "Settings", icon: Settings },
+  { href: "/services/annotations/help", label: "Help", icon: CircleHelp },
 ]
 
 export interface ProtectedShellProps {
@@ -123,7 +122,7 @@ export function ProtectedShell({
               All Services
             </Link>
             <LogoMark compact />
-            <p className="mt-1 text-[11px] font-medium text-foreground/80 tracking-tight">Document Annotator</p>
+            <p className="mt-1 text-[11px] font-medium text-foreground/80 tracking-tight">PDF Annotator</p>
           </div>
 
           {/* Main navigation */}
@@ -136,31 +135,6 @@ export function ProtectedShell({
             </div>
 
             <Separator />
-
-            {role === "ADMIN" && (
-              <>
-                <div>
-                  <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
-                    Admin
-                  </p>
-                  <nav className="space-y-0.5">
-                    <Link
-                      href="/services/documents/admin"
-                      className={cn(
-                        "group flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors",
-                        pathname.startsWith("/services/documents/admin")
-                          ? "bg-primary/10 text-primary font-medium"
-                          : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
-                      )}
-                    >
-                      <Shield className={cn("size-4 shrink-0", pathname.startsWith("/services/documents/admin") ? "text-primary" : "text-muted-foreground group-hover:text-foreground")} />
-                      Admin
-                    </Link>
-                  </nav>
-                </div>
-                <Separator />
-              </>
-            )}
 
             <div>
               <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/70">
@@ -245,7 +219,7 @@ export function ProtectedShell({
                       All Services
                     </Link>
                     <LogoMark compact />
-                    <p className="mt-1 text-[11px] font-medium text-foreground/80">Document Annotator</p>
+                    <p className="mt-1 text-[11px] font-medium text-foreground/80">PDF Annotator</p>
                   </div>
                   <div className="flex-1">
                     {renderNavItems(() => setMobileOpen(false))}
@@ -270,7 +244,7 @@ export function ProtectedShell({
           <div className="relative flex-1 max-w-md">
             <Search className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
             <div className="flex h-9 items-center rounded-md border border-border/70 bg-muted/40 pl-9 pr-3 text-sm text-muted-foreground cursor-default select-none">
-              <span>Search documents...</span>
+              <span>Search PDFs...</span>
             </div>
           </div>
 

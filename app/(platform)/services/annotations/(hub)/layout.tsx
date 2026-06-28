@@ -4,7 +4,7 @@ import { ErrorBoundary } from "@/components/error-boundary"
 
 export const dynamic = "force-dynamic"
 
-export default async function DocumentsLayout({
+export default async function DocumentsHubLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const session = await requireAppUser()

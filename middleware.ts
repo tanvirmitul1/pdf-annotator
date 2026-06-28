@@ -62,7 +62,7 @@ export default auth(async (req) => {
 
   // Legacy route redirects
   if (req.nextUrl.pathname.startsWith("/app")) {
-    const newPath = req.nextUrl.pathname.replace("/app", "/services/documents")
+    const newPath = req.nextUrl.pathname.replace("/app", "/services/annotations")
     const response = NextResponse.redirect(new URL(newPath, req.url))
     setSecurityHeaders(response)
     return response

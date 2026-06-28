@@ -102,7 +102,7 @@ export function UserMenu({
           </DropdownMenuItem>
           {role === "ADMIN" && (
             <DropdownMenuItem asChild className="rounded-lg px-3 py-2.5 text-sm cursor-pointer">
-              <Link href="/services/documents/admin">
+              <Link href="/admin">
                 <Shield className="size-4 text-muted-foreground" />
                 <span>Admin Dashboard</span>
               </Link>

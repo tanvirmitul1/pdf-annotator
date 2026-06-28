@@ -15,11 +15,11 @@ export interface ServiceConfig {
 export const SERVICES: ServiceConfig[] = [
   {
     id: "DOCUMENTS" as ServiceType,
-    name: "Document Annotator",
-    description: "Upload, annotate, and collaborate on PDF documents",
+    name: "PDF Annotator",
+    description: "Upload, annotate, and collaborate on PDF and image files",
     icon: FileText,
     iconName: "FileText",
-    path: "/services/documents",
+    path: "/services/annotations",
     enabled: true,
   },
   {

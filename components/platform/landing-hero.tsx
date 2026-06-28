@@ -30,7 +30,7 @@ const NAV_ITEMS = [
     label: "Features",
     items: [
       {
-        label: "Document Annotator",
+        label: "PDF Annotator",
         description: "Highlight, comment & organize PDFs",
         href: "/features/documents",
       },
@@ -90,14 +90,14 @@ const NAV_ITEMS = [
 
 const services = [
   {
-    name: "Document Annotator",
+    name: "PDF Annotator",
     tagline: "Your PDF workflow, supercharged.",
     description:
       "Upload any PDF or image and annotate it with precision. Add highlights, comments, tags, and bookmarks. Collaborate with teammates in real time.",
     icon: FileText,
     gradient: "from-blue-500 to-cyan-400",
     glowColor: "#3b82f6",
-    href: "/signup?callbackUrl=/services/documents",
+    href: "/signup?callbackUrl=/services/annotations",
     features: [
       "Highlight, underline & draw on any PDF",
       "Threaded comments and @mentions",

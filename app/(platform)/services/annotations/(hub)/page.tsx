@@ -21,7 +21,7 @@ export default async function DocumentsPage() {
         <div>
           <p className="text-sm text-muted-foreground">{getGreeting()}, {firstName}</p>
           <h1 className="mt-0.5 font-heading text-3xl font-bold tracking-tight text-foreground">
-            Document Workspace
+            PDF Annotator
           </h1>
         </div>
         
@@ -38,7 +38,7 @@ export default async function DocumentsPage() {
       </div>
 
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold tracking-tight">Recent Documents</h2>
+        <h2 className="text-xl font-semibold tracking-tight">Recent PDFs</h2>
         <DocumentList />
       </div>
     </div>

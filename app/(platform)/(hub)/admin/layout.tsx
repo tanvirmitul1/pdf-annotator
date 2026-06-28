@@ -6,13 +6,13 @@ import { BarChart3, Activity, FileText, Key, Server, Users, AlertCircle } from "
 export const dynamic = "force-dynamic"
 
 const adminNav = [
-  { href: "/app/admin", label: "Overview", icon: BarChart3 },
-  { href: "/app/admin/users", label: "Users", icon: Users },
-  { href: "/app/admin/errors", label: "Errors", icon: AlertCircle },
-  { href: "/app/admin/activity", label: "Activity", icon: Activity },
-  { href: "/app/admin/documents", label: "Documents", icon: FileText },
-  { href: "/app/admin/api-keys", label: "API Keys", icon: Key },
-  { href: "/app/admin/system", label: "System", icon: Server },
+  { href: "/admin", label: "Overview", icon: BarChart3 },
+  { href: "/admin/users", label: "Users", icon: Users },
+  { href: "/admin/errors", label: "Errors", icon: AlertCircle },
+  { href: "/admin/activity", label: "Activity", icon: Activity },
+  { href: "/admin/documents", label: "Documents", icon: FileText },
+  { href: "/admin/api-keys", label: "API Keys", icon: Key },
+  { href: "/admin/system", label: "System", icon: Server },
 ]
 
 export default async function AdminLayout({
@@ -21,11 +21,11 @@ export default async function AdminLayout({
   const session = await requireAppUser()
 
   if (session.user.role !== "ADMIN") {
-    redirect("/app")
+    redirect("/dashboard")
   }
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-[1400px] px-6 sm:px-8 lg:px-12 py-8 space-y-6">
       <div>
         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
         <p className="text-muted-foreground mt-1">Manage users, content, and system health</p>
